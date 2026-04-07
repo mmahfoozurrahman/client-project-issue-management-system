@@ -1,0 +1,47 @@
+<?php
+
+namespace App\Models;
+
+use App\Models\Concerns\UserOwned;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Model;
+
+class Issue extends Model
+{
+    use UserOwned;
+
+    protected $fillable = [
+        'title',
+        'description',
+        'status',
+        'project_id',
+        'user_id',
+        'parent_id',
+    ];
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
+    }
+
+    public function parentIssue(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'parent_id');
+    }
+
+    public function subIssues(): HasMany
+    {
+        return $this->hasMany(self::class, 'parent_id');
+    }
+
+    public function images(): HasMany
+    {
+        return $this->hasMany(IssueImage::class);
+    }
+}
