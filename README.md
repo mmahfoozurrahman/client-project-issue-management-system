@@ -1,58 +1,148 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Client Listing
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Client Listing is a multi-tenant project and issue management app built around a simple workflow:
 
-## About Laravel
+**Clients -> Projects -> Issues -> Sub-Issues**
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+The goal is to give each user a private workspace where they can manage their own clients, projects, issue tracking, screenshots, and nested work items. A Super Admin manages user accounts, while normal users only see and work with their own data.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## What It Does
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- **Multi-tenant workspaces:** every client, project, and issue belongs to a specific user.
+- **Super Admin user management:** admins can create, update, and manage users from an admin page.
+- **Client management:** compact table-style client list with create/edit/delete flows.
+- **Project management:** projects belong to clients and include a polished project detail page with paginated top-level issues.
+- **Issue management:** issues include status, rich descriptions, project/client context, screenshots, and nested sub-issues.
+- **Recursive sub-issues:** users can create child issues directly from an issue detail page, including deeper nested children.
+- **Kanban board:** visual Todo / In Progress / Done board for issue flow.
+- **Issue image uploads:** multiple JPG/PNG images can be attached to issues.
+- **Rich text descriptions:** description fields use a lightweight rich text editor instead of plain textareas.
+- **Compact professional lists:** Clients, Projects, Issues, Dashboard activity, Project Detail issues, and Admin Users use clean table-style panels.
+- **Pagination:** list-style pages include pagination, while Kanban intentionally stays unpaginated for a smoother board experience.
+- **Polished status badges:** Todo, In Progress, and Done use distinct colors so status changes are easy to scan.
+- **Engaging UI:** sidebar navigation, responsive layout, reusable modal, SweetAlert2 toasts, loading states, validation feedback, and a warm card-based visual style.
 
-## Learning Laravel
+## Tech Stack
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+Backend:
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- Laravel 13
+- PHP 8.3+
+- MySQL
+- Custom session-based authentication
+- Laravel Storage for issue images
+- Laravel Form Requests for validation
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+Frontend:
 
-## Agentic Development
+- Vue 3
+- Inertia.js
+- Vite
+- Bootstrap 5
+- SweetAlert2
+- Lucide Vue icons
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Main Pages
+
+- `/login` - custom login page
+- `/dashboard` - workspace summary and recent issue activity
+- `/clients` - client list and management
+- `/projects` - project list and management
+- `/projects/{project}` - project detail with top-level issues
+- `/issues` - issue list and filters
+- `/issues/{issue}` - issue detail, images, context, and nested issue tree
+- `/kanban` - issue board grouped by status
+- `/admin/users` - admin-only user management
+
+## Installation
+
+1. Install PHP dependencies:
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+composer install
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+2. Install frontend dependencies:
 
-## Contributing
+```bash
+npm install
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+3. Create the environment file:
 
-## Code of Conduct
+```bash
+cp .env.example .env
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+On Windows PowerShell, use:
 
-## Security Vulnerabilities
+```powershell
+Copy-Item .env.example .env
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+4. Generate the Laravel app key:
 
-## License
+```bash
+php artisan key:generate
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+5. Configure MySQL in `.env`.
+
+The default example uses:
+
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=client_issues_listing
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+Create the database in MySQL before running migrations.
+
+6. Run migrations:
+
+```bash
+php artisan migrate
+```
+
+7. Link public storage for issue images:
+
+```bash
+php artisan storage:link
+```
+
+8. Build frontend assets:
+
+```bash
+npm run build
+```
+
+For local development, run Vite instead:
+
+```bash
+npm run dev
+```
+
+9. Start the Laravel server if you are not using a local virtual host:
+
+```bash
+php artisan serve
+```
+
+## Demo Accounts
+
+If you have already created the local demo users, you can log in with:
+
+- Admin: `admin@example.com` / `password123`
+- Normal user: `user@example.com` / `password123`
+
+If those accounts do not exist in your database yet, create them through your preferred local seeding or Tinker workflow.
+
+## Notes
+
+- Kanban intentionally does not use pagination because paginated boards feel awkward for workflow scanning.
+- Issue descriptions are stored as formatted HTML from the rich text editor.
+- Uploaded issue images are stored on Laravel's public disk under the `issues` folder.
+- Multi-tenancy is enforced in the model layer so users only access their own client, project, and issue data.
