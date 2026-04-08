@@ -1,17 +1,22 @@
 <script setup>
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import FormError from '../../Components/FormError.vue';
 import Modal from '../../Components/Modal.vue';
-import IssueCard from '../../Components/IssueCard.vue';
+import Pagination from '../../Components/Pagination.vue';
+import RichTextEditor from '../../Components/RichTextEditor.vue';
+import StatusPill from '../../Components/StatusPill.vue';
 import AppLayout from '../../Layouts/AppLayout.vue';
 
 const props = defineProps({
     project: Object,
+    issues: Object,
     breadcrumbs: Array,
 });
 
 const modalOpen = ref(false);
+const issueRows = computed(() => props.issues?.data ?? []);
+const plainText = (value) => String(value || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 const form = useForm({
     title: '',
     description: '',
@@ -45,7 +50,8 @@ const onFilesChange = (event) => {
             <div>
                 <span class="pill-tag">Project Space</span>
                 <h2>{{ project.name }}</h2>
-                <p class="hero-copy">{{ project.description || 'No description added yet.' }}</p>
+                <div v-if="project.description" class="hero-copy rich-display" v-html="project.description" />
+                <p v-else class="hero-copy">No description added yet.</p>
             </div>
             <div class="project-meta-block">
                 <span class="badge text-bg-light rounded-pill px-3 py-2">{{ project.client?.name }}</span>
@@ -62,9 +68,47 @@ const onFilesChange = (event) => {
                 <Link href="/kanban" class="btn btn-outline-dark rounded-pill">Open Kanban</Link>
             </div>
 
-            <div class="issue-grid">
-                <IssueCard v-for="issue in project.issues" :key="issue.id" :issue="issue" />
+            <div class="compact-table-shell">
+                <table class="compact-table">
+                    <thead>
+                        <tr>
+                            <th>Issue</th>
+                            <th>Status</th>
+                            <th>Sub-issues</th>
+                            <th>Images</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="issue in issueRows" :key="issue.id">
+                            <td>
+                                <div class="table-entity">
+                                    <span class="table-avatar issue">{{ issue.title.slice(0, 1) }}</span>
+                                    <div>
+                                        <strong>{{ issue.title }}</strong>
+                                        <small>{{ plainText(issue.description) || 'No description added yet.' }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><StatusPill :status="issue.status" /></td>
+                            <td>{{ issue.sub_issues_count ?? 0 }}</td>
+                            <td>{{ issue.images_count ?? 0 }}</td>
+                            <td>
+                                <div class="table-actions">
+                                    <Link :href="`/issues/${issue.id}`" class="btn btn-sm btn-light rounded-pill">Open</Link>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr v-if="!issueRows.length">
+                            <td colspan="5">
+                                <div class="table-empty">No top-level issues yet. Add the first issue for this project.</div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
+
+            <Pagination :links="issues.links" :meta="issues" />
         </section>
 
         <Modal v-model="modalOpen" title="Create Issue">
@@ -86,7 +130,7 @@ const onFilesChange = (event) => {
 
                 <div>
                     <label class="form-label">Description</label>
-                    <textarea v-model="form.description" rows="4" class="form-control" :class="{ 'is-invalid-soft': form.errors.description }" />
+                    <RichTextEditor v-model="form.description" :error="form.errors.description" placeholder="Add rich issue details, reproduction notes, or acceptance criteria..." />
                     <FormError :message="form.errors.description" />
                 </div>
 

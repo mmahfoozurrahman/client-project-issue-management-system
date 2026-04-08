@@ -51,10 +51,10 @@ const kanbanColumns = [
             </div>
 
             <div class="kanban-board">
-                <section v-for="column in kanbanColumns" :key="column.key" class="kanban-column">
+                <section v-for="column in kanbanColumns" :key="column.key" class="kanban-column" :class="`kanban-column-${column.key}`">
                     <div class="kanban-column-head">
                         <h4>{{ column.title }}</h4>
-                        <span class="badge rounded-pill text-bg-light">{{ columns[column.key]?.length || 0 }}</span>
+                        <span class="kanban-count-pill">{{ columns[column.key]?.length || 0 }}</span>
                     </div>
 
                     <div class="kanban-stack compact-kanban-stack">

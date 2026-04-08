@@ -1,9 +1,12 @@
 <script setup>
-import { reactive, ref } from 'vue';
+import { computed, reactive, ref } from 'vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import FormError from '../../Components/FormError.vue';
 import Modal from '../../Components/Modal.vue';
 import SkeletonCard from '../../Components/SkeletonCard.vue';
+import Pagination from '../../Components/Pagination.vue';
+import RichTextEditor from '../../Components/RichTextEditor.vue';
+import StatusPill from '../../Components/StatusPill.vue';
 import AppLayout from '../../Layouts/AppLayout.vue';
 
 const props = defineProps({
@@ -15,6 +18,8 @@ const props = defineProps({
 
 const loading = ref(false);
 const modalOpen = ref(false);
+const issueRows = computed(() => props.issues?.data ?? props.issues ?? []);
+const plainText = (value) => String(value || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 
 const searchFilters = reactive({
     project_id: props.filters?.project_id ?? '',
@@ -99,19 +104,19 @@ const onFilesChange = (event) => {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="issue in issues" :key="issue.id">
+                        <tr v-for="issue in issueRows" :key="issue.id">
                             <td>
                                 <div class="table-entity">
                                     <span class="table-avatar issue">{{ issue.title.slice(0, 1) }}</span>
                                     <div>
                                         <strong>{{ issue.title }}</strong>
-                                        <small>{{ issue.description || 'No description added yet.' }}</small>
+                                        <small>{{ plainText(issue.description) || 'No description added yet.' }}</small>
                                     </div>
                                 </div>
                             </td>
                             <td>{{ issue.project?.client?.name || 'No client' }}</td>
                             <td>{{ issue.project?.name || 'No project' }}</td>
-                            <td><span class="table-pill status-pill">{{ issue.status }}</span></td>
+                            <td><StatusPill :status="issue.status" /></td>
                             <td>{{ issue.sub_issues_count ?? 0 }}</td>
                             <td>
                                 <div class="table-actions">
@@ -119,7 +124,7 @@ const onFilesChange = (event) => {
                                 </div>
                             </td>
                         </tr>
-                        <tr v-if="!issues.length">
+                        <tr v-if="!issueRows.length">
                             <td colspan="6">
                                 <div class="table-empty">No issues match the current filters.</div>
                             </td>
@@ -127,6 +132,8 @@ const onFilesChange = (event) => {
                     </tbody>
                 </table>
             </div>
+
+            <Pagination :links="issues.links" :meta="issues" />
         </section>
 
         <Modal v-model="modalOpen" title="Create Issue">
@@ -159,7 +166,7 @@ const onFilesChange = (event) => {
 
                 <div>
                     <label class="form-label">Description</label>
-                    <textarea v-model="form.description" rows="4" class="form-control" :class="{ 'is-invalid-soft': form.errors.description }" />
+                    <RichTextEditor v-model="form.description" :error="form.errors.description" placeholder="Add rich details, links, notes, or acceptance context..." />
                     <FormError :message="form.errors.description" />
                 </div>
 

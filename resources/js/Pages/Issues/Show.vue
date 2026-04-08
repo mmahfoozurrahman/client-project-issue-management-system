@@ -4,6 +4,8 @@ import { Head, useForm } from '@inertiajs/vue3';
 import Swal from 'sweetalert2';
 import FormError from '../../Components/FormError.vue';
 import Modal from '../../Components/Modal.vue';
+import RichTextEditor from '../../Components/RichTextEditor.vue';
+import StatusPill from '../../Components/StatusPill.vue';
 import IssueTree from '../../Components/IssueTree.vue';
 import AppLayout from '../../Layouts/AppLayout.vue';
 
@@ -13,12 +15,6 @@ const props = defineProps({
     projectIssues: Array,
     breadcrumbs: Array,
 });
-
-const statusLabel = computed(() => ({
-    todo: 'Todo',
-    inprogress: 'In Progress',
-    done: 'Done',
-}[props.issue.status] ?? props.issue.status));
 
 const nestedIssues = computed(() => props.issue.sub_issues ?? props.issue.subIssues ?? []);
 const parentIssue = computed(() => props.issue.parent_issue ?? props.issue.parentIssue ?? null);
@@ -115,11 +111,12 @@ const submitChild = () => {
             <div>
                 <span class="pill-tag">Issue Detail</span>
                 <h2>{{ issue.title }}</h2>
-                <p class="hero-copy">{{ issue.description || 'No description added yet.' }}</p>
+                <div v-if="issue.description" class="hero-copy rich-display" v-html="issue.description" />
+                <p v-else class="hero-copy">No description added yet.</p>
             </div>
             <div class="project-meta-block">
                 <button class="btn btn-outline-dark rounded-pill" @click="openChildModal(issue)">Add Sub-Issue</button>
-                <span class="badge rounded-pill px-3 py-2 text-bg-light">{{ statusLabel }}</span>
+                <StatusPill :status="issue.status" />
                 <button class="btn btn-outline-danger rounded-pill" @click="destroyIssue">Delete</button>
             </div>
         </section>
@@ -194,7 +191,7 @@ const submitChild = () => {
 
                         <div>
                             <label class="form-label">Description</label>
-                            <textarea v-model="updateForm.description" rows="5" class="form-control" :class="{ 'is-invalid-soft': updateForm.errors.description }" />
+                            <RichTextEditor v-model="updateForm.description" :error="updateForm.errors.description" placeholder="Capture formatted details, notes, links, and acceptance context..." />
                             <FormError :message="updateForm.errors.description" />
                         </div>
 
@@ -282,7 +279,7 @@ const submitChild = () => {
 
                 <div>
                     <label class="form-label">Description</label>
-                    <textarea v-model="childForm.description" rows="4" class="form-control" :class="{ 'is-invalid-soft': childForm.errors.description }" />
+                    <RichTextEditor v-model="childForm.description" :error="childForm.errors.description" placeholder="Describe the child issue with formatted notes..." />
                     <FormError :message="childForm.errors.description" />
                 </div>
 

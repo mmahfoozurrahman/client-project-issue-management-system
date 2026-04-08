@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import { Plus } from 'lucide-vue-next';
+import StatusPill from './StatusPill.vue';
 
 const props = defineProps({
     issues: {
@@ -18,6 +19,7 @@ const emit = defineEmits(['create-child']);
 const normalizedIssues = computed(() => props.issues ?? []);
 
 const getChildren = (issue) => issue.sub_issues ?? issue.subIssues ?? [];
+const plainText = (value) => String(value || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 </script>
 
 <template>
@@ -29,11 +31,11 @@ const getChildren = (issue) => issue.sub_issues ?? issue.subIssues ?? [];
                         <span class="nested-depth-marker">{{ depth + 1 }}</span>
                         <div>
                             <strong>{{ issue.title }}</strong>
-                            <small>{{ issue.description || 'No description added yet.' }}</small>
+                            <small>{{ plainText(issue.description) || 'No description added yet.' }}</small>
                         </div>
                     </Link>
                     <div class="nested-issue-meta">
-                        <span class="table-pill status-pill">{{ issue.status }}</span>
+                        <StatusPill :status="issue.status" size="sm" />
                         <span>{{ getChildren(issue).length }} children</span>
                         <button type="button" class="nested-add-btn" @click="emit('create-child', issue)">
                             <Plus :size="14" />

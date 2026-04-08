@@ -4,13 +4,18 @@ import { Head, useForm } from '@inertiajs/vue3';
 import Swal from 'sweetalert2';
 import FormError from '../../Components/FormError.vue';
 import Modal from '../../Components/Modal.vue';
+import Pagination from '../../Components/Pagination.vue';
+import RichTextEditor from '../../Components/RichTextEditor.vue';
 import AppLayout from '../../Layouts/AppLayout.vue';
 
-defineProps({
+const props = defineProps({
     projects: Array,
     clients: Array,
     breadcrumbs: Array,
 });
+
+const projectRows = computed(() => props.projects?.data ?? props.projects ?? []);
+const plainText = (value) => String(value || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 
 const modalOpen = ref(false);
 const editingProject = ref(null);
@@ -99,7 +104,7 @@ const destroyProject = (project) => {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="project in projects" :key="project.id">
+                        <tr v-for="project in projectRows" :key="project.id">
                             <td>
                                 <div class="table-entity">
                                     <span class="table-avatar alt">{{ project.name.slice(0, 1) }}</span>
@@ -111,7 +116,7 @@ const destroyProject = (project) => {
                             </td>
                             <td>{{ project.client?.name || 'No client' }}</td>
                             <td><span class="table-pill">{{ project.issues_count }} issues</span></td>
-                            <td class="table-muted-cell">{{ project.description || 'No description added yet.' }}</td>
+                            <td class="table-muted-cell">{{ plainText(project.description) || 'No description added yet.' }}</td>
                             <td>
                                 <div class="table-actions">
                                     <Link :href="`/projects/${project.id}`" class="btn btn-sm btn-light rounded-pill">Open</Link>
@@ -120,7 +125,7 @@ const destroyProject = (project) => {
                                 </div>
                             </td>
                         </tr>
-                        <tr v-if="!projects.length">
+                        <tr v-if="!projectRows.length">
                             <td colspan="5">
                                 <div class="table-empty">No projects yet. Create a project and connect it to a client.</div>
                             </td>
@@ -128,6 +133,8 @@ const destroyProject = (project) => {
                     </tbody>
                 </table>
             </div>
+
+            <Pagination :links="projects.links" :meta="projects" />
         </section>
 
         <Modal v-model="modalOpen" :title="submitLabel">
@@ -149,7 +156,7 @@ const destroyProject = (project) => {
 
                 <div>
                     <label class="form-label">Description</label>
-                    <textarea v-model="form.description" rows="4" class="form-control" :class="{ 'is-invalid-soft': form.errors.description }" />
+                    <RichTextEditor v-model="form.description" :error="form.errors.description" placeholder="Describe goals, scope, and important project notes..." />
                     <FormError :message="form.errors.description" />
                 </div>
 

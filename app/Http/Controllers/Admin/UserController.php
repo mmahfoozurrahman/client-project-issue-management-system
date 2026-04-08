@@ -18,7 +18,8 @@ class UserController extends Controller
     {
         $users = User::query()
             ->latest()
-            ->get(['id', 'name', 'email', 'is_admin', 'created_at']);
+            ->paginate(10, ['id', 'name', 'email', 'is_admin', 'created_at'])
+            ->withQueryString();
 
         return Inertia::render('Admin/Users/Index', [
             'users' => $users,

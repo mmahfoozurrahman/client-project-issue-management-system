@@ -18,7 +18,8 @@ class ProjectController extends Controller
             ->with(['client:id,name'])
             ->withCount('issues')
             ->latest()
-            ->get();
+            ->paginate(10)
+            ->withQueryString();
 
         return Inertia::render('Projects/Index', [
             'projects' => $projects,
@@ -50,15 +51,19 @@ class ProjectController extends Controller
     {
         $project->load([
             'client:id,name',
-            'issues' => fn ($query) => $query
-                ->whereNull('parent_id')
-                ->latest()
-                ->with(['images'])
-                ->withCount(['subIssues', 'images']),
         ]);
+
+        $issues = $project->issues()
+            ->whereNull('parent_id')
+            ->latest()
+            ->with(['images'])
+            ->withCount(['subIssues', 'images'])
+            ->paginate(10)
+            ->withQueryString();
 
         return Inertia::render('Projects/Show', [
             'project' => $project,
+            'issues' => $issues,
             'breadcrumbs' => [
                 ['label' => 'Home', 'href' => route('dashboard')],
                 ['label' => 'Projects', 'href' => route('projects.index')],

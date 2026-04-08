@@ -37,7 +37,7 @@ class IssueController extends Controller
         }
 
         return Inertia::render('Issues/Index', [
-            'issues' => $query->get(),
+            'issues' => $query->paginate(10)->withQueryString(),
             'projects' => Project::query()->orderBy('name')->get(['id', 'name']),
             'filters' => [
                 'project_id' => $request->input('project_id'),

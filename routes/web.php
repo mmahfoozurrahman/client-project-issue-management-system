@@ -32,8 +32,8 @@ Route::middleware('auth')->group(function (): void {
                 ->withCount(['subIssues', 'images'])
                 ->whereNull('parent_id')
                 ->latest()
-                ->take(6)
-                ->get(),
+                ->paginate(8)
+                ->withQueryString(),
             'breadcrumbs' => [
                 ['label' => 'Home'],
             ],

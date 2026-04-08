@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import { FolderKanban, Image as ImageIcon, ListChecks, Plus } from 'lucide-vue-next';
+import StatusPill from './StatusPill.vue';
 
 const props = defineProps({
     issue: {
@@ -18,18 +19,6 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['create-child']);
-
-const badgeClass = computed(() => ({
-    todo: 'text-bg-secondary',
-    inprogress: 'text-bg-warning',
-    done: 'text-bg-success',
-}[props.issue.status] ?? 'text-bg-secondary'));
-
-const badgeLabel = computed(() => ({
-    todo: 'Todo',
-    inprogress: 'In Progress',
-    done: 'Done',
-}[props.issue.status] ?? props.issue.status));
 
 const thumbnail = computed(() => props.issue.images?.[0]?.url ?? null);
 const subIssueCount = computed(() => props.issue.sub_issues_count ?? props.issue.subIssues_count ?? props.issue.subIssues?.length ?? 0);
@@ -58,7 +47,7 @@ const subIssueCount = computed(() => props.issue.sub_issues_count ?? props.issue
             <div class="issue-card-body">
                 <div class="d-flex justify-content-between align-items-start gap-3 mb-2">
                     <h3 class="issue-card-title">{{ issue.title }}</h3>
-                    <span class="badge rounded-pill" :class="badgeClass">{{ badgeLabel }}</span>
+                    <StatusPill :status="issue.status" size="sm" />
                 </div>
 
                 <p class="issue-card-text">{{ issue.description || 'No description added yet.' }}</p>

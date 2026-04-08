@@ -4,12 +4,15 @@ import { Head, useForm } from '@inertiajs/vue3';
 import Swal from 'sweetalert2';
 import FormError from '../../Components/FormError.vue';
 import Modal from '../../Components/Modal.vue';
+import Pagination from '../../Components/Pagination.vue';
 import AppLayout from '../../Layouts/AppLayout.vue';
 
-defineProps({
+const props = defineProps({
     clients: Array,
     breadcrumbs: Array,
 });
+
+const clientRows = computed(() => props.clients?.data ?? props.clients ?? []);
 
 const modalOpen = ref(false);
 const editingClient = ref(null);
@@ -95,7 +98,7 @@ const destroyClient = (client) => {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="client in clients" :key="client.id">
+                        <tr v-for="client in clientRows" :key="client.id">
                             <td>
                                 <div class="table-entity">
                                     <span class="table-avatar">{{ client.name.slice(0, 1) }}</span>
@@ -115,7 +118,7 @@ const destroyClient = (client) => {
                                 </div>
                             </td>
                         </tr>
-                        <tr v-if="!clients.length">
+                        <tr v-if="!clientRows.length">
                             <td colspan="4">
                                 <div class="table-empty">No clients yet. Add the first client to start building the workspace.</div>
                             </td>
@@ -123,6 +126,8 @@ const destroyClient = (client) => {
                     </tbody>
                 </table>
             </div>
+
+            <Pagination :links="clients.links" :meta="clients" />
         </section>
 
         <Modal v-model="modalOpen" :title="submitLabel">

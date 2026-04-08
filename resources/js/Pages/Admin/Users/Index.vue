@@ -4,9 +4,10 @@ import { Head, useForm, usePage } from '@inertiajs/vue3';
 import Swal from 'sweetalert2';
 import FormError from '../../../Components/FormError.vue';
 import Modal from '../../../Components/Modal.vue';
+import Pagination from '../../../Components/Pagination.vue';
 import AdminLayout from '../../../Layouts/AdminLayout.vue';
 
-defineProps({
+const props = defineProps({
     users: Array,
     breadcrumbs: Array,
 });
@@ -24,6 +25,7 @@ const form = useForm({
 
 const authUserId = computed(() => page.props.auth?.user?.id);
 const submitLabel = computed(() => (editingUser.value ? 'Update User' : 'Create User'));
+const userRows = computed(() => props.users?.data ?? props.users ?? []);
 
 const openCreate = () => {
     editingUser.value = null;
@@ -101,7 +103,7 @@ const destroyUser = (user) => {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="user in users" :key="user.id">
+                        <tr v-for="user in userRows" :key="user.id">
                             <td>
                                 <div class="table-entity">
                                     <span class="table-avatar">{{ user.name.slice(0, 1) }}</span>
@@ -124,7 +126,7 @@ const destroyUser = (user) => {
                                 </div>
                             </td>
                         </tr>
-                        <tr v-if="!users.length">
+                        <tr v-if="!userRows.length">
                             <td colspan="4">
                                 <div class="table-empty">No users found.</div>
                             </td>
@@ -132,6 +134,8 @@ const destroyUser = (user) => {
                     </tbody>
                 </table>
             </div>
+
+            <Pagination :links="users.links" :meta="users" />
         </section>
 
         <Modal v-model="modalOpen" :title="submitLabel">
