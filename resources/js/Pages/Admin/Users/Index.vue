@@ -90,22 +90,47 @@ const destroyUser = (user) => {
                 <button class="btn btn-accent rounded-pill" @click="openCreate">Add User</button>
             </div>
 
-            <div class="simple-card-grid">
-                <article v-for="user in users" :key="user.id" class="simple-card">
-                    <div class="simple-card-head">
-                        <div>
-                            <h4>{{ user.name }}</h4>
-                            <p>{{ user.email }}</p>
-                        </div>
-                        <span class="badge rounded-pill" :class="user.is_admin ? 'text-bg-dark' : 'text-bg-light'">
-                            {{ user.is_admin ? 'Admin' : 'User' }}
-                        </span>
-                    </div>
-                    <div class="simple-card-actions">
-                        <button class="btn btn-outline-dark rounded-pill" @click="openEdit(user)">Edit</button>
-                        <button class="btn btn-outline-danger rounded-pill" :disabled="user.id === authUserId" @click="destroyUser(user)">Delete</button>
-                    </div>
-                </article>
+            <div class="compact-table-shell">
+                <table class="compact-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="user in users" :key="user.id">
+                            <td>
+                                <div class="table-entity">
+                                    <span class="table-avatar">{{ user.name.slice(0, 1) }}</span>
+                                    <div>
+                                        <strong>{{ user.name }}</strong>
+                                        <small>{{ user.id === authUserId ? 'Current account' : 'Managed tenant owner' }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ user.email }}</td>
+                            <td>
+                                <span class="table-pill" :class="{ dark: user.is_admin }">
+                                    {{ user.is_admin ? 'Admin' : 'User' }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="table-actions">
+                                    <button class="btn btn-sm btn-outline-dark rounded-pill" @click="openEdit(user)">Edit</button>
+                                    <button class="btn btn-sm btn-outline-danger rounded-pill" :disabled="user.id === authUserId" @click="destroyUser(user)">Delete</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr v-if="!users.length">
+                            <td colspan="4">
+                                <div class="table-empty">No users found.</div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </section>
 

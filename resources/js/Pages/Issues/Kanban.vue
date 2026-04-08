@@ -1,7 +1,6 @@
 <script setup>
 import { reactive, ref } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
-import IssueCard from '../../Components/IssueCard.vue';
 import SkeletonCard from '../../Components/SkeletonCard.vue';
 import AppLayout from '../../Layouts/AppLayout.vue';
 
@@ -58,9 +57,22 @@ const kanbanColumns = [
                         <span class="badge rounded-pill text-bg-light">{{ columns[column.key]?.length || 0 }}</span>
                     </div>
 
-                    <div class="kanban-stack">
+                    <div class="kanban-stack compact-kanban-stack">
                         <SkeletonCard v-if="loading" v-for="n in 3" :key="`${column.key}-${n}`" />
-                        <IssueCard v-else v-for="issue in columns[column.key]" :key="issue.id" :issue="issue" :compact="true" />
+                        <Link
+                            v-else
+                            v-for="issue in columns[column.key]"
+                            :key="issue.id"
+                            :href="`/issues/${issue.id}`"
+                            class="kanban-row-card"
+                        >
+                            <div>
+                                <strong>{{ issue.title }}</strong>
+                                <span>{{ issue.project?.client?.name || 'No client' }} / {{ issue.project?.name || 'No project' }}</span>
+                            </div>
+                            <small>{{ issue.sub_issues_count ?? 0 }} children</small>
+                        </Link>
+                        <div v-if="!loading && !(columns[column.key]?.length)" class="kanban-empty">No issues</div>
                     </div>
                 </section>
             </div>

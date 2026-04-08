@@ -87,22 +87,46 @@ const destroyProject = (project) => {
                 <button class="btn btn-accent rounded-pill" @click="openCreate">Add Project</button>
             </div>
 
-            <div class="simple-card-grid">
-                <article v-for="project in projects" :key="project.id" class="simple-card">
-                    <div class="simple-card-head">
-                        <div>
-                            <h4>{{ project.name }}</h4>
-                            <p>{{ project.client?.name }} / {{ project.issues_count }} issues</p>
-                        </div>
-                        <Link :href="`/projects/${project.id}`" class="btn btn-light rounded-pill">Open</Link>
-                    </div>
-                    <p class="card-muted">{{ project.description || 'No description added yet.' }}</p>
-                    <div class="simple-card-actions">
-                        <button class="btn btn-outline-dark rounded-pill" @click="openEdit(project)">Edit</button>
-                        <Link :href="`/projects/${project.id}`" class="btn btn-outline-secondary rounded-pill">Details</Link>
-                        <button class="btn btn-outline-danger rounded-pill" @click="destroyProject(project)">Delete</button>
-                    </div>
-                </article>
+            <div class="compact-table-shell">
+                <table class="compact-table">
+                    <thead>
+                        <tr>
+                            <th>Project</th>
+                            <th>Client</th>
+                            <th>Issues</th>
+                            <th>Description</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="project in projects" :key="project.id">
+                            <td>
+                                <div class="table-entity">
+                                    <span class="table-avatar alt">{{ project.name.slice(0, 1) }}</span>
+                                    <div>
+                                        <strong>{{ project.name }}</strong>
+                                        <small>Project workspace</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ project.client?.name || 'No client' }}</td>
+                            <td><span class="table-pill">{{ project.issues_count }} issues</span></td>
+                            <td class="table-muted-cell">{{ project.description || 'No description added yet.' }}</td>
+                            <td>
+                                <div class="table-actions">
+                                    <Link :href="`/projects/${project.id}`" class="btn btn-sm btn-light rounded-pill">Open</Link>
+                                    <button class="btn btn-sm btn-outline-dark rounded-pill" @click="openEdit(project)">Edit</button>
+                                    <button class="btn btn-sm btn-outline-danger rounded-pill" @click="destroyProject(project)">Delete</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr v-if="!projects.length">
+                            <td colspan="5">
+                                <div class="table-empty">No projects yet. Create a project and connect it to a client.</div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </section>
 

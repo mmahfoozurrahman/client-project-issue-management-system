@@ -28,7 +28,7 @@ Route::middleware('auth')->group(function (): void {
                 'issues' => Issue::query()->count(),
             ],
             'recentIssues' => Issue::query()
-                ->with(['project:id,name', 'images'])
+                ->with(['project:id,name,client_id', 'project.client:id,name', 'images'])
                 ->withCount(['subIssues', 'images'])
                 ->whereNull('parent_id')
                 ->latest()

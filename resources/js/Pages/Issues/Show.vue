@@ -21,6 +21,7 @@ const statusLabel = computed(() => ({
 }[props.issue.status] ?? props.issue.status));
 
 const nestedIssues = computed(() => props.issue.sub_issues ?? props.issue.subIssues ?? []);
+const parentIssue = computed(() => props.issue.parent_issue ?? props.issue.parentIssue ?? null);
 
 const updateForm = useForm({
     title: props.issue.title,
@@ -120,6 +121,28 @@ const submitChild = () => {
                 <button class="btn btn-outline-dark rounded-pill" @click="openChildModal(issue)">Add Sub-Issue</button>
                 <span class="badge rounded-pill px-3 py-2 text-bg-light">{{ statusLabel }}</span>
                 <button class="btn btn-outline-danger rounded-pill" @click="destroyIssue">Delete</button>
+            </div>
+        </section>
+
+        <section class="issue-context-strip">
+            <div class="context-stat">
+                <span>Client</span>
+                <strong>{{ issue.project?.client?.name || 'No client' }}</strong>
+            </div>
+            <div class="context-stat">
+                <span>Project</span>
+                <strong>{{ issue.project?.name || 'No project' }}</strong>
+            </div>
+            <div class="context-stat">
+                <span>Parent Issue</span>
+                <strong v-if="parentIssue">
+                    <Link :href="`/issues/${parentIssue.id}`">{{ parentIssue.title }}</Link>
+                </strong>
+                <strong v-else>Top-level issue</strong>
+            </div>
+            <div class="context-stat accent">
+                <span>Nested Items</span>
+                <strong>{{ nestedIssues.length }}</strong>
             </div>
         </section>
 

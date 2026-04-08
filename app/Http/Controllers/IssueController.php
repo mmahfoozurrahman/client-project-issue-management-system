@@ -18,7 +18,7 @@ class IssueController extends Controller
     public function index(Request $request): Response
     {
         $query = Issue::query()
-            ->with(['project:id,name', 'images'])
+            ->with(['project:id,name,client_id', 'project.client:id,name', 'parentIssue:id,title', 'images'])
             ->withCount(['subIssues', 'images'])
             ->whereNull('parent_id')
             ->latest();
@@ -59,7 +59,7 @@ class IssueController extends Controller
         }
 
         $issues = Issue::query()
-            ->with(['project:id,name', 'images'])
+            ->with(['project:id,name,client_id', 'project.client:id,name', 'images'])
             ->withCount(['subIssues', 'images'])
             ->whereNull('parent_id')
             ->when($project, fn ($query) => $query->where('project_id', $project->id))
@@ -177,7 +177,8 @@ class IssueController extends Controller
     private function detailRelations(): array
     {
         return [
-            'project:id,name',
+            'project:id,name,client_id',
+            'project.client:id,name',
             'images',
             'parentIssue:id,title,project_id,parent_id',
             'subIssues' => fn ($query) => $query

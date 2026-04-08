@@ -84,21 +84,44 @@ const destroyClient = (client) => {
                 <button class="btn btn-accent rounded-pill" @click="openCreate">Add Client</button>
             </div>
 
-            <div class="simple-card-grid">
-                <article v-for="client in clients" :key="client.id" class="simple-card">
-                    <div class="simple-card-head">
-                        <div>
-                            <h4>{{ client.name }}</h4>
-                            <p>{{ client.email || 'No email provided' }}</p>
-                        </div>
-                        <span class="badge text-bg-light">{{ client.projects_count }} projects</span>
-                    </div>
-                    <div class="simple-card-actions">
-                        <button class="btn btn-outline-dark rounded-pill" @click="openEdit(client)">Edit</button>
-                        <Link href="/projects" class="btn btn-light rounded-pill">View Projects</Link>
-                        <button class="btn btn-outline-danger rounded-pill" @click="destroyClient(client)">Delete</button>
-                    </div>
-                </article>
+            <div class="compact-table-shell">
+                <table class="compact-table">
+                    <thead>
+                        <tr>
+                            <th>Client</th>
+                            <th>Email</th>
+                            <th>Projects</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="client in clients" :key="client.id">
+                            <td>
+                                <div class="table-entity">
+                                    <span class="table-avatar">{{ client.name.slice(0, 1) }}</span>
+                                    <div>
+                                        <strong>{{ client.name }}</strong>
+                                        <small>Tenant workspace owner</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ client.email || 'No email provided' }}</td>
+                            <td><span class="table-pill">{{ client.projects_count }} projects</span></td>
+                            <td>
+                                <div class="table-actions">
+                                    <button class="btn btn-sm btn-outline-dark rounded-pill" @click="openEdit(client)">Edit</button>
+                                    <Link href="/projects" class="btn btn-sm btn-light rounded-pill">Projects</Link>
+                                    <button class="btn btn-sm btn-outline-danger rounded-pill" @click="destroyClient(client)">Delete</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr v-if="!clients.length">
+                            <td colspan="4">
+                                <div class="table-empty">No clients yet. Add the first client to start building the workspace.</div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </section>
 

@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue';
-import IssueCard from './IssueCard.vue';
+import { Plus } from 'lucide-vue-next';
 
 const props = defineProps({
     issues: {
@@ -24,7 +24,23 @@ const getChildren = (issue) => issue.sub_issues ?? issue.subIssues ?? [];
     <div v-if="normalizedIssues.length" class="issue-tree">
         <div v-for="issue in normalizedIssues" :key="issue.id" class="issue-tree-node">
             <div class="issue-tree-card" :style="{ '--tree-depth': depth }">
-                <IssueCard :issue="issue" :compact="depth > 0" show-child-action @create-child="emit('create-child', $event)" />
+                <div class="nested-issue-row">
+                    <Link :href="`/issues/${issue.id}`" class="nested-issue-main">
+                        <span class="nested-depth-marker">{{ depth + 1 }}</span>
+                        <div>
+                            <strong>{{ issue.title }}</strong>
+                            <small>{{ issue.description || 'No description added yet.' }}</small>
+                        </div>
+                    </Link>
+                    <div class="nested-issue-meta">
+                        <span class="table-pill status-pill">{{ issue.status }}</span>
+                        <span>{{ getChildren(issue).length }} children</span>
+                        <button type="button" class="nested-add-btn" @click="emit('create-child', issue)">
+                            <Plus :size="14" />
+                            Child
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <IssueTree

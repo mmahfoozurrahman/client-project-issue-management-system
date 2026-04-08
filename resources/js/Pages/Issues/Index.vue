@@ -3,7 +3,6 @@ import { reactive, ref } from 'vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import FormError from '../../Components/FormError.vue';
 import Modal from '../../Components/Modal.vue';
-import IssueCard from '../../Components/IssueCard.vue';
 import SkeletonCard from '../../Components/SkeletonCard.vue';
 import AppLayout from '../../Layouts/AppLayout.vue';
 
@@ -84,9 +83,49 @@ const onFilesChange = (event) => {
                 </select>
             </div>
 
-            <div class="issue-grid">
-                <SkeletonCard v-if="loading" v-for="n in 6" :key="n" />
-                <IssueCard v-else v-for="issue in issues" :key="issue.id" :issue="issue" />
+            <div class="compact-table-shell">
+                <div v-if="loading" class="compact-skeleton-list">
+                    <SkeletonCard v-for="n in 4" :key="n" />
+                </div>
+                <table v-else class="compact-table">
+                    <thead>
+                        <tr>
+                            <th>Issue</th>
+                            <th>Client</th>
+                            <th>Project</th>
+                            <th>Status</th>
+                            <th>Sub-issues</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="issue in issues" :key="issue.id">
+                            <td>
+                                <div class="table-entity">
+                                    <span class="table-avatar issue">{{ issue.title.slice(0, 1) }}</span>
+                                    <div>
+                                        <strong>{{ issue.title }}</strong>
+                                        <small>{{ issue.description || 'No description added yet.' }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ issue.project?.client?.name || 'No client' }}</td>
+                            <td>{{ issue.project?.name || 'No project' }}</td>
+                            <td><span class="table-pill status-pill">{{ issue.status }}</span></td>
+                            <td>{{ issue.sub_issues_count ?? 0 }}</td>
+                            <td>
+                                <div class="table-actions">
+                                    <Link :href="`/issues/${issue.id}`" class="btn btn-sm btn-light rounded-pill">Open</Link>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr v-if="!issues.length">
+                            <td colspan="6">
+                                <div class="table-empty">No issues match the current filters.</div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </section>
 

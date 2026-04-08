@@ -1,6 +1,5 @@
 <script setup>
 import { Head } from '@inertiajs/vue3';
-import IssueCard from '../Components/IssueCard.vue';
 import AppLayout from '../Layouts/AppLayout.vue';
 
 defineProps({
@@ -44,8 +43,44 @@ defineProps({
                 <Link href="/kanban" class="btn btn-outline-dark rounded-pill">Open Kanban</Link>
             </div>
 
-            <div class="issue-grid">
-                <IssueCard v-for="issue in recentIssues" :key="issue.id" :issue="issue" />
+            <div class="compact-table-shell">
+                <table class="compact-table">
+                    <thead>
+                        <tr>
+                            <th>Issue</th>
+                            <th>Client</th>
+                            <th>Project</th>
+                            <th>Status</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="issue in recentIssues" :key="issue.id">
+                            <td>
+                                <div class="table-entity">
+                                    <span class="table-avatar issue">{{ issue.title.slice(0, 1) }}</span>
+                                    <div>
+                                        <strong>{{ issue.title }}</strong>
+                                        <small>{{ issue.description || 'No description added yet.' }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ issue.project?.client?.name || 'No client' }}</td>
+                            <td>{{ issue.project?.name || 'No project' }}</td>
+                            <td><span class="table-pill status-pill">{{ issue.status }}</span></td>
+                            <td>
+                                <div class="table-actions">
+                                    <Link :href="`/issues/${issue.id}`" class="btn btn-sm btn-light rounded-pill">Open</Link>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr v-if="!recentIssues.length">
+                            <td colspan="5">
+                                <div class="table-empty">No recent issues yet. Create an issue to see activity here.</div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </section>
     </AppLayout>
