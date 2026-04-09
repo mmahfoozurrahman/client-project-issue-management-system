@@ -19,7 +19,15 @@ const props = defineProps({
 const loading = ref(false);
 const modalOpen = ref(false);
 const issueRows = computed(() => props.issues?.data ?? props.issues ?? []);
-const plainText = (value) => String(value || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+const formatIssueDate = (value) => {
+    if (!value) return 'Recently created';
+
+    return new Intl.DateTimeFormat('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+    }).format(new Date(value));
+};
 
 const searchFilters = reactive({
     project_id: props.filters?.project_id ?? '',
@@ -110,7 +118,7 @@ const onFilesChange = (event) => {
                                     <span class="table-avatar issue">{{ issue.title.slice(0, 1) }}</span>
                                     <div>
                                         <strong>{{ issue.title }}</strong>
-                                        <small>{{ plainText(issue.description) || 'No description added yet.' }}</small>
+                                        <small class="issue-date-meta">Created {{ formatIssueDate(issue.created_at) }}</small>
                                     </div>
                                 </div>
                             </td>

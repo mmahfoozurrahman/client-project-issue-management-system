@@ -32,6 +32,16 @@ const kanbanColumns = [
     { key: 'inprogress', title: 'In Progress' },
     { key: 'done', title: 'Done' },
 ];
+
+const formatIssueDate = (value) => {
+    if (!value) return 'Recently created';
+
+    return new Intl.DateTimeFormat('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+    }).format(new Date(value));
+};
 </script>
 
 <template>
@@ -69,8 +79,9 @@ const kanbanColumns = [
                             <div>
                                 <strong>{{ issue.title }}</strong>
                                 <span>{{ issue.project?.client?.name || 'No client' }} / {{ issue.project?.name || 'No project' }}</span>
+                                <small class="kanban-date-meta">Created {{ formatIssueDate(issue.created_at) }}</small>
                             </div>
-                            <small>{{ issue.sub_issues_count ?? 0 }} children</small>
+                            <small class="kanban-side-meta">{{ issue.sub_issues_count ?? 0 }} children</small>
                         </Link>
                         <div v-if="!loading && !(columns[column.key]?.length)" class="kanban-empty">No issues</div>
                     </div>
