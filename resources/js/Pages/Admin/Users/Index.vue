@@ -8,7 +8,7 @@ import Pagination from '../../../Components/Pagination.vue';
 import AdminLayout from '../../../Layouts/AdminLayout.vue';
 
 const props = defineProps({
-    users: Array,
+    users: Object,
     breadcrumbs: Array,
 });
 
@@ -104,7 +104,7 @@ const destroyUser = (user) => {
                     </thead>
                     <tbody>
                         <tr v-for="user in userRows" :key="user.id">
-                            <td>
+                            <td data-label="User">
                                 <div class="table-entity">
                                     <span class="table-avatar">{{ user.name.slice(0, 1) }}</span>
                                     <div>
@@ -113,13 +113,13 @@ const destroyUser = (user) => {
                                     </div>
                                 </div>
                             </td>
-                            <td>{{ user.email }}</td>
-                            <td>
+                            <td data-label="Email">{{ user.email }}</td>
+                            <td data-label="Role">
                                 <span class="table-pill" :class="{ dark: user.is_admin }">
                                     {{ user.is_admin ? 'Admin' : 'User' }}
                                 </span>
                             </td>
-                            <td>
+                            <td data-label="Actions">
                                 <div class="table-actions">
                                     <button class="btn btn-sm btn-outline-dark rounded-pill" @click="openEdit(user)">Edit</button>
                                     <button class="btn btn-sm btn-outline-danger rounded-pill" :disabled="user.id === authUserId" @click="destroyUser(user)">Delete</button>

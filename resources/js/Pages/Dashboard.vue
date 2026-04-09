@@ -63,7 +63,7 @@ const plainText = (value) => String(value || '').replace(/<[^>]*>/g, ' ').replac
                     </thead>
                     <tbody>
                         <tr v-for="issue in recentIssueRows" :key="issue.id">
-                            <td>
+                            <td data-label="Issue">
                                 <div class="table-entity">
                                     <span class="table-avatar issue">{{ issue.title.slice(0, 1) }}</span>
                                     <div>
@@ -72,10 +72,10 @@ const plainText = (value) => String(value || '').replace(/<[^>]*>/g, ' ').replac
                                     </div>
                                 </div>
                             </td>
-                            <td>{{ issue.project?.client?.name || 'No client' }}</td>
-                            <td>{{ issue.project?.name || 'No project' }}</td>
-                            <td><StatusPill :status="issue.status" /></td>
-                            <td>
+                            <td data-label="Client">{{ issue.project?.client?.name || 'No client' }}</td>
+                            <td data-label="Project">{{ issue.project?.name || 'No project' }}</td>
+                            <td data-label="Status"><StatusPill :status="issue.status" /></td>
+                            <td data-label="Action">
                                 <div class="table-actions">
                                     <Link :href="`/issues/${issue.id}`" class="btn btn-sm btn-light rounded-pill">Open</Link>
                                 </div>

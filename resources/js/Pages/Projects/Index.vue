@@ -9,7 +9,7 @@ import RichTextEditor from '../../Components/RichTextEditor.vue';
 import AppLayout from '../../Layouts/AppLayout.vue';
 
 const props = defineProps({
-    projects: Array,
+    projects: Object,
     clients: Array,
     breadcrumbs: Array,
 });
@@ -105,7 +105,7 @@ const destroyProject = (project) => {
                     </thead>
                     <tbody>
                         <tr v-for="project in projectRows" :key="project.id">
-                            <td>
+                            <td data-label="Project">
                                 <div class="table-entity">
                                     <span class="table-avatar alt">{{ project.name.slice(0, 1) }}</span>
                                     <div>
@@ -114,10 +114,10 @@ const destroyProject = (project) => {
                                     </div>
                                 </div>
                             </td>
-                            <td>{{ project.client?.name || 'No client' }}</td>
-                            <td><span class="table-pill">{{ project.issues_count }} issues</span></td>
-                            <td class="table-muted-cell">{{ plainText(project.description) || 'No description added yet.' }}</td>
-                            <td>
+                            <td data-label="Client">{{ project.client?.name || 'No client' }}</td>
+                            <td data-label="Issues"><span class="table-pill">{{ project.issues_count }} issues</span></td>
+                            <td data-label="Description" class="table-muted-cell">{{ plainText(project.description) || 'No description added yet.' }}</td>
+                            <td data-label="Actions">
                                 <div class="table-actions">
                                     <Link :href="`/projects/${project.id}`" class="btn btn-sm btn-light rounded-pill">Open</Link>
                                     <button class="btn btn-sm btn-outline-dark rounded-pill" @click="openEdit(project)">Edit</button>

@@ -8,7 +8,7 @@ import Pagination from '../../Components/Pagination.vue';
 import AppLayout from '../../Layouts/AppLayout.vue';
 
 const props = defineProps({
-    clients: Array,
+    clients: Object,
     breadcrumbs: Array,
 });
 
@@ -99,7 +99,7 @@ const destroyClient = (client) => {
                     </thead>
                     <tbody>
                         <tr v-for="client in clientRows" :key="client.id">
-                            <td>
+                            <td data-label="Client">
                                 <div class="table-entity">
                                     <span class="table-avatar">{{ client.name.slice(0, 1) }}</span>
                                     <div>
@@ -108,9 +108,9 @@ const destroyClient = (client) => {
                                     </div>
                                 </div>
                             </td>
-                            <td>{{ client.email || 'No email provided' }}</td>
-                            <td><span class="table-pill">{{ client.projects_count }} projects</span></td>
-                            <td>
+                            <td data-label="Email">{{ client.email || 'No email provided' }}</td>
+                            <td data-label="Projects"><span class="table-pill">{{ client.projects_count }} projects</span></td>
+                            <td data-label="Actions">
                                 <div class="table-actions">
                                     <button class="btn btn-sm btn-outline-dark rounded-pill" @click="openEdit(client)">Edit</button>
                                     <Link href="/projects" class="btn btn-sm btn-light rounded-pill">Projects</Link>

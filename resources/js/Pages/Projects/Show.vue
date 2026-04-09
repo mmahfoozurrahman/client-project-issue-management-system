@@ -81,7 +81,7 @@ const onFilesChange = (event) => {
                     </thead>
                     <tbody>
                         <tr v-for="issue in issueRows" :key="issue.id">
-                            <td>
+                            <td data-label="Issue">
                                 <div class="table-entity">
                                     <span class="table-avatar issue">{{ issue.title.slice(0, 1) }}</span>
                                     <div>
@@ -90,10 +90,10 @@ const onFilesChange = (event) => {
                                     </div>
                                 </div>
                             </td>
-                            <td><StatusPill :status="issue.status" /></td>
-                            <td>{{ issue.sub_issues_count ?? 0 }}</td>
-                            <td>{{ issue.images_count ?? 0 }}</td>
-                            <td>
+                            <td data-label="Status"><StatusPill :status="issue.status" /></td>
+                            <td data-label="Sub-issues">{{ issue.sub_issues_count ?? 0 }}</td>
+                            <td data-label="Images">{{ issue.images_count ?? 0 }}</td>
+                            <td data-label="Action">
                                 <div class="table-actions">
                                     <Link :href="`/issues/${issue.id}`" class="btn btn-sm btn-light rounded-pill">Open</Link>
                                 </div>
