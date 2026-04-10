@@ -111,8 +111,8 @@ const submitChild = () => {
             <div>
                 <span class="pill-tag">Issue Detail</span>
                 <h2>{{ issue.title }}</h2>
-                <div v-if="issue.description" class="hero-copy rich-display" v-html="issue.description" />
-                <p v-else class="hero-copy">No description added yet.</p>
+                <!-- <div v-if="issue.description" class="hero-copy rich-display" v-html="issue.description" />
+                <p v-else class="hero-copy">No description added yet.</p> -->
             </div>
             <div class="project-meta-block">
                 <button class="btn btn-outline-dark rounded-pill" @click="openChildModal(issue)">Add Sub-Issue</button>
@@ -156,7 +156,7 @@ const submitChild = () => {
                     <form class="vstack gap-3" @submit.prevent="submit">
                         <div>
                             <label class="form-label">Title</label>
-                            <input v-model="updateForm.title" type="text" class="form-control" :class="{ 'is-invalid-soft': updateForm.errors.title }" required>
+                            <input v-model="updateForm.title" type="text" class="form-control" :class="{ 'is-invalid-soft': updateForm.errors.title }">
                             <FormError :message="updateForm.errors.title" />
                         </div>
 
@@ -252,7 +252,7 @@ const submitChild = () => {
 
                 <div>
                     <label class="form-label">Title</label>
-                    <input v-model="childForm.title" type="text" class="form-control" :class="{ 'is-invalid-soft': childForm.errors.title }" required>
+                    <input v-model="childForm.title" type="text" class="form-control" :class="{ 'is-invalid-soft': childForm.errors.title }">
                     <FormError :message="childForm.errors.title" />
                 </div>
 

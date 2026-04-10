@@ -134,7 +134,7 @@ const destroyClient = (client) => {
             <form class="vstack gap-3" @submit.prevent="submit">
                 <div>
                     <label class="form-label">Client name</label>
-                    <input v-model="form.name" type="text" class="form-control" :class="{ 'is-invalid-soft': form.errors.name }" required>
+                    <input v-model="form.name" type="text" class="form-control" :class="{ 'is-invalid-soft': form.errors.name }">
                     <FormError :message="form.errors.name" />
                 </div>
 

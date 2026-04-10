@@ -142,19 +142,19 @@ const destroyUser = (user) => {
             <form class="vstack gap-3" @submit.prevent="submit">
                 <div>
                     <label class="form-label">Name</label>
-                    <input v-model="form.name" type="text" class="form-control" :class="{ 'is-invalid-soft': form.errors.name }" required>
+                    <input v-model="form.name" type="text" class="form-control" :class="{ 'is-invalid-soft': form.errors.name }">
                     <FormError :message="form.errors.name" />
                 </div>
 
                 <div>
                     <label class="form-label">Email</label>
-                    <input v-model="form.email" type="email" class="form-control" :class="{ 'is-invalid-soft': form.errors.email }" required>
+                    <input v-model="form.email" type="email" class="form-control" :class="{ 'is-invalid-soft': form.errors.email }">
                     <FormError :message="form.errors.email" />
                 </div>
 
                 <div>
                     <label class="form-label">{{ editingUser ? 'New Password (optional)' : 'Password' }}</label>
-                    <input v-model="form.password" type="password" class="form-control" :class="{ 'is-invalid-soft': form.errors.password }" :required="!editingUser">
+                    <input v-model="form.password" type="password" class="form-control" :class="{ 'is-invalid-soft': form.errors.password }">
                     <FormError :message="form.errors.password" />
                 </div>
 

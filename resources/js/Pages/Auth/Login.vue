@@ -25,13 +25,13 @@ const submit = () => form.post('/login');
             <form class="auth-form" @submit.prevent="submit">
                 <div>
                     <label class="form-label">Email</label>
-                    <input v-model="form.email" type="email" class="form-control form-control-lg" :class="{ 'is-invalid-soft': form.errors.email }" required>
+                    <input v-model="form.email" type="email" class="form-control form-control-lg" :class="{ 'is-invalid-soft': form.errors.email }">
                     <FormError :message="form.errors.email" />
                 </div>
 
                 <div>
                     <label class="form-label">Password</label>
-                    <input v-model="form.password" type="password" class="form-control form-control-lg" :class="{ 'is-invalid-soft': form.errors.password }" required>
+                    <input v-model="form.password" type="password" class="form-control form-control-lg" :class="{ 'is-invalid-soft': form.errors.password }">
                     <FormError :message="form.errors.password" />
                 </div>
 

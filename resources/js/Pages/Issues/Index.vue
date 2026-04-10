@@ -148,14 +148,14 @@ const onFilesChange = (event) => {
             <form class="vstack gap-3" @submit.prevent="submit">
                 <div>
                     <label class="form-label">Title</label>
-                    <input v-model="form.title" type="text" class="form-control" :class="{ 'is-invalid-soft': form.errors.title }" required>
+                    <input v-model="form.title" type="text" class="form-control" :class="{ 'is-invalid-soft': form.errors.title }">
                     <FormError :message="form.errors.title" />
                 </div>
 
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label">Project</label>
-                        <select v-model="form.project_id" class="form-select" :class="{ 'is-invalid-soft': form.errors.project_id }" required>
+                        <select v-model="form.project_id" class="form-select" :class="{ 'is-invalid-soft': form.errors.project_id }">
                             <option value="">Select project</option>
                             <option v-for="project in projects" :key="project.id" :value="project.id">{{ project.name }}</option>
                         </select>

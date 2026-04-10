@@ -41,7 +41,7 @@ const submit = () => {
                 <form class="vstack gap-3" @submit.prevent="submit">
                     <div>
                         <label class="form-label">Site name</label>
-                        <input v-model="form.site_name" type="text" class="form-control" :class="{ 'is-invalid-soft': form.errors.site_name }" required>
+                        <input v-model="form.site_name" type="text" class="form-control" :class="{ 'is-invalid-soft': form.errors.site_name }">
                         <FormError :message="form.errors.site_name" />
                     </div>
 

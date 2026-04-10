@@ -141,13 +141,13 @@ const destroyProject = (project) => {
             <form class="vstack gap-3" @submit.prevent="submit">
                 <div>
                     <label class="form-label">Project name</label>
-                    <input v-model="form.name" type="text" class="form-control" :class="{ 'is-invalid-soft': form.errors.name }" required>
+                    <input v-model="form.name" type="text" class="form-control" :class="{ 'is-invalid-soft': form.errors.name }">
                     <FormError :message="form.errors.name" />
                 </div>
 
                 <div>
                     <label class="form-label">Client</label>
-                    <select v-model="form.client_id" class="form-select" :class="{ 'is-invalid-soft': form.errors.client_id }" required>
+                    <select v-model="form.client_id" class="form-select" :class="{ 'is-invalid-soft': form.errors.client_id }">
                         <option value="">Select a client</option>
                         <option v-for="client in clients" :key="client.id" :value="client.id">{{ client.name }}</option>
                     </select>

@@ -115,7 +115,7 @@ const onFilesChange = (event) => {
             <form class="vstack gap-3" @submit.prevent="submit">
                 <div>
                     <label class="form-label">Title</label>
-                    <input v-model="form.title" type="text" class="form-control" :class="{ 'is-invalid-soft': form.errors.title }" required>
+                    <input v-model="form.title" type="text" class="form-control" :class="{ 'is-invalid-soft': form.errors.title }">
                     <FormError :message="form.errors.title" />
                 </div>
 
