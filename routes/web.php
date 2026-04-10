@@ -1,9 +1,11 @@
 <?php
 
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\SiteSettingsController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\IssueController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
 use App\Models\Client;
 use App\Models\Issue;
@@ -42,6 +44,8 @@ Route::middleware('auth')->group(function (): void {
     })->name('dashboard');
 
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+    Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
+    Route::match(['put', 'post'], '/profile', [ProfileController::class, 'update'])->name('profile.update');
 
     Route::resource('clients', ClientController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::resource('projects', ProjectController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
@@ -50,5 +54,7 @@ Route::middleware('auth')->group(function (): void {
 
     Route::prefix('admin')->name('admin.')->middleware('admin')->group(function (): void {
         Route::resource('users', UserController::class)->only(['index', 'store', 'update', 'destroy']);
+        Route::get('/settings', [SiteSettingsController::class, 'index'])->name('settings.index');
+        Route::match(['put', 'post'], '/settings', [SiteSettingsController::class, 'update'])->name('settings.update');
     });
 });

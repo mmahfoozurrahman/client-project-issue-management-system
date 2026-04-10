@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { useForm, usePage } from '@inertiajs/vue3';
-import { BriefcaseBusiness, Building2, LayoutDashboard, LogOut, Menu, PanelsTopLeft, ShieldCheck, UserCircle2, X } from 'lucide-vue-next';
+import { BriefcaseBusiness, Building2, LayoutDashboard, LogOut, Menu, PanelsTopLeft, Settings, ShieldCheck, UserCircle2, X } from 'lucide-vue-next';
 import Breadcrumbs from '../Components/Breadcrumbs.vue';
 import FlashToasts from '../Components/FlashToasts.vue';
 
@@ -23,6 +23,7 @@ const logoutForm = useForm({});
 const user = computed(() => page.props.auth?.user);
 const isAdmin = computed(() => Boolean(user.value?.is_admin));
 const currentUrl = computed(() => page.url);
+const siteName = computed(() => page.props.app?.site_name || 'Issue Tracker');
 
 const navItems = computed(() => [
     { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -30,7 +31,13 @@ const navItems = computed(() => [
     { label: 'Projects', href: '/projects', icon: BriefcaseBusiness },
     { label: 'Issues', href: '/issues', icon: PanelsTopLeft },
     { label: 'Kanban', href: '/kanban', icon: PanelsTopLeft },
-    ...(isAdmin.value ? [{ label: 'Users', href: '/admin/users', icon: ShieldCheck }] : []),
+    { label: 'Profile', href: '/profile', icon: UserCircle2 },
+    ...(isAdmin.value
+        ? [
+            { label: 'Users', href: '/admin/users', icon: ShieldCheck },
+            { label: 'Settings', href: '/admin/settings', icon: Settings },
+        ]
+        : []),
 ]);
 
 const logout = () => logoutForm.post('/logout');
@@ -44,7 +51,7 @@ const logout = () => logoutForm.post('/logout');
             <div class="sidebar-brand">
                 <div>
                     <p class="sidebar-eyebrow">Workspace</p>
-                    <h1>Client Listing</h1>
+                    <h1>{{ siteName }}</h1>
                 </div>
                 <button class="btn btn-light d-lg-none rounded-circle" @click="sidebarOpen = false">
                     <X :size="18" />
@@ -68,7 +75,8 @@ const logout = () => logoutForm.post('/logout');
             <div class="sidebar-user">
                 <div class="sidebar-user-card">
                     <div class="sidebar-avatar">
-                        <UserCircle2 :size="30" />
+                        <img v-if="user?.avatar_url" :src="user.avatar_url" :alt="user?.name">
+                        <UserCircle2 v-else :size="30" />
                     </div>
                     <div>
                         <strong>{{ user?.name }}</strong>
