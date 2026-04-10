@@ -63,7 +63,7 @@ class IssueController extends Controller
             ->withCount(['subIssues', 'images'])
             ->whereNull('parent_id')
             ->when($project, fn ($query) => $query->where('project_id', $project->id))
-            ->orderBy('created_at')
+            ->orderBy('created_at', 'desc')
             ->get()
             ->groupBy('status');
 
