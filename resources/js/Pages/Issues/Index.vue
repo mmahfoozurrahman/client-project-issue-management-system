@@ -41,6 +41,8 @@ const form = useForm({
     project_id: props.filters?.project_id ?? '',
     parent_id: '',
     images: [],
+    files: [],
+    links: [],
 });
 
 const applyFilters = () => {
@@ -64,8 +66,20 @@ const submit = () => {
     });
 };
 
-const onFilesChange = (event) => {
+const onImageChange = (event) => {
     form.images = Array.from(event.target.files || []);
+};
+
+const onFileChange = (event) => {
+    form.files = Array.from(event.target.files || []);
+};
+
+const addLink = () => {
+    form.links.push({ label: '', url: '' });
+};
+
+const removeLink = (index) => {
+    form.links.splice(index, 1);
 };
 </script>
 
@@ -180,8 +194,34 @@ const onFilesChange = (event) => {
 
                 <div>
                     <label class="form-label">Images</label>
-                    <input type="file" multiple accept=".jpg,.jpeg,.png" class="form-control" :class="{ 'is-invalid-soft': form.errors.images || form.errors['images.0'] }" @change="onFilesChange">
+                    <input type="file" multiple accept=".jpg,.jpeg,.png" class="form-control" :class="{ 'is-invalid-soft': form.errors.images || form.errors['images.0'] }" @change="onImageChange">
                     <FormError :message="form.errors.images || form.errors['images.0']" />
+                </div>
+
+                <div>
+                    <label class="form-label">Files</label>
+                    <input type="file" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.rtf,.ppt,.pptx,.zip,.rar" class="form-control" :class="{ 'is-invalid-soft': form.errors.files || form.errors['files.0'] }" @change="onFileChange">
+                    <FormError :message="form.errors.files || form.errors['files.0']" />
+                </div>
+
+                <div>
+                    <label class="form-label">Links</label>
+                    <div v-if="!form.links.length" class="text-muted small mb-2">Add internal or external links for this issue.</div>
+                    <div v-for="(link, index) in form.links" :key="index" class="row g-2 align-items-center mb-2">
+                        <div class="col-5">
+                            <input v-model="link.label" type="text" class="form-control" placeholder="Label (optional)" :class="{ 'is-invalid-soft': form.errors[`links.${index}.label`] }">
+                        </div>
+                        <div class="col-6">
+                            <input v-model="link.url" type="text" class="form-control" placeholder="https:// or /internal/path" :class="{ 'is-invalid-soft': form.errors[`links.${index}.url`] }">
+                        </div>
+                        <div class="col-1 d-grid">
+                            <button type="button" class="btn btn-outline-danger" @click="removeLink(index)">×</button>
+                        </div>
+                        <div class="col-12">
+                            <FormError :message="form.errors[`links.${index}.url`] || form.errors[`links.${index}.label`]" />
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" @click="addLink">+ Add Link</button>
                 </div>
 
                 <button class="btn btn-accent rounded-pill align-self-start" :disabled="form.processing">

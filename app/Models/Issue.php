@@ -44,4 +44,14 @@ class Issue extends Model
     {
         return $this->hasMany(IssueImage::class);
     }
+
+    public function files(): HasMany
+    {
+        return $this->hasMany(IssueFile::class);
+    }
+
+    public function links(): HasMany
+    {
+        return $this->hasMany(IssueLink::class);
+    }
 }

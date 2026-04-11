@@ -56,8 +56,8 @@ class ProjectController extends Controller
         $issues = $project->issues()
             ->whereNull('parent_id')
             ->latest()
-            ->with(['images'])
-            ->withCount(['subIssues', 'images'])
+            ->with(['images', 'files', 'links'])
+            ->withCount(['subIssues', 'images', 'files'])
             ->paginate(10)
             ->withQueryString();
 

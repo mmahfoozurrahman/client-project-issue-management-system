@@ -35,7 +35,12 @@ class IssueUpdateRequest extends FormRequest
             'project_id' => ['required', 'integer', Rule::exists(Project::class, 'id')],
             'parent_id' => ['nullable', 'integer', Rule::exists(Issue::class, 'id'), Rule::notIn([$issue?->id])],
             'images' => ['sometimes', 'array'],
-            'images.*' => ['file', 'mimes:jpg,jpeg,png', 'max:5120'],
+            'images.*' => ['file', 'mimes:jpg,jpeg,png', 'max:10240'],
+            'files' => ['sometimes', 'array'],
+            'files.*' => ['file', 'mimes:pdf,doc,docx,xls,xlsx,csv,txt,rtf,ppt,pptx,zip,rar', 'max:10240'],
+            'links' => ['sometimes', 'array'],
+            'links.*.url' => ['nullable', 'string', 'max:2048'],
+            'links.*.label' => ['nullable', 'string', 'max:255'],
         ];
     }
 
@@ -43,6 +48,8 @@ class IssueUpdateRequest extends FormRequest
     {
         return [
             'images.*' => 'issue image',
+            'files.*' => 'issue file',
+            'links.*.url' => 'issue link',
         ];
     }
 }

@@ -27,6 +27,11 @@ const updateForm = useForm({
     project_id: props.issue.project_id,
     parent_id: props.issue.parent_id ?? '',
     images: [],
+    files: [],
+    links: (props.issue.links ?? []).map((link) => ({
+        label: link.label ?? '',
+        url: link.url ?? '',
+    })),
 });
 const deleteForm = useForm({});
 const childModalOpen = ref(false);
@@ -38,8 +43,25 @@ const childForm = useForm({
     parent_id: props.issue.id,
     return_to_issue_id: props.issue.id,
     images: [],
+    files: [],
+    links: [],
 });
 const childIssueParent = computed(() => props.projectIssues.find((entry) => entry.id === childForm.parent_id) ?? props.issue);
+const formatFileSize = (value) => {
+    if (!value && value !== 0) {
+        return 'Unknown size';
+    }
+
+    if (value < 1024) {
+        return `${value} B`;
+    }
+
+    if (value < 1024 * 1024) {
+        return `${(value / 1024).toFixed(1)} KB`;
+    }
+
+    return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+};
 
 const submit = () => {
     updateForm.transform((data) => ({
@@ -65,12 +87,36 @@ const destroyIssue = () => {
     });
 };
 
-const onFilesChange = (event) => {
+const onImageChange = (event) => {
     updateForm.images = Array.from(event.target.files || []);
 };
 
-const onChildFilesChange = (event) => {
+const onFileChange = (event) => {
+    updateForm.files = Array.from(event.target.files || []);
+};
+
+const onChildImageChange = (event) => {
     childForm.images = Array.from(event.target.files || []);
+};
+
+const onChildFileChange = (event) => {
+    childForm.files = Array.from(event.target.files || []);
+};
+
+const addUpdateLink = () => {
+    updateForm.links.push({ label: '', url: '' });
+};
+
+const removeUpdateLink = (index) => {
+    updateForm.links.splice(index, 1);
+};
+
+const addChildLink = () => {
+    childForm.links.push({ label: '', url: '' });
+};
+
+const removeChildLink = (index) => {
+    childForm.links.splice(index, 1);
 };
 
 const openChildModal = (parentIssue = props.issue) => {
@@ -150,7 +196,7 @@ const submitChild = () => {
                     <div class="panel-header">
                         <div>
                             <p class="section-kicker">Edit Issue</p>
-                            <h3 class="panel-title">Update details, parent links, and images</h3>
+                            <h3 class="panel-title">Update details, parent links, and attachments</h3>
                         </div>
                     </div>
 
@@ -199,8 +245,34 @@ const submitChild = () => {
 
                         <div>
                             <label class="form-label">Add Images</label>
-                            <input type="file" multiple accept=".jpg,.jpeg,.png" class="form-control" :class="{ 'is-invalid-soft': updateForm.errors.images || updateForm.errors['images.0'] }" @change="onFilesChange">
+                            <input type="file" multiple accept=".jpg,.jpeg,.png" class="form-control" :class="{ 'is-invalid-soft': updateForm.errors.images || updateForm.errors['images.0'] }" @change="onImageChange">
                             <FormError :message="updateForm.errors.images || updateForm.errors['images.0']" />
+                        </div>
+
+                        <div>
+                            <label class="form-label">Add Files</label>
+                            <input type="file" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.rtf,.ppt,.pptx,.zip,.rar" class="form-control" :class="{ 'is-invalid-soft': updateForm.errors.files || updateForm.errors['files.0'] }" @change="onFileChange">
+                            <FormError :message="updateForm.errors.files || updateForm.errors['files.0']" />
+                        </div>
+
+                        <div>
+                            <label class="form-label">Links</label>
+                            <div v-if="!updateForm.links.length" class="text-muted small mb-2">Add internal or external links for this issue.</div>
+                            <div v-for="(link, index) in updateForm.links" :key="index" class="row g-2 align-items-center mb-2">
+                                <div class="col-5">
+                                    <input v-model="link.label" type="text" class="form-control" placeholder="Label (optional)" :class="{ 'is-invalid-soft': updateForm.errors[`links.${index}.label`] }">
+                                </div>
+                                <div class="col-6">
+                                    <input v-model="link.url" type="text" class="form-control" placeholder="https:// or /internal/path" :class="{ 'is-invalid-soft': updateForm.errors[`links.${index}.url`] }">
+                                </div>
+                                <div class="col-1 d-grid">
+                                    <button type="button" class="btn btn-outline-danger" @click="removeUpdateLink(index)">×</button>
+                                </div>
+                                <div class="col-12">
+                                    <FormError :message="updateForm.errors[`links.${index}.url`] || updateForm.errors[`links.${index}.label`]" />
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" @click="addUpdateLink">+ Add Link</button>
                         </div>
 
                         <button class="btn btn-accent rounded-pill align-self-start" :disabled="updateForm.processing">
@@ -222,6 +294,48 @@ const submitChild = () => {
 
                     <div class="gallery-grid">
                         <img v-for="image in issue.images" :key="image.id" :src="image.url" :alt="image.original_name || issue.title" class="gallery-thumb">
+                    </div>
+                </section>
+
+                <section class="panel-card mb-4">
+                    <div class="panel-header">
+                        <div>
+                            <p class="section-kicker">Attachments</p>
+                            <h3 class="panel-title">Supporting files for this issue</h3>
+                        </div>
+                    </div>
+
+                    <div v-if="!issue.files?.length" class="empty-state-card">
+                        <strong>No files attached</strong>
+                        <p>Add PDFs, spreadsheets, notes, or archives from the edit form.</p>
+                    </div>
+
+                    <div v-else class="list-group list-group-flush">
+                        <a v-for="file in issue.files" :key="file.id" :href="file.url" target="_blank" rel="noopener noreferrer" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <span>{{ file.original_name || 'Attachment' }}</span>
+                            <small class="text-muted">{{ formatFileSize(file.size) }}</small>
+                        </a>
+                    </div>
+                </section>
+
+                <section class="panel-card mb-4">
+                    <div class="panel-header">
+                        <div>
+                            <p class="section-kicker">Links</p>
+                            <h3 class="panel-title">Internal and external references</h3>
+                        </div>
+                    </div>
+
+                    <div v-if="!issue.links?.length" class="empty-state-card">
+                        <strong>No links added</strong>
+                        <p>Add internal or external links from the edit form.</p>
+                    </div>
+
+                    <div v-else class="list-group list-group-flush">
+                        <a v-for="link in issue.links" :key="link.id" :href="link.url" target="_blank" rel="noopener noreferrer" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <span>{{ link.label || link.url }}</span>
+                            <small class="text-muted">{{ link.is_external ? 'External' : 'Internal' }}</small>
+                        </a>
                     </div>
                 </section>
 
@@ -287,8 +401,34 @@ const submitChild = () => {
 
                 <div>
                     <label class="form-label">Images</label>
-                    <input type="file" multiple accept=".jpg,.jpeg,.png" class="form-control" :class="{ 'is-invalid-soft': childForm.errors.images || childForm.errors['images.0'] }" @change="onChildFilesChange">
+                    <input type="file" multiple accept=".jpg,.jpeg,.png" class="form-control" :class="{ 'is-invalid-soft': childForm.errors.images || childForm.errors['images.0'] }" @change="onChildImageChange">
                     <FormError :message="childForm.errors.images || childForm.errors['images.0']" />
+                </div>
+
+                <div>
+                    <label class="form-label">Files</label>
+                    <input type="file" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.rtf,.ppt,.pptx,.zip,.rar" class="form-control" :class="{ 'is-invalid-soft': childForm.errors.files || childForm.errors['files.0'] }" @change="onChildFileChange">
+                    <FormError :message="childForm.errors.files || childForm.errors['files.0']" />
+                </div>
+
+                <div>
+                    <label class="form-label">Links</label>
+                    <div v-if="!childForm.links.length" class="text-muted small mb-2">Add internal or external links for this issue.</div>
+                    <div v-for="(link, index) in childForm.links" :key="index" class="row g-2 align-items-center mb-2">
+                        <div class="col-5">
+                            <input v-model="link.label" type="text" class="form-control" placeholder="Label (optional)" :class="{ 'is-invalid-soft': childForm.errors[`links.${index}.label`] }">
+                        </div>
+                        <div class="col-6">
+                            <input v-model="link.url" type="text" class="form-control" placeholder="https:// or /internal/path" :class="{ 'is-invalid-soft': childForm.errors[`links.${index}.url`] }">
+                        </div>
+                        <div class="col-1 d-grid">
+                            <button type="button" class="btn btn-outline-danger" @click="removeChildLink(index)">×</button>
+                        </div>
+                        <div class="col-12">
+                            <FormError :message="childForm.errors[`links.${index}.url`] || childForm.errors[`links.${index}.label`]" />
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" @click="addChildLink">+ Add Link</button>
                 </div>
 
                 <button class="btn btn-accent rounded-pill align-self-start" :disabled="childForm.processing">

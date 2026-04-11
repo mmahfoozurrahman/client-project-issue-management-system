@@ -6,6 +6,7 @@ use App\Http\Requests\IssueStoreRequest;
 use App\Http\Requests\IssueUpdateRequest;
 use App\Models\Issue;
 use App\Models\Project;
+use App\Services\IssueService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -15,11 +16,15 @@ use Inertia\Response;
 
 class IssueController extends Controller
 {
+    public function __construct(private readonly IssueService $issueService)
+    {
+    }
+
     public function index(Request $request): Response
     {
         $query = Issue::query()
-            ->with(['project:id,name,client_id', 'project.client:id,name', 'parentIssue:id,title', 'images'])
-            ->withCount(['subIssues', 'images'])
+            ->with(['project:id,name,client_id', 'project.client:id,name', 'parentIssue:id,title', 'images', 'files', 'links'])
+            ->withCount(['subIssues', 'images', 'files'])
             ->whereNull('parent_id')
             ->latest();
 
@@ -59,8 +64,8 @@ class IssueController extends Controller
         }
 
         $issues = Issue::query()
-            ->with(['project:id,name,client_id', 'project.client:id,name', 'images'])
-            ->withCount(['subIssues', 'images'])
+            ->with(['project:id,name,client_id', 'project.client:id,name', 'images', 'files', 'links'])
+            ->withCount(['subIssues', 'images', 'files'])
             ->whereNull('parent_id')
             ->when($project, fn ($query) => $query->where('project_id', $project->id))
             ->orderBy('created_at', 'desc')
@@ -89,7 +94,7 @@ class IssueController extends Controller
         $validated = $request->validated();
 
         $project = Project::query()->findOrFail($validated['project_id']);
-        $parentIssue = $this->resolveParentIssue($validated['parent_id'] ?? null, $project->id);
+        $parentIssue = $this->issueService->resolveParentIssue($validated['parent_id'] ?? null, $project->id);
         $returnToIssue = isset($validated['return_to_issue_id'])
             ? Issue::query()->where('project_id', $project->id)->find($validated['return_to_issue_id'])
             : null;
@@ -102,7 +107,8 @@ class IssueController extends Controller
             'parent_id' => $parentIssue?->id,
         ]);
 
-        $this->storeImages($request, $issue);
+        $this->issueService->storeAttachments($request, $issue);
+        $this->issueService->syncLinks($validated['links'] ?? null, $issue);
 
         if ($returnToIssue) {
             return redirect()
@@ -117,14 +123,14 @@ class IssueController extends Controller
 
     public function show(Issue $issue): Response
     {
-        $issue->load($this->detailRelations());
-        $this->loadNestedSubIssues($issue);
+        $issue->load($this->issueService->detailRelations());
+        $this->issueService->loadNestedSubIssues($issue);
 
         return Inertia::render('Issues/Show', [
             'issue' => $issue,
             'projects' => Project::query()->orderBy('name')->get(['id', 'name']),
-            'projectIssues' => $this->issueOptionsForProject($issue->project_id, [$issue->id]),
-            'parentIssueOptions' => $this->parentIssueOptions($issue),
+            'projectIssues' => $this->issueService->issueOptionsForProject($issue->project_id, [$issue->id]),
+            'parentIssueOptions' => $this->issueService->parentIssueOptions($issue),
             'breadcrumbs' => [
                 ['label' => 'Home', 'href' => route('dashboard')],
                 ['label' => 'Projects', 'href' => route('projects.index')],
@@ -139,7 +145,7 @@ class IssueController extends Controller
         $validated = $request->validated();
 
         $project = Project::query()->findOrFail($validated['project_id']);
-        $parentIssue = $this->resolveParentIssue($validated['parent_id'] ?? null, $project->id, $issue->id);
+        $parentIssue = $this->issueService->resolveParentIssue($validated['parent_id'] ?? null, $project->id, $issue->id);
 
         $issue->update([
             'title' => $validated['title'],
@@ -149,7 +155,8 @@ class IssueController extends Controller
             'parent_id' => $parentIssue?->id,
         ]);
 
-        $this->storeImages($request, $issue);
+        $this->issueService->storeAttachments($request, $issue);
+        $this->issueService->syncLinks($validated['links'] ?? null, $issue);
 
         return redirect()
             ->route('issues.show', $issue)
@@ -162,6 +169,10 @@ class IssueController extends Controller
             Storage::disk('public')->delete($image->path);
         }
 
+        foreach ($issue->files as $file) {
+            Storage::disk('public')->delete($file->path);
+        }
+
         $project = $issue->project;
         $title = $issue->title;
         $issue->delete();
@@ -169,130 +180,5 @@ class IssueController extends Controller
         return redirect()
             ->route('projects.show', $project)
             ->with('success', "Issue {$title} deleted successfully.");
-    }
-
-    private function detailRelations(): array
-    {
-        return [
-            'project:id,name,client_id',
-            'project.client:id,name',
-            'images',
-            'parentIssue:id,title,project_id,parent_id',
-            'subIssues' => fn ($query) => $query
-                ->with(['images', 'project:id,name'])
-                ->withCount(['subIssues', 'images'])
-                ->latest(),
-        ];
-    }
-
-    private function resolveParentIssue(?int $parentId, int $projectId, ?int $ignoreIssueId = null): ?Issue
-    {
-        if (! $parentId) {
-            return null;
-        }
-
-        $query = Issue::query()
-            ->where('project_id', $projectId)
-            ->whereKey($parentId);
-
-        if ($ignoreIssueId) {
-            $query->whereKeyNot($ignoreIssueId);
-        }
-
-        return $query->firstOrFail();
-    }
-
-    private function storeImages(Request $request, Issue $issue): void
-    {
-        if (! $request->hasFile('images')) {
-            return;
-        }
-
-        foreach ($request->file('images') as $file) {
-            $path = $file->store('issues', 'public');
-
-            $issue->images()->create([
-                'path' => $path,
-                'original_name' => $file->getClientOriginalName(),
-                'mime_type' => $file->getMimeType(),
-                'size' => $file->getSize(),
-            ]);
-        }
-    }
-
-    private function loadNestedSubIssues(Issue $issue): void
-    {
-        $issue->load([
-            'subIssues' => fn ($query) => $query
-                ->with(['images', 'project:id,name', 'parentIssue:id,title,project_id,parent_id'])
-                ->withCount(['subIssues', 'images'])
-                ->latest(),
-        ]);
-
-        $issue->subIssues->each(fn (Issue $subIssue) => $this->loadNestedSubIssues($subIssue));
-    }
-
-    private function parentIssueOptions(Issue $issue)
-    {
-        $excludedIds = [$issue->id, ...$this->descendantIssueIds($issue)];
-
-        return $this->issueOptionsForProject($issue->project_id, $excludedIds);
-    }
-
-    private function descendantIssueIds(Issue $issue): array
-    {
-        $descendantIds = [];
-        $pendingIds = [$issue->id];
-
-        while ($pendingIds !== []) {
-            $childIds = Issue::query()
-                ->whereIn('parent_id', $pendingIds)
-                ->pluck('id')
-                ->all();
-
-            if ($childIds === []) {
-                break;
-            }
-
-            $descendantIds = [...$descendantIds, ...$childIds];
-            $pendingIds = $childIds;
-        }
-
-        return array_values(array_unique($descendantIds));
-    }
-
-    private function issueOptionsForProject(int $projectId, array $excludedIds = [])
-    {
-        $issues = Issue::query()
-            ->where('project_id', $projectId)
-            ->orderBy('title')
-            ->get(['id', 'title', 'parent_id']);
-
-        return $this->flattenIssueOptions($issues, null, 0, $excludedIds)->values();
-    }
-
-    private function flattenIssueOptions($issues, ?int $parentId = null, int $depth = 0, array $excludedIds = [])
-    {
-        return $issues
-            ->where('parent_id', $parentId)
-            ->sortBy('title', SORT_NATURAL | SORT_FLAG_CASE)
-            ->values()
-            ->flatMap(function (Issue $entry) use ($issues, $depth, $excludedIds) {
-                $children = $this->flattenIssueOptions($issues, $entry->id, $depth + 1, $excludedIds);
-
-                if (in_array($entry->id, $excludedIds, true)) {
-                    return $children;
-                }
-
-                return collect([
-                    [
-                        'id' => $entry->id,
-                        'title' => $entry->title,
-                        'depth' => $depth,
-                        'label' => str_repeat('- ', $depth).$entry->title,
-                    ],
-                    ...$children->all(),
-                ]);
-            });
     }
 }
