@@ -1108,14 +1108,16 @@ a {
 }
 
 .nested-depth-marker {
-    width: 32px;
+    min-width: 32px;
     height: 32px;
+    padding: 0 10px;
     display: grid;
     place-items: center;
     border-radius: 12px;
     background: rgba(15, 118, 110, 0.1);
     color: var(--accent-deep);
     font-weight: 800;
+    font-size: 0.82rem;
 }
 
 .nested-issue-meta {

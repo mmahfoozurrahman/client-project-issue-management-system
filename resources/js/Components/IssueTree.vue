@@ -8,6 +8,10 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
+    path: {
+        type: Array,
+        default: () => [],
+    },
     depth: {
         type: Number,
         default: 0,
@@ -20,18 +24,19 @@ const normalizedIssues = computed(() => props.issues ?? []);
 
 const getChildren = (issue) => issue.sub_issues ?? issue.subIssues ?? [];
 const plainText = (value) => String(value || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+const issueNumber = (index) => [...props.path, index + 1].join('-');
 </script>
 
 <template>
     <div v-if="normalizedIssues.length" class="issue-tree">
-        <div v-for="issue in normalizedIssues" :key="issue.id" class="issue-tree-node">
+        <div v-for="(issue, index) in normalizedIssues" :key="issue.id" class="issue-tree-node">
             <div class="issue-tree-card" :style="{ '--tree-depth': depth }">
                 <div class="nested-issue-row">
                     <Link :href="`/issues/${issue.id}`" class="nested-issue-main">
-                        <span class="nested-depth-marker">{{ depth + 1 }}</span>
+                        <span class="nested-depth-marker">{{ issueNumber(index) }}</span>
                         <div>
                             <strong>{{ issue.title }}</strong>
-                            <small>{{ plainText(issue.description) || 'No description added yet.' }}</small>
+                            <!--small>{{ plainText(issue.description) || 'No description added yet.' }}</small-->
                         </div>
                     </Link>
                     <div class="nested-issue-meta">
@@ -48,6 +53,7 @@ const plainText = (value) => String(value || '').replace(/<[^>]*>/g, ' ').replac
             <IssueTree
                 v-if="getChildren(issue).length"
                 :issues="getChildren(issue)"
+                :path="[...path, index + 1]"
                 :depth="depth + 1"
                 @create-child="emit('create-child', $event)"
             />
