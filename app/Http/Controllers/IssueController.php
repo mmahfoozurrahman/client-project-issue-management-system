@@ -123,11 +123,8 @@ class IssueController extends Controller
         return Inertia::render('Issues/Show', [
             'issue' => $issue,
             'projects' => Project::query()->orderBy('name')->get(['id', 'name']),
-            'projectIssues' => Issue::query()
-                ->where('project_id', $issue->project_id)
-                ->whereKeyNot($issue->id)
-                ->orderBy('title')
-                ->get(['id', 'title']),
+            'projectIssues' => $this->issueOptionsForProject($issue->project_id, [$issue->id]),
+            'parentIssueOptions' => $this->parentIssueOptions($issue),
             'breadcrumbs' => [
                 ['label' => 'Home', 'href' => route('dashboard')],
                 ['label' => 'Projects', 'href' => route('projects.index')],
@@ -233,5 +230,69 @@ class IssueController extends Controller
         ]);
 
         $issue->subIssues->each(fn (Issue $subIssue) => $this->loadNestedSubIssues($subIssue));
+    }
+
+    private function parentIssueOptions(Issue $issue)
+    {
+        $excludedIds = [$issue->id, ...$this->descendantIssueIds($issue)];
+
+        return $this->issueOptionsForProject($issue->project_id, $excludedIds);
+    }
+
+    private function descendantIssueIds(Issue $issue): array
+    {
+        $descendantIds = [];
+        $pendingIds = [$issue->id];
+
+        while ($pendingIds !== []) {
+            $childIds = Issue::query()
+                ->whereIn('parent_id', $pendingIds)
+                ->pluck('id')
+                ->all();
+
+            if ($childIds === []) {
+                break;
+            }
+
+            $descendantIds = [...$descendantIds, ...$childIds];
+            $pendingIds = $childIds;
+        }
+
+        return array_values(array_unique($descendantIds));
+    }
+
+    private function issueOptionsForProject(int $projectId, array $excludedIds = [])
+    {
+        $issues = Issue::query()
+            ->where('project_id', $projectId)
+            ->orderBy('title')
+            ->get(['id', 'title', 'parent_id']);
+
+        return $this->flattenIssueOptions($issues, null, 0, $excludedIds)->values();
+    }
+
+    private function flattenIssueOptions($issues, ?int $parentId = null, int $depth = 0, array $excludedIds = [])
+    {
+        return $issues
+            ->where('parent_id', $parentId)
+            ->sortBy('title', SORT_NATURAL | SORT_FLAG_CASE)
+            ->values()
+            ->flatMap(function (Issue $entry) use ($issues, $depth, $excludedIds) {
+                $children = $this->flattenIssueOptions($issues, $entry->id, $depth + 1, $excludedIds);
+
+                if (in_array($entry->id, $excludedIds, true)) {
+                    return $children;
+                }
+
+                return collect([
+                    [
+                        'id' => $entry->id,
+                        'title' => $entry->title,
+                        'depth' => $depth,
+                        'label' => str_repeat('- ', $depth).$entry->title,
+                    ],
+                    ...$children->all(),
+                ]);
+            });
     }
 }

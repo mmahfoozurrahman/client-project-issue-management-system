@@ -13,6 +13,7 @@ const props = defineProps({
     issue: Object,
     projects: Array,
     projectIssues: Array,
+    parentIssueOptions: Array,
     breadcrumbs: Array,
 });
 
@@ -182,12 +183,13 @@ const submitChild = () => {
 
                         <div>
                             <label class="form-label">Parent Issue</label>
-                            <select v-model="updateForm.parent_id" class="form-select" :class="{ 'is-invalid-soft': updateForm.errors.parent_id }">
-                                <option value="">No parent</option>
-                                <option v-for="parent in projectIssues" :key="parent.id" :value="parent.id">{{ parent.title }}</option>
-                            </select>
-                            <FormError :message="updateForm.errors.parent_id" />
-                        </div>
+                                <select v-model="updateForm.parent_id" class="form-select" :class="{ 'is-invalid-soft': updateForm.errors.parent_id }">
+                                    <option value="">No parent</option>
+                                    <option v-for="parent in parentIssueOptions" :key="parent.id" :value="parent.id">{{ parent.label }}</option>
+                                </select>
+                                <small v-if="!parentIssueOptions.length" class="text-muted d-block mt-2">No valid parent issues available. This issue already sits at the top of its branch.</small>
+                                <FormError :message="updateForm.errors.parent_id" />
+                            </div>
 
                         <div>
                             <label class="form-label">Description</label>
@@ -271,7 +273,7 @@ const submitChild = () => {
                         <label class="form-label">Parent</label>
                         <select v-model="childForm.parent_id" class="form-select" :class="{ 'is-invalid-soft': childForm.errors.parent_id }">
                             <option :value="issue.id">{{ issue.title }}</option>
-                            <option v-for="parent in projectIssues" :key="parent.id" :value="parent.id">{{ parent.title }}</option>
+                            <option v-for="parent in projectIssues" :key="parent.id" :value="parent.id">{{ parent.label }}</option>
                         </select>
                         <FormError :message="childForm.errors.parent_id" />
                     </div>
