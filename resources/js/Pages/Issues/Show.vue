@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, router, useForm } from '@inertiajs/vue3';
 import Swal from 'sweetalert2';
 import FormError from '../../Components/FormError.vue';
 import Modal from '../../Components/Modal.vue';
@@ -19,6 +19,9 @@ const props = defineProps({
 
 const nestedIssues = computed(() => props.issue.sub_issues ?? props.issue.subIssues ?? []);
 const parentIssue = computed(() => props.issue.parent_issue ?? props.issue.parentIssue ?? null);
+const issueImages = ref([...(props.issue.images ?? [])]);
+const issueFiles = ref([...(props.issue.files ?? [])]);
+const issueLinks = ref([...(props.issue.links ?? [])]);
 
 const updateForm = useForm({
     title: props.issue.title,
@@ -47,6 +50,8 @@ const childForm = useForm({
     links: [],
 });
 const childIssueParent = computed(() => props.projectIssues.find((entry) => entry.id === childForm.parent_id) ?? props.issue);
+const imageModalOpen = ref(false);
+const activeImageIndex = ref(0);
 const formatFileSize = (value) => {
     if (!value && value !== 0) {
         return 'Unknown size';
@@ -146,6 +151,84 @@ const submitChild = () => {
         onSuccess: () => {
             resetChildForm();
         },
+    });
+};
+
+const openImageModal = (index) => {
+    activeImageIndex.value = index;
+    imageModalOpen.value = true;
+};
+
+const showNextImage = () => {
+    if (!issueImages.value.length) return;
+    activeImageIndex.value = (activeImageIndex.value + 1) % issueImages.value.length;
+};
+
+const showPrevImage = () => {
+    if (!issueImages.value.length) return;
+    activeImageIndex.value = (activeImageIndex.value - 1 + issueImages.value.length) % issueImages.value.length;
+};
+
+const deleteImage = (image) => {
+    Swal.fire({
+        title: 'Delete image?',
+        text: 'This will remove the image from this issue.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Delete',
+        confirmButtonColor: '#b91c1c',
+    }).then(({ isConfirmed }) => {
+        if (!isConfirmed) return;
+
+        router.delete(`/issues/images/${image.id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                issueImages.value = issueImages.value.filter((entry) => entry.id !== image.id);
+                if (activeImageIndex.value >= issueImages.value.length) {
+                    activeImageIndex.value = Math.max(issueImages.value.length - 1, 0);
+                }
+            },
+        });
+    });
+};
+
+const deleteFile = (file) => {
+    Swal.fire({
+        title: 'Delete file?',
+        text: 'This will remove the file from this issue.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Delete',
+        confirmButtonColor: '#b91c1c',
+    }).then(({ isConfirmed }) => {
+        if (!isConfirmed) return;
+
+        router.delete(`/issues/files/${file.id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                issueFiles.value = issueFiles.value.filter((entry) => entry.id !== file.id);
+            },
+        });
+    });
+};
+
+const deleteLink = (link) => {
+    Swal.fire({
+        title: 'Delete link?',
+        text: 'This will remove the link from this issue.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Delete',
+        confirmButtonColor: '#b91c1c',
+    }).then(({ isConfirmed }) => {
+        if (!isConfirmed) return;
+
+        router.delete(`/issues/links/${link.id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                issueLinks.value = issueLinks.value.filter((entry) => entry.id !== link.id);
+            },
+        });
     });
 };
 </script>
@@ -293,7 +376,17 @@ const submitChild = () => {
                     </div>
 
                     <div class="gallery-grid">
-                        <img v-for="image in issue.images" :key="image.id" :src="image.url" :alt="image.original_name || issue.title" class="gallery-thumb">
+                        <div v-for="(image, index) in issueImages" :key="image.id" class="position-relative">
+                            <img
+                                :src="image.url"
+                                :alt="image.original_name || issue.title"
+                                class="gallery-thumb"
+                                role="button"
+                                tabindex="0"
+                                @click="openImageModal(index)"
+                            >
+                            <button type="button" class="btn btn-light btn-sm position-absolute top-0 end-0 m-2" @click.stop="deleteImage(image)">Delete</button>
+                        </div>
                     </div>
                 </section>
 
@@ -305,16 +398,19 @@ const submitChild = () => {
                         </div>
                     </div>
 
-                    <div v-if="!issue.files?.length" class="empty-state-card">
+                    <div v-if="!issueFiles.length" class="empty-state-card">
                         <strong>No files attached</strong>
                         <p>Add PDFs, spreadsheets, notes, or archives from the edit form.</p>
                     </div>
 
                     <div v-else class="list-group list-group-flush">
-                        <a v-for="file in issue.files" :key="file.id" :href="file.url" target="_blank" rel="noopener noreferrer" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-                            <span>{{ file.original_name || 'Attachment' }}</span>
-                            <small class="text-muted">{{ formatFileSize(file.size) }}</small>
-                        </a>
+                        <div v-for="file in issueFiles" :key="file.id" class="list-group-item d-flex justify-content-between align-items-center">
+                            <a :href="file.url" target="_blank" rel="noopener noreferrer" class="text-decoration-none">{{ file.original_name || 'Attachment' }}</a>
+                            <div class="d-flex align-items-center gap-2">
+                                <small class="text-muted">{{ formatFileSize(file.size) }}</small>
+                                <button type="button" class="btn btn-outline-danger btn-sm" @click="deleteFile(file)">Delete</button>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -326,16 +422,19 @@ const submitChild = () => {
                         </div>
                     </div>
 
-                    <div v-if="!issue.links?.length" class="empty-state-card">
+                    <div v-if="!issueLinks.length" class="empty-state-card">
                         <strong>No links added</strong>
                         <p>Add internal or external links from the edit form.</p>
                     </div>
 
                     <div v-else class="list-group list-group-flush">
-                        <a v-for="link in issue.links" :key="link.id" :href="link.url" target="_blank" rel="noopener noreferrer" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-                            <span>{{ link.label || link.url }}</span>
-                            <small class="text-muted">{{ link.is_external ? 'External' : 'Internal' }}</small>
-                        </a>
+                        <div v-for="link in issueLinks" :key="link.id" class="list-group-item d-flex justify-content-between align-items-center">
+                            <a :href="link.url" target="_blank" rel="noopener noreferrer" class="text-decoration-none">{{ link.label || link.url }}</a>
+                            <div class="d-flex align-items-center gap-2">
+                                <small class="text-muted">{{ link.is_external ? 'External' : 'Internal' }}</small>
+                                <button type="button" class="btn btn-outline-danger btn-sm" @click="deleteLink(link)">Delete</button>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -438,4 +537,21 @@ const submitChild = () => {
             </form>
         </Modal>
     </AppLayout>
+
+    <Modal v-model="imageModalOpen" title="Issue Images" size="modal-lg">
+        <div class="d-flex align-items-center justify-content-between gap-3">
+            <button type="button" class="btn btn-outline-secondary" @click="showPrevImage">Prev</button>
+            <div class="flex-grow-1 text-center">
+                <img
+                    v-if="issueImages.length"
+                    :src="issueImages[activeImageIndex]?.url"
+                    :alt="issueImages[activeImageIndex]?.original_name || issue.title"
+                    class="img-fluid rounded"
+                >
+                <div v-else class="text-muted">No images to display.</div>
+                <div class="text-muted small mt-2">{{ activeImageIndex + 1 }} / {{ issueImages.length }}</div>
+            </div>
+            <button type="button" class="btn btn-outline-secondary" @click="showNextImage">Next</button>
+        </div>
+    </Modal>
 </template>

@@ -15,9 +15,14 @@ class Issue extends Model
         'title',
         'description',
         'status',
+        'done_at',
         'project_id',
         'user_id',
         'parent_id',
+    ];
+
+    protected $casts = [
+        'done_at' => 'datetime',
     ];
 
     public function user(): BelongsTo

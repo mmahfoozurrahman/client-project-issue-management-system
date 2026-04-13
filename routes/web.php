@@ -51,6 +51,9 @@ Route::middleware('auth')->group(function (): void {
     Route::resource('projects', ProjectController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
     Route::resource('issues', IssueController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
     Route::get('/kanban', [IssueController::class, 'kanban'])->name('kanban');
+    Route::delete('/issues/images/{issueImage}', [IssueController::class, 'destroyImage'])->name('issues.images.destroy');
+    Route::delete('/issues/files/{issueFile}', [IssueController::class, 'destroyFile'])->name('issues.files.destroy');
+    Route::delete('/issues/links/{issueLink}', [IssueController::class, 'destroyLink'])->name('issues.links.destroy');
 
     Route::prefix('admin')->name('admin.')->middleware('admin')->group(function (): void {
         Route::resource('users', UserController::class)->only(['index', 'store', 'update', 'destroy']);

@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Http\Requests\IssueStoreRequest;
 use App\Http\Requests\IssueUpdateRequest;
 use App\Models\Issue;
+use App\Models\IssueFile;
+use App\Models\IssueImage;
+use App\Models\IssueLink;
 use App\Models\Project;
 use App\Services\IssueService;
 use Illuminate\Http\RedirectResponse;
@@ -76,7 +79,7 @@ class IssueController extends Controller
             'columns' => [
                 'todo' => $issues->get('todo', collect())->values(),
                 'inprogress' => $issues->get('inprogress', collect())->values(),
-                'done' => $issues->get('done', collect())->values(),
+                'done' => $issues->get('done', collect())->sortByDesc('done_at')->values(),
             ],
             'projects' => Project::query()->orderBy('name')->get(['id', 'name']),
             'filters' => [
@@ -103,6 +106,7 @@ class IssueController extends Controller
             'title' => $validated['title'],
             'description' => $validated['description'] ?? null,
             'status' => $validated['status'],
+            'done_at' => $validated['status'] === 'done' ? now() : null,
             'project_id' => $project->id,
             'parent_id' => $parentIssue?->id,
         ]);
@@ -147,10 +151,21 @@ class IssueController extends Controller
         $project = Project::query()->findOrFail($validated['project_id']);
         $parentIssue = $this->issueService->resolveParentIssue($validated['parent_id'] ?? null, $project->id, $issue->id);
 
+        $previousStatus = $issue->status;
+        $nextStatus = $validated['status'];
+        $doneAt = $issue->done_at;
+
+        if ($nextStatus === 'done' && $previousStatus !== 'done') {
+            $doneAt = now();
+        } elseif ($nextStatus !== 'done') {
+            $doneAt = null;
+        }
+
         $issue->update([
             'title' => $validated['title'],
             'description' => $validated['description'] ?? null,
-            'status' => $validated['status'],
+            'status' => $nextStatus,
+            'done_at' => $doneAt,
             'project_id' => $project->id,
             'parent_id' => $parentIssue?->id,
         ]);
@@ -180,5 +195,28 @@ class IssueController extends Controller
         return redirect()
             ->route('projects.show', $project)
             ->with('success', "Issue {$title} deleted successfully.");
+    }
+
+    public function destroyImage(IssueImage $issueImage): RedirectResponse
+    {
+        Storage::disk('public')->delete($issueImage->path);
+        $issueImage->delete();
+
+        return back()->with('success', 'Image deleted.');
+    }
+
+    public function destroyFile(IssueFile $issueFile): RedirectResponse
+    {
+        Storage::disk('public')->delete($issueFile->path);
+        $issueFile->delete();
+
+        return back()->with('success', 'File deleted.');
+    }
+
+    public function destroyLink(IssueLink $issueLink): RedirectResponse
+    {
+        $issueLink->delete();
+
+        return back()->with('success', 'Link deleted.');
     }
 }

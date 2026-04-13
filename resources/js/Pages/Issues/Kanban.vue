@@ -42,6 +42,16 @@ const formatIssueDate = (value) => {
         year: 'numeric',
     }).format(new Date(value));
 };
+
+const formatDoneDate = (value) => {
+    if (!value) return 'Recently completed';
+
+    return new Intl.DateTimeFormat('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+    }).format(new Date(value));
+};
 </script>
 
 <template>
@@ -79,7 +89,8 @@ const formatIssueDate = (value) => {
                             <div>
                                 <strong>{{ issue.title }}</strong>
                                 <span>{{ issue.project?.client?.name || 'No client' }} / {{ issue.project?.name || 'No project' }}</span>
-                                <small class="kanban-date-meta">Created {{ formatIssueDate(issue.created_at) }}</small>
+                                <small v-if="column.key === 'done'" class="kanban-date-meta">Completed {{ formatDoneDate(issue.done_at) }}</small>
+                                <small v-else class="kanban-date-meta">Created {{ formatIssueDate(issue.created_at) }}</small>
                             </div>
                             <small class="kanban-side-meta">{{ issue.sub_issues_count ?? 0 }} children</small>
                         </Link>
