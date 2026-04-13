@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import Swal from 'sweetalert2';
 import FormError from '../../Components/FormError.vue';
@@ -153,6 +153,34 @@ const submitChild = () => {
         },
     });
 };
+
+watch(
+    () => props.issue.images,
+    (next) => {
+        issueImages.value = [...(next ?? [])];
+    },
+    { immediate: true }
+);
+
+watch(
+    () => props.issue.files,
+    (next) => {
+        issueFiles.value = [...(next ?? [])];
+    },
+    { immediate: true }
+);
+
+watch(
+    () => props.issue.links,
+    (next) => {
+        issueLinks.value = [...(next ?? [])];
+        updateForm.links = (next ?? []).map((link) => ({
+            label: link.label ?? '',
+            url: link.url ?? '',
+        }));
+    },
+    { immediate: true }
+);
 
 const openImageModal = (index) => {
     activeImageIndex.value = index;
