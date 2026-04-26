@@ -12,6 +12,7 @@ use App\Models\Issue;
 use App\Models\Project;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 
 Route::redirect('/', '/dashboard');
@@ -23,19 +24,55 @@ Route::middleware('guest')->group(function (): void {
 
 Route::middleware('auth')->group(function (): void {
     Route::get('/dashboard', function (Request $request) {
+        $statusIssues = collect(['inprogress', 'todo', 'done'])->mapWithKeys(function (string $status) {
+            $query = Issue::query()
+                ->with(['project:id,name,client_id', 'project.client:id,name', 'images', 'tags'])
+                ->withCount(['subIssues', 'images'])
+                ->whereNull('parent_id')
+                ->where('status', $status);
+
+            if ($status === 'done') {
+                $query->orderByDesc('done_at')->orderByDesc('updated_at');
+            } else {
+                $query->latest();
+            }
+
+            return [$status => $query->limit(12)->get()];
+        });
+
+        $weekly = collect(range(7, 0))->map(function (int $offset) {
+            $start = Carbon::now()->startOfWeek()->subWeeks($offset);
+            $end = (clone $start)->endOfWeek();
+
+            return [
+                'label' => $start->format('M d'),
+                'created' => Issue::query()->whereBetween('created_at', [$start, $end])->count(),
+                'completed' => Issue::query()->whereBetween('done_at', [$start, $end])->count(),
+            ];
+        })->values();
+
+        $monthly = collect(range(5, 0))->map(function (int $offset) {
+            $start = Carbon::now()->startOfMonth()->subMonths($offset);
+            $end = (clone $start)->endOfMonth();
+
+            return [
+                'label' => $start->format('M Y'),
+                'created' => Issue::query()->whereBetween('created_at', [$start, $end])->count(),
+                'completed' => Issue::query()->whereBetween('done_at', [$start, $end])->count(),
+            ];
+        })->values();
+
         return Inertia::render('Dashboard', [
             'counts' => [
                 'clients' => Client::query()->count(),
                 'projects' => Project::query()->count(),
                 'issues' => Issue::query()->count(),
             ],
-            'recentIssues' => Issue::query()
-                ->with(['project:id,name,client_id', 'project.client:id,name', 'images'])
-                ->withCount(['subIssues', 'images'])
-                ->whereNull('parent_id')
-                ->latest()
-                ->paginate(8)
-                ->withQueryString(),
+            'statusIssues' => $statusIssues,
+            'analytics' => [
+                'weekly' => $weekly,
+                'monthly' => $monthly,
+            ],
             'breadcrumbs' => [
                 ['label' => 'Home'],
             ],
@@ -49,6 +86,7 @@ Route::middleware('auth')->group(function (): void {
 
     Route::resource('clients', ClientController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::resource('projects', ProjectController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+    Route::get('/issues/daily-activity', [IssueController::class, 'dailyActivity'])->name('issues.daily-activity');
     Route::resource('issues', IssueController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
     Route::get('/kanban', [IssueController::class, 'kanban'])->name('kanban');
     Route::delete('/issues/images/{issueImage}', [IssueController::class, 'destroyImage'])->name('issues.images.destroy');

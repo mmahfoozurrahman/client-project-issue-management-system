@@ -15,6 +15,7 @@ class AdminSiteSettingsUpdateRequest extends FormRequest
     {
         return [
             'site_name' => ['required', 'string', 'max:255'],
+            'issue_daily_target' => ['required', 'integer', 'min:1', 'max:50'],
         ];
     }
 }

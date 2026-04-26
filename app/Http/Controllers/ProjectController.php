@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProjectStoreRequest;
+use App\Models\IssueTag;
 use App\Http\Requests\ProjectUpdateRequest;
 use App\Models\Client;
 use App\Models\Project;
@@ -56,7 +57,7 @@ class ProjectController extends Controller
         $issues = $project->issues()
             ->whereNull('parent_id')
             ->latest()
-            ->with(['images', 'files', 'links'])
+            ->with(['images', 'files', 'links', 'tags'])
             ->withCount(['subIssues', 'images', 'files'])
             ->paginate(10)
             ->withQueryString();
@@ -64,6 +65,10 @@ class ProjectController extends Controller
         return Inertia::render('Projects/Show', [
             'project' => $project,
             'issues' => $issues,
+            'projectTags' => IssueTag::query()
+                ->where('project_id', $project->id)
+                ->orderBy('name')
+                ->get(['id', 'name', 'project_id']),
             'breadcrumbs' => [
                 ['label' => 'Home', 'href' => route('dashboard')],
                 ['label' => 'Projects', 'href' => route('projects.index')],

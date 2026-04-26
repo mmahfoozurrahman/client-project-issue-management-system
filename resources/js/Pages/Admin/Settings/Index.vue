@@ -10,6 +10,7 @@ const props = defineProps({
 
 const form = useForm({
     site_name: props.settings?.site_name ?? '',
+    issue_daily_target: props.settings?.issue_daily_target ?? 3,
 });
 
 const submit = () => {
@@ -43,6 +44,13 @@ const submit = () => {
                         <label class="form-label">Site name</label>
                         <input v-model="form.site_name" type="text" class="form-control" :class="{ 'is-invalid-soft': form.errors.site_name }">
                         <FormError :message="form.errors.site_name" />
+                    </div>
+
+                    <div>
+                        <label class="form-label">Issue daily target</label>
+                        <input v-model.number="form.issue_daily_target" type="number" min="1" max="50" class="form-control" :class="{ 'is-invalid-soft': form.errors.issue_daily_target }">
+                        <small class="text-muted d-block mt-1">Used by Kanban "Today&apos;s target" widget. Range: 1 to 50.</small>
+                        <FormError :message="form.errors.issue_daily_target" />
                     </div>
 
                     <button class="btn btn-accent rounded-pill align-self-start" :disabled="form.processing">

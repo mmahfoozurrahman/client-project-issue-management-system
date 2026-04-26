@@ -41,6 +41,8 @@ class IssueUpdateRequest extends FormRequest
             'links' => ['sometimes', 'array'],
             'links.*.url' => ['nullable', 'string', 'max:2048'],
             'links.*.label' => ['nullable', 'string', 'max:255'],
+            'tag_names' => ['sometimes', 'array'],
+            'tag_names.*' => ['nullable', 'string', 'max:50'],
         ];
     }
 
@@ -50,6 +52,7 @@ class IssueUpdateRequest extends FormRequest
             'images.*' => 'issue image',
             'files.*' => 'issue file',
             'links.*.url' => 'issue link',
+            'tag_names.*' => 'issue tag',
         ];
     }
 }

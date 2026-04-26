@@ -31,6 +31,7 @@ const navItems = computed(() => [
     { label: 'Projects', href: '/projects', icon: BriefcaseBusiness },
     { label: 'Issues', href: '/issues', icon: PanelsTopLeft },
     { label: 'Kanban', href: '/kanban', icon: PanelsTopLeft },
+    { label: 'Daily Activity', href: '/issues/daily-activity', icon: PanelsTopLeft },
     { label: 'Profile', href: '/profile', icon: UserCircle2 },
     ...(isAdmin.value
         ? [
@@ -41,6 +42,14 @@ const navItems = computed(() => [
 ]);
 
 const logout = () => logoutForm.post('/logout');
+
+const isItemActive = (href) => {
+    if (href === '/issues') {
+        return currentUrl.value.startsWith('/issues') && !currentUrl.value.startsWith('/issues/daily-activity');
+    }
+
+    return currentUrl.value.startsWith(href);
+};
 </script>
 
 <template>
@@ -64,7 +73,7 @@ const logout = () => logoutForm.post('/logout');
                     :key="item.href"
                     :href="item.href"
                     class="sidebar-link"
-                    :class="{ active: currentUrl.startsWith(item.href) }"
+                    :class="{ active: isItemActive(item.href) }"
                     @click="sidebarOpen = false"
                 >
                     <component :is="item.icon" :size="18" />

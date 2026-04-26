@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\UserOwned;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Model;
 
@@ -58,5 +59,10 @@ class Issue extends Model
     public function links(): HasMany
     {
         return $this->hasMany(IssueLink::class);
+    }
+
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(IssueTag::class, 'issue_issue_tag');
     }
 }

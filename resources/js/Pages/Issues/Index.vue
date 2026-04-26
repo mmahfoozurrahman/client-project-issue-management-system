@@ -12,6 +12,7 @@ import AppLayout from '../../Layouts/AppLayout.vue';
 const props = defineProps({
     issues: Object,
     projects: Array,
+    issueTags: Array,
     filters: Object,
     breadcrumbs: Array,
 });
@@ -32,6 +33,8 @@ const formatIssueDate = (value) => {
 const searchFilters = reactive({
     project_id: props.filters?.project_id ?? '',
     status: props.filters?.status ?? '',
+    tag_id: props.filters?.tag_id ?? '',
+    q: props.filters?.q ?? '',
 });
 
 const form = useForm({
@@ -43,7 +46,10 @@ const form = useForm({
     images: [],
     files: [],
     links: [],
+    tag_names: [],
 });
+
+const tagInput = ref('');
 
 const applyFilters = () => {
     loading.value = true;
@@ -81,6 +87,30 @@ const addLink = () => {
 const removeLink = (index) => {
     form.links.splice(index, 1);
 };
+
+const addTagToForm = (value = tagInput.value) => {
+    const normalized = String(value || '').trim();
+    if (!normalized) return;
+
+    const exists = form.tag_names.some((entry) => entry.toLowerCase() === normalized.toLowerCase());
+    if (!exists) {
+        form.tag_names.push(normalized);
+    }
+
+    tagInput.value = '';
+};
+
+const removeTagFromForm = (index) => {
+    form.tag_names.splice(index, 1);
+};
+
+const availableTagNames = computed(() => {
+    if (!form.project_id) return [];
+
+    return (props.issueTags ?? [])
+        .filter((tag) => String(tag.project_id) === String(form.project_id))
+        .map((tag) => tag.name);
+});
 </script>
 
 <template>
@@ -108,6 +138,22 @@ const removeLink = (index) => {
                     <option value="inprogress">In Progress</option>
                     <option value="done">Done</option>
                 </select>
+
+                <select v-model="searchFilters.tag_id" class="form-select" @change="applyFilters">
+                    <option value="">All tags</option>
+                    <option v-for="tag in issueTags" :key="tag.id" :value="tag.id">{{ tag.name }}</option>
+                </select>
+
+                <div class="d-flex gap-2 flex-grow-1">
+                    <input
+                        v-model="searchFilters.q"
+                        type="text"
+                        class="form-control"
+                        placeholder="Search issue title/description..."
+                        @keyup.enter="applyFilters"
+                    >
+                    <button type="button" class="btn btn-outline-secondary" @click="applyFilters">Search</button>
+                </div>
             </div>
 
             <div class="compact-table-shell">
@@ -133,6 +179,9 @@ const removeLink = (index) => {
                                     <div>
                                         <strong>{{ issue.title }}</strong>
                                         <small class="issue-date-meta">Created {{ formatIssueDate(issue.created_at) }}</small>
+                                        <div v-if="issue.tags?.length" class="d-flex flex-wrap gap-1 mt-2">
+                                            <span v-for="tag in issue.tags" :key="tag.id" class="badge rounded-pill text-bg-light border">{{ tag.name }}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </td>
@@ -222,6 +271,39 @@ const removeLink = (index) => {
                         </div>
                     </div>
                     <button type="button" class="btn btn-outline-secondary btn-sm" @click="addLink">+ Add Link</button>
+                </div>
+
+                <div>
+                    <label class="form-label">Tags</label>
+                    <small class="text-muted d-block mb-2">Project-based tags for searching and grouping issues.</small>
+                    <div class="d-flex gap-2 mb-2">
+                        <input
+                            v-model="tagInput"
+                            type="text"
+                            class="form-control"
+                            placeholder="Type tag and press Enter"
+                            @keyup.enter.prevent="addTagToForm()"
+                        >
+                        <button type="button" class="btn btn-outline-secondary" @click="addTagToForm()">Add</button>
+                    </div>
+                    <div v-if="availableTagNames.length" class="d-flex flex-wrap gap-1 mb-2">
+                        <button
+                            v-for="tagName in availableTagNames"
+                            :key="tagName"
+                            type="button"
+                            class="btn btn-sm btn-light border rounded-pill"
+                            @click="addTagToForm(tagName)"
+                        >
+                            + {{ tagName }}
+                        </button>
+                    </div>
+                    <div v-if="form.tag_names.length" class="d-flex flex-wrap gap-1">
+                        <span v-for="(tag, index) in form.tag_names" :key="`${tag}-${index}`" class="badge rounded-pill text-bg-light border d-inline-flex align-items-center gap-1 px-2 py-1">
+                            {{ tag }}
+                            <button type="button" class="btn btn-sm p-0 border-0 bg-transparent" @click="removeTagFromForm(index)">x</button>
+                        </span>
+                    </div>
+                    <FormError :message="form.errors.tag_names || form.errors['tag_names.0']" />
                 </div>
 
                 <button class="btn btn-accent rounded-pill align-self-start" :disabled="form.processing">

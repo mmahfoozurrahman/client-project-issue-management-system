@@ -123,4 +123,6 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    'issue_daily_target' => (int) env('ISSUE_DAILY_TARGET', 3),
+
 ];

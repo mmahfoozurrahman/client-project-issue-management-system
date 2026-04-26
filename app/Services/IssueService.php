@@ -3,11 +3,11 @@
 namespace App\Services;
 
 use App\Models\Issue;
+use App\Models\IssueTag;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Illuminate\Support\Stringable;
 
 class IssueService
 {
@@ -19,9 +19,10 @@ class IssueService
             'images',
             'files',
             'links',
+            'tags',
             'parentIssue:id,title,project_id,parent_id',
             'subIssues' => fn ($query) => $query
-                ->with(['images', 'files', 'links', 'project:id,name'])
+                ->with(['images', 'files', 'links', 'tags', 'project:id,name'])
                 ->withCount(['subIssues', 'images', 'files'])
                 ->latest(),
         ];
@@ -105,7 +106,7 @@ class IssueService
     {
         $issue->load([
             'subIssues' => fn ($query) => $query
-                ->with(['images', 'files', 'links', 'project:id,name', 'parentIssue:id,title,project_id,parent_id'])
+                ->with(['images', 'files', 'links', 'tags', 'project:id,name', 'parentIssue:id,title,project_id,parent_id'])
                 ->withCount(['subIssues', 'images', 'files'])
                 ->latest(),
         ]);
@@ -205,5 +206,45 @@ class IssueService
         return Str::of($name)
             ->replace(['\\', '/'], '-')
             ->toString();
+    }
+
+    public function syncTags(?array $tagNames, Issue $issue, int $projectId): void
+    {
+        if (! is_array($tagNames)) {
+            return;
+        }
+
+        $normalizedNames = collect($tagNames)
+            ->map(fn ($name) => trim((string) $name))
+            ->filter()
+            ->unique(fn ($name) => Str::lower($name))
+            ->values();
+
+        if ($normalizedNames->isEmpty()) {
+            $issue->tags()->sync([]);
+
+            return;
+        }
+
+        $tagIds = $normalizedNames
+            ->map(function (string $name) use ($projectId) {
+                $slug = Str::slug($name);
+                $effectiveSlug = filled($slug) ? $slug : Str::lower(Str::replace(' ', '-', $name));
+
+                $tag = IssueTag::query()->firstOrCreate(
+                    [
+                        'project_id' => $projectId,
+                        'slug' => $effectiveSlug,
+                    ],
+                    [
+                        'name' => $name,
+                    ]
+                );
+
+                return $tag->id;
+            })
+            ->all();
+
+        $issue->tags()->sync($tagIds);
     }
 }

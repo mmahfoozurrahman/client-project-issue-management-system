@@ -14,6 +14,7 @@ const props = defineProps({
     projects: Array,
     projectIssues: Array,
     parentIssueOptions: Array,
+    projectTags: Array,
     breadcrumbs: Array,
 });
 
@@ -22,6 +23,7 @@ const parentIssue = computed(() => props.issue.parent_issue ?? props.issue.paren
 const issueImages = ref([...(props.issue.images ?? [])]);
 const issueFiles = ref([...(props.issue.files ?? [])]);
 const issueLinks = ref([...(props.issue.links ?? [])]);
+const issueTags = ref([...(props.issue.tags ?? [])]);
 
 const updateForm = useForm({
     title: props.issue.title,
@@ -35,6 +37,7 @@ const updateForm = useForm({
         label: link.label ?? '',
         url: link.url ?? '',
     })),
+    tag_names: (props.issue.tags ?? []).map((tag) => tag.name),
 });
 const deleteForm = useForm({});
 const childModalOpen = ref(false);
@@ -48,10 +51,13 @@ const childForm = useForm({
     images: [],
     files: [],
     links: [],
+    tag_names: [],
 });
 const childIssueParent = computed(() => props.projectIssues.find((entry) => entry.id === childForm.parent_id) ?? props.issue);
 const imageModalOpen = ref(false);
 const activeImageIndex = ref(0);
+const updateTagInput = ref('');
+const childTagInput = ref('');
 const formatFileSize = (value) => {
     if (!value && value !== 0) {
         return 'Unknown size';
@@ -124,6 +130,34 @@ const removeChildLink = (index) => {
     childForm.links.splice(index, 1);
 };
 
+const addUpdateTag = (value = updateTagInput.value) => {
+    const normalized = String(value || '').trim();
+    if (!normalized) return;
+    const exists = updateForm.tag_names.some((entry) => entry.toLowerCase() === normalized.toLowerCase());
+    if (!exists) {
+        updateForm.tag_names.push(normalized);
+    }
+    updateTagInput.value = '';
+};
+
+const removeUpdateTag = (index) => {
+    updateForm.tag_names.splice(index, 1);
+};
+
+const addChildTag = (value = childTagInput.value) => {
+    const normalized = String(value || '').trim();
+    if (!normalized) return;
+    const exists = childForm.tag_names.some((entry) => entry.toLowerCase() === normalized.toLowerCase());
+    if (!exists) {
+        childForm.tag_names.push(normalized);
+    }
+    childTagInput.value = '';
+};
+
+const removeChildTag = (index) => {
+    childForm.tag_names.splice(index, 1);
+};
+
 const openChildModal = (parentIssue = props.issue) => {
     childModalOpen.value = true;
     childForm.reset();
@@ -134,6 +168,7 @@ const openChildModal = (parentIssue = props.issue) => {
     childForm.project_id = props.issue.project_id;
     childForm.parent_id = parentIssue.id;
     childForm.return_to_issue_id = props.issue.id;
+    childForm.tag_names = [];
 };
 
 const resetChildForm = () => {
@@ -178,6 +213,15 @@ watch(
             label: link.label ?? '',
             url: link.url ?? '',
         }));
+    },
+    { immediate: true }
+);
+
+watch(
+    () => props.issue.tags,
+    (next) => {
+        issueTags.value = [...(next ?? [])];
+        updateForm.tag_names = (next ?? []).map((tag) => tag.name);
     },
     { immediate: true }
 );
@@ -299,6 +343,13 @@ const deleteLink = (link) => {
                 <span>Nested Items</span>
                 <strong>{{ nestedIssues.length }}</strong>
             </div>
+            <div class="context-stat">
+                <span>Tags</span>
+                <div v-if="issueTags.length" class="d-flex flex-wrap gap-1 mt-1">
+                    <span v-for="tag in issueTags" :key="tag.id" class="badge rounded-pill text-bg-light border">{{ tag.name }}</span>
+                </div>
+                <strong v-else>No tags</strong>
+            </div>
         </section>
 
         <div class="row g-4">
@@ -384,6 +435,39 @@ const deleteLink = (link) => {
                                 </div>
                             </div>
                             <button type="button" class="btn btn-outline-secondary btn-sm" @click="addUpdateLink">+ Add Link</button>
+                        </div>
+
+                        <div>
+                            <label class="form-label">Tags</label>
+                            <small class="text-muted d-block mb-2">Project-based tags for search and categorization.</small>
+                            <div class="d-flex gap-2 mb-2">
+                                <input
+                                    v-model="updateTagInput"
+                                    type="text"
+                                    class="form-control"
+                                    placeholder="Type tag and press Enter"
+                                    @keyup.enter.prevent="addUpdateTag()"
+                                >
+                                <button type="button" class="btn btn-outline-secondary" @click="addUpdateTag()">Add</button>
+                            </div>
+                            <div v-if="projectTags?.length" class="d-flex flex-wrap gap-1 mb-2">
+                                <button
+                                    v-for="tag in projectTags"
+                                    :key="tag.id"
+                                    type="button"
+                                    class="btn btn-sm btn-light border rounded-pill"
+                                    @click="addUpdateTag(tag.name)"
+                                >
+                                    + {{ tag.name }}
+                                </button>
+                            </div>
+                            <div v-if="updateForm.tag_names.length" class="d-flex flex-wrap gap-1">
+                                <span v-for="(tag, index) in updateForm.tag_names" :key="`${tag}-${index}`" class="badge rounded-pill text-bg-light border d-inline-flex align-items-center gap-1 px-2 py-1">
+                                    {{ tag }}
+                                    <button type="button" class="btn btn-sm p-0 border-0 bg-transparent" @click="removeUpdateTag(index)">x</button>
+                                </span>
+                            </div>
+                            <FormError :message="updateForm.errors.tag_names || updateForm.errors['tag_names.0']" />
                         </div>
 
                         <button class="btn btn-accent rounded-pill align-self-start" :disabled="updateForm.processing">
@@ -556,6 +640,39 @@ const deleteLink = (link) => {
                         </div>
                     </div>
                     <button type="button" class="btn btn-outline-secondary btn-sm" @click="addChildLink">+ Add Link</button>
+                </div>
+
+                <div>
+                    <label class="form-label">Tags</label>
+                    <small class="text-muted d-block mb-2">Project-based tags for search and categorization.</small>
+                    <div class="d-flex gap-2 mb-2">
+                        <input
+                            v-model="childTagInput"
+                            type="text"
+                            class="form-control"
+                            placeholder="Type tag and press Enter"
+                            @keyup.enter.prevent="addChildTag()"
+                        >
+                        <button type="button" class="btn btn-outline-secondary" @click="addChildTag()">Add</button>
+                    </div>
+                    <div v-if="projectTags?.length" class="d-flex flex-wrap gap-1 mb-2">
+                        <button
+                            v-for="tag in projectTags"
+                            :key="`child-${tag.id}`"
+                            type="button"
+                            class="btn btn-sm btn-light border rounded-pill"
+                            @click="addChildTag(tag.name)"
+                        >
+                            + {{ tag.name }}
+                        </button>
+                    </div>
+                    <div v-if="childForm.tag_names.length" class="d-flex flex-wrap gap-1">
+                        <span v-for="(tag, index) in childForm.tag_names" :key="`child-${tag}-${index}`" class="badge rounded-pill text-bg-light border d-inline-flex align-items-center gap-1 px-2 py-1">
+                            {{ tag }}
+                            <button type="button" class="btn btn-sm p-0 border-0 bg-transparent" @click="removeChildTag(index)">x</button>
+                        </span>
+                    </div>
+                    <FormError :message="childForm.errors.tag_names || childForm.errors['tag_names.0']" />
                 </div>
 
                 <button class="btn btn-accent rounded-pill align-self-start" :disabled="childForm.processing">

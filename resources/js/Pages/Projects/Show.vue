@@ -11,6 +11,7 @@ import AppLayout from '../../Layouts/AppLayout.vue';
 const props = defineProps({
     project: Object,
     issues: Object,
+    projectTags: Array,
     breadcrumbs: Array,
 });
 
@@ -26,14 +27,16 @@ const form = useForm({
     images: [],
     files: [],
     links: [],
+    tag_names: [],
 });
+const tagInput = ref('');
 
 const submit = () => {
     form.post('/issues', {
         forceFormData: true,
         onSuccess: () => {
             modalOpen.value = false;
-            form.reset('title', 'description', 'status', 'parent_id', 'images', 'files');
+            form.reset('title', 'description', 'status', 'parent_id', 'images', 'files', 'tag_names');
             form.project_id = props.project.id;
         },
     });
@@ -53,6 +56,20 @@ const addLink = () => {
 
 const removeLink = (index) => {
     form.links.splice(index, 1);
+};
+
+const addTagToForm = (value = tagInput.value) => {
+    const normalized = String(value || '').trim();
+    if (!normalized) return;
+    const exists = form.tag_names.some((entry) => entry.toLowerCase() === normalized.toLowerCase());
+    if (!exists) {
+        form.tag_names.push(normalized);
+    }
+    tagInput.value = '';
+};
+
+const removeTagFromForm = (index) => {
+    form.tag_names.splice(index, 1);
 };
 </script>
 
@@ -101,6 +118,9 @@ const removeLink = (index) => {
                                     <div>
                                         <strong>{{ issue.title }}</strong>
                                         <small>{{ plainText(issue.description) || 'No description added yet.' }}</small>
+                                        <div v-if="issue.tags?.length" class="d-flex flex-wrap gap-1 mt-2">
+                                            <span v-for="tag in issue.tags" :key="tag.id" class="badge rounded-pill text-bg-light border">{{ tag.name }}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </td>
@@ -178,6 +198,39 @@ const removeLink = (index) => {
                         </div>
                     </div>
                     <button type="button" class="btn btn-outline-secondary btn-sm" @click="addLink">+ Add Link</button>
+                </div>
+
+                <div>
+                    <label class="form-label">Tags</label>
+                    <small class="text-muted d-block mb-2">Project-based tags for searching and grouping issues.</small>
+                    <div class="d-flex gap-2 mb-2">
+                        <input
+                            v-model="tagInput"
+                            type="text"
+                            class="form-control"
+                            placeholder="Type tag and press Enter"
+                            @keyup.enter.prevent="addTagToForm()"
+                        >
+                        <button type="button" class="btn btn-outline-secondary" @click="addTagToForm()">Add</button>
+                    </div>
+                    <div v-if="projectTags?.length" class="d-flex flex-wrap gap-1 mb-2">
+                        <button
+                            v-for="tag in projectTags"
+                            :key="tag.id"
+                            type="button"
+                            class="btn btn-sm btn-light border rounded-pill"
+                            @click="addTagToForm(tag.name)"
+                        >
+                            + {{ tag.name }}
+                        </button>
+                    </div>
+                    <div v-if="form.tag_names.length" class="d-flex flex-wrap gap-1">
+                        <span v-for="(tag, index) in form.tag_names" :key="`${tag}-${index}`" class="badge rounded-pill text-bg-light border d-inline-flex align-items-center gap-1 px-2 py-1">
+                            {{ tag }}
+                            <button type="button" class="btn btn-sm p-0 border-0 bg-transparent" @click="removeTagFromForm(index)">x</button>
+                        </span>
+                    </div>
+                    <FormError :message="form.errors.tag_names || form.errors['tag_names.0']" />
                 </div>
 
                 <button class="btn btn-accent rounded-pill align-self-start" :disabled="form.processing">

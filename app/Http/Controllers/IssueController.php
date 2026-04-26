@@ -8,10 +8,13 @@ use App\Models\Issue;
 use App\Models\IssueFile;
 use App\Models\IssueImage;
 use App\Models\IssueLink;
+use App\Models\IssueTag;
 use App\Models\Project;
+use App\Models\SiteMeta;
 use App\Services\IssueService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -25,8 +28,15 @@ class IssueController extends Controller
 
     public function index(Request $request): Response
     {
+        $request->validate([
+            'project_id' => ['nullable', 'integer', Rule::exists(Project::class, 'id')],
+            'status' => ['nullable', 'string', Rule::in(['todo', 'inprogress', 'done'])],
+            'tag_id' => ['nullable', 'integer', Rule::exists(IssueTag::class, 'id')],
+            'q' => ['nullable', 'string', 'max:255'],
+        ]);
+
         $query = Issue::query()
-            ->with(['project:id,name,client_id', 'project.client:id,name', 'parentIssue:id,title', 'images', 'files', 'links'])
+            ->with(['project:id,name,client_id', 'project.client:id,name', 'parentIssue:id,title', 'images', 'files', 'links', 'tags'])
             ->withCount(['subIssues', 'images', 'files'])
             ->whereNull('parent_id')
             ->latest();
@@ -37,19 +47,38 @@ class IssueController extends Controller
         }
 
         if ($request->filled('status')) {
-            $request->validate([
-                'status' => ['string', Rule::in(['todo', 'inprogress', 'done'])],
-            ]);
-
             $query->where('status', $request->string('status')->value());
+        }
+
+        if ($request->filled('tag_id')) {
+            $tagId = (int) $request->input('tag_id');
+            $query->whereHas('tags', fn ($tagQuery) => $tagQuery->whereKey($tagId));
+        }
+
+        if ($request->filled('q')) {
+            $term = trim((string) $request->input('q'));
+
+            $query->where(function ($searchQuery) use ($term) {
+                $searchQuery
+                    ->where('title', 'like', "%{$term}%")
+                    ->orWhere('description', 'like', "%{$term}%");
+            });
+        }
+
+        $tagQuery = IssueTag::query()->orderBy('name');
+        if ($request->filled('project_id')) {
+            $tagQuery->where('project_id', (int) $request->input('project_id'));
         }
 
         return Inertia::render('Issues/Index', [
             'issues' => $query->paginate(10)->withQueryString(),
             'projects' => Project::query()->orderBy('name')->get(['id', 'name']),
+            'issueTags' => $tagQuery->get(['id', 'name', 'project_id']),
             'filters' => [
                 'project_id' => $request->input('project_id'),
                 'status' => $request->input('status'),
+                'tag_id' => $request->input('tag_id'),
+                'q' => $request->input('q'),
             ],
             'breadcrumbs' => [
                 ['label' => 'Home', 'href' => route('dashboard')],
@@ -67,7 +96,7 @@ class IssueController extends Controller
         }
 
         $issues = Issue::query()
-            ->with(['project:id,name,client_id', 'project.client:id,name', 'images', 'files', 'links'])
+            ->with(['project:id,name,client_id', 'project.client:id,name', 'images', 'files', 'links', 'tags'])
             ->withCount(['subIssues', 'images', 'files'])
             ->whereNull('parent_id')
             ->when($project, fn ($query) => $query->where('project_id', $project->id))
@@ -75,11 +104,22 @@ class IssueController extends Controller
             ->get()
             ->groupBy('status');
 
+        $dailyTarget = max((int) SiteMeta::value('issue_daily_target', (string) config('app.issue_daily_target', 3)), 1);
+        $completedToday = Issue::query()
+            ->whereDate('done_at', Carbon::today())
+            ->when($project, fn ($query) => $query->where('project_id', $project->id))
+            ->count();
+
         return Inertia::render('Issues/Kanban', [
             'columns' => [
                 'todo' => $issues->get('todo', collect())->values(),
                 'inprogress' => $issues->get('inprogress', collect())->values(),
                 'done' => $issues->get('done', collect())->sortByDesc('done_at')->values(),
+            ],
+            'todayTarget' => [
+                'target' => max($dailyTarget, 1),
+                'completed' => $completedToday,
+                'remaining' => max(max($dailyTarget, 1) - $completedToday, 0),
             ],
             'projects' => Project::query()->orderBy('name')->get(['id', 'name']),
             'filters' => [
@@ -88,6 +128,59 @@ class IssueController extends Controller
             'breadcrumbs' => [
                 ['label' => 'Home', 'href' => route('dashboard')],
                 ['label' => 'Kanban'],
+            ],
+        ]);
+    }
+
+    public function dailyActivity(Request $request): Response
+    {
+        $request->validate([
+            'project_id' => ['nullable', 'integer', Rule::exists(Project::class, 'id')],
+            'date' => ['nullable', 'date'],
+            'status' => ['nullable', 'string', Rule::in(['todo', 'inprogress', 'done'])],
+        ]);
+
+        $selectedDate = $request->filled('date')
+            ? Carbon::parse((string) $request->input('date'))->toDateString()
+            : Carbon::today()->toDateString();
+
+        $selectedProjectId = $request->filled('project_id') ? (int) $request->input('project_id') : null;
+        $selectedStatus = $request->filled('status') ? (string) $request->input('status') : 'inprogress';
+
+        $baseCreatedQuery = Issue::query()
+            ->whereDate('created_at', $selectedDate)
+            ->when($selectedProjectId, fn ($query) => $query->where('project_id', $selectedProjectId));
+
+        $issues = (clone $baseCreatedQuery)
+            ->with(['project:id,name,client_id', 'project.client:id,name', 'tags'])
+            ->where('status', $selectedStatus)
+            ->orderByDesc('created_at')
+            ->get();
+
+        $statusCounts = collect(['todo', 'inprogress', 'done'])->mapWithKeys(
+            fn (string $status) => [$status => (clone $baseCreatedQuery)->where('status', $status)->count()]
+        );
+
+        return Inertia::render('Issues/DailyActivity', [
+            'issues' => $issues,
+            'statusCounts' => $statusCounts,
+            'summary' => [
+                'created_total' => (clone $baseCreatedQuery)->count(),
+                'completed_total' => Issue::query()
+                    ->whereDate('done_at', $selectedDate)
+                    ->when($selectedProjectId, fn ($query) => $query->where('project_id', $selectedProjectId))
+                    ->count(),
+            ],
+            'projects' => Project::query()->orderBy('name')->get(['id', 'name']),
+            'filters' => [
+                'project_id' => $selectedProjectId,
+                'date' => $selectedDate,
+                'status' => $selectedStatus,
+            ],
+            'breadcrumbs' => [
+                ['label' => 'Home', 'href' => route('dashboard')],
+                ['label' => 'Issues', 'href' => route('issues.index')],
+                ['label' => 'Daily Activity'],
             ],
         ]);
     }
@@ -113,6 +206,7 @@ class IssueController extends Controller
 
         $this->issueService->storeAttachments($request, $issue);
         $this->issueService->syncLinks($validated['links'] ?? null, $issue);
+        $this->issueService->syncTags($validated['tag_names'] ?? null, $issue, $project->id);
 
         if ($returnToIssue) {
             return redirect()
@@ -135,6 +229,10 @@ class IssueController extends Controller
             'projects' => Project::query()->orderBy('name')->get(['id', 'name']),
             'projectIssues' => $this->issueService->issueOptionsForProject($issue->project_id, [$issue->id]),
             'parentIssueOptions' => $this->issueService->parentIssueOptions($issue),
+            'projectTags' => IssueTag::query()
+                ->where('project_id', $issue->project_id)
+                ->orderBy('name')
+                ->get(['id', 'name', 'project_id']),
             'breadcrumbs' => [
                 ['label' => 'Home', 'href' => route('dashboard')],
                 ['label' => 'Projects', 'href' => route('projects.index')],
@@ -172,6 +270,7 @@ class IssueController extends Controller
 
         $this->issueService->storeAttachments($request, $issue);
         $this->issueService->syncLinks($validated['links'] ?? null, $issue);
+        $this->issueService->syncTags($validated['tag_names'] ?? null, $issue, $project->id);
 
         return redirect()
             ->route('issues.show', $issue)

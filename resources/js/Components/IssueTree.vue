@@ -36,6 +36,9 @@ const issueNumber = (index) => [...props.path, index + 1].join('-');
                         <span class="nested-depth-marker">{{ issueNumber(index) }}</span>
                         <div>
                             <strong>{{ issue.title }}</strong>
+                            <div v-if="issue.tags?.length" class="d-flex flex-wrap gap-1 mt-1">
+                                <span v-for="tag in issue.tags" :key="tag.id" class="badge rounded-pill text-bg-light border">{{ tag.name }}</span>
+                            </div>
                             <!--small>{{ plainText(issue.description) || 'No description added yet.' }}</small-->
                         </div>
                     </Link>
