@@ -11,6 +11,8 @@ const props = defineProps({
 const form = useForm({
     site_name: props.settings?.site_name ?? '',
     issue_daily_target: props.settings?.issue_daily_target ?? 3,
+    issue_stale_days: props.settings?.issue_stale_days ?? 7,
+    issue_critical_days: props.settings?.issue_critical_days ?? 14,
 });
 
 const submit = () => {
@@ -51,6 +53,21 @@ const submit = () => {
                         <input v-model.number="form.issue_daily_target" type="number" min="1" max="50" class="form-control" :class="{ 'is-invalid-soft': form.errors.issue_daily_target }">
                         <small class="text-muted d-block mt-1">Used by Kanban "Today&apos;s target" widget. Range: 1 to 50.</small>
                         <FormError :message="form.errors.issue_daily_target" />
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Stale threshold (days)</label>
+                            <input v-model.number="form.issue_stale_days" type="number" min="1" max="60" class="form-control" :class="{ 'is-invalid-soft': form.errors.issue_stale_days }">
+                            <small class="text-muted d-block mt-1">Issues idle beyond this are treated as at-risk.</small>
+                            <FormError :message="form.errors.issue_stale_days" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Critical threshold (days)</label>
+                            <input v-model.number="form.issue_critical_days" type="number" min="1" max="120" class="form-control" :class="{ 'is-invalid-soft': form.errors.issue_critical_days }">
+                            <small class="text-muted d-block mt-1">Must be greater than or equal to stale threshold.</small>
+                            <FormError :message="form.errors.issue_critical_days" />
+                        </div>
                     </div>
 
                     <button class="btn btn-accent rounded-pill align-self-start" :disabled="form.processing">

@@ -17,6 +17,8 @@ class SiteSettingsController extends Controller
             'settings' => [
                 'site_name' => SiteMeta::value('site_name', 'Issue Tracker'),
                 'issue_daily_target' => (int) SiteMeta::value('issue_daily_target', (string) config('app.issue_daily_target', 3)),
+                'issue_stale_days' => (int) SiteMeta::value('issue_stale_days', (string) config('app.issue_stale_days', 7)),
+                'issue_critical_days' => (int) SiteMeta::value('issue_critical_days', (string) config('app.issue_critical_days', 14)),
             ],
             'breadcrumbs' => [
                 ['label' => 'Home', 'href' => route('dashboard')],
@@ -35,6 +37,16 @@ class SiteSettingsController extends Controller
         SiteMeta::query()->updateOrCreate(
             ['key' => 'issue_daily_target'],
             ['value' => (string) $request->validated('issue_daily_target')]
+        );
+
+        SiteMeta::query()->updateOrCreate(
+            ['key' => 'issue_stale_days'],
+            ['value' => (string) $request->validated('issue_stale_days')]
+        );
+
+        SiteMeta::query()->updateOrCreate(
+            ['key' => 'issue_critical_days'],
+            ['value' => (string) $request->validated('issue_critical_days')]
         );
 
         return redirect()

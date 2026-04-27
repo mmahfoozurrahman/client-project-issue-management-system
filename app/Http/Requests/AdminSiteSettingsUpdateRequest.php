@@ -16,6 +16,8 @@ class AdminSiteSettingsUpdateRequest extends FormRequest
         return [
             'site_name' => ['required', 'string', 'max:255'],
             'issue_daily_target' => ['required', 'integer', 'min:1', 'max:50'],
+            'issue_stale_days' => ['required', 'integer', 'min:1', 'max:60'],
+            'issue_critical_days' => ['required', 'integer', 'min:1', 'max:120', 'gte:issue_stale_days'],
         ];
     }
 }

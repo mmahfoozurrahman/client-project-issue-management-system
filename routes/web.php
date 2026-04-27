@@ -10,6 +10,7 @@ use App\Http\Controllers\ProjectController;
 use App\Models\Client;
 use App\Models\Issue;
 use App\Models\Project;
+use App\Models\SiteMeta;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Carbon;
@@ -24,7 +25,8 @@ Route::middleware('guest')->group(function (): void {
 
 Route::middleware('auth')->group(function (): void {
     Route::get('/dashboard', function (Request $request) {
-        $staleDays = max((int) config('app.issue_stale_days', 7), 1);
+        $staleDays = max((int) SiteMeta::value('issue_stale_days', (string) config('app.issue_stale_days', 7)), 1);
+        $criticalDays = max((int) SiteMeta::value('issue_critical_days', (string) config('app.issue_critical_days', 14)), $staleDays);
         $statusIssues = collect(['inprogress', 'todo', 'done'])->mapWithKeys(function (string $status) {
             $query = Issue::query()
                 ->with(['project:id,name,client_id', 'project.client:id,name', 'images', 'tags'])
@@ -74,13 +76,13 @@ Route::middleware('auth')->group(function (): void {
             ->whereNull('done_at')
             ->where('status', '!=', 'done')
             ->where('updated_at', '<=', Carbon::now()->subDays($staleDays))
-            ->where('updated_at', '>', Carbon::now()->subDays($staleDays + 7))
+            ->where('updated_at', '>', Carbon::now()->subDays($criticalDays))
             ->count();
 
         $pendingCritical = Issue::query()
             ->whereNull('done_at')
             ->where('status', '!=', 'done')
-            ->where('updated_at', '<=', Carbon::now()->subDays($staleDays + 7))
+            ->where('updated_at', '<=', Carbon::now()->subDays($criticalDays))
             ->count();
 
         $pendingFocusIssues = Issue::query()
@@ -105,6 +107,7 @@ Route::middleware('auth')->group(function (): void {
             ],
             'pendingNudges' => [
                 'stale_days' => $staleDays,
+                'critical_days' => $criticalDays,
                 'watch' => $pendingWatch,
                 'needs_attention' => $pendingNeedsAttention,
                 'critical' => $pendingCritical,

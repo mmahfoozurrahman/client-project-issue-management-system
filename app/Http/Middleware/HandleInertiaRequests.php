@@ -19,7 +19,8 @@ class HandleInertiaRequests extends Middleware
 
     public function share(Request $request): array
     {
-        $staleDays = max((int) config('app.issue_stale_days', 7), 1);
+        $staleDays = max((int) SiteMeta::value('issue_stale_days', (string) config('app.issue_stale_days', 7)), 1);
+        $criticalDays = max((int) SiteMeta::value('issue_critical_days', (string) config('app.issue_critical_days', 14)), $staleDays);
         $pendingNudgeCount = 0;
 
         if ($request->user()) {
@@ -39,6 +40,7 @@ class HandleInertiaRequests extends Middleware
                 'site_name' => SiteMeta::value('site_name', 'Issue Tracker'),
                 'pending_nudge_count' => $pendingNudgeCount,
                 'issue_stale_days' => $staleDays,
+                'issue_critical_days' => $criticalDays,
             ],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
