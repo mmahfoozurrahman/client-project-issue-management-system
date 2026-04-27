@@ -37,7 +37,7 @@ Route::middleware('auth')->group(function (): void {
                 ->where('status', $status);
 
             if ($status === 'done') {
-                $query->orderByDesc('done_at')->orderByDesc('updated_at');
+                $query->orderByDesc('updated_at');
             } else {
                 $query->latest();
             }

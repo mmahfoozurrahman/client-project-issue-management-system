@@ -125,7 +125,7 @@ class IssueController extends Controller
             'columns' => [
                 'todo' => $issues->get('todo', collect())->values(),
                 'inprogress' => $issues->get('inprogress', collect())->values(),
-                'done' => $issues->get('done', collect())->sortByDesc('done_at')->values(),
+                'done' => $issues->get('done', collect())->sortByDesc('updated_at')->values(),
             ],
             'todayTarget' => [
                 'target' => max($dailyTarget, 1),
@@ -184,11 +184,17 @@ class IssueController extends Controller
             ->groupBy('date_key')
             ->pluck('total', 'date_key');
 
-        $issues = (clone $baseCreatedQuery)
+        $issuesQuery = (clone $baseCreatedQuery)
             ->with(['project:id,name,client_id', 'project.client:id,name', 'tags'])
-            ->where('status', $selectedStatus)
-            ->orderByDesc('created_at')
-            ->get();
+            ->where('status', $selectedStatus);
+
+        if ($selectedStatus === 'done') {
+            $issuesQuery->orderByDesc('updated_at');
+        } else {
+            $issuesQuery->orderByDesc('created_at');
+        }
+
+        $issues = $issuesQuery->get();
 
         $staleDays = max((int) SiteMeta::value('issue_stale_days', (string) config('app.issue_stale_days', 3)), 1);
         $carryoverIssues = Issue::query()
