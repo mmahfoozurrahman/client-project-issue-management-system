@@ -24,6 +24,7 @@ Route::middleware('guest')->group(function (): void {
 
 Route::middleware('auth')->group(function (): void {
     Route::get('/dashboard', function (Request $request) {
+        $staleDays = max((int) config('app.issue_stale_days', 7), 1);
         $statusIssues = collect(['inprogress', 'todo', 'done'])->mapWithKeys(function (string $status) {
             $query = Issue::query()
                 ->with(['project:id,name,client_id', 'project.client:id,name', 'images', 'tags'])
@@ -62,6 +63,35 @@ Route::middleware('auth')->group(function (): void {
             ];
         })->values();
 
+        $pendingWatch = Issue::query()
+            ->whereNull('done_at')
+            ->where('status', '!=', 'done')
+            ->where('updated_at', '<=', Carbon::now()->subDays(max($staleDays - 3, 1)))
+            ->where('updated_at', '>', Carbon::now()->subDays($staleDays))
+            ->count();
+
+        $pendingNeedsAttention = Issue::query()
+            ->whereNull('done_at')
+            ->where('status', '!=', 'done')
+            ->where('updated_at', '<=', Carbon::now()->subDays($staleDays))
+            ->where('updated_at', '>', Carbon::now()->subDays($staleDays + 7))
+            ->count();
+
+        $pendingCritical = Issue::query()
+            ->whereNull('done_at')
+            ->where('status', '!=', 'done')
+            ->where('updated_at', '<=', Carbon::now()->subDays($staleDays + 7))
+            ->count();
+
+        $pendingFocusIssues = Issue::query()
+            ->with(['project:id,name,client_id', 'project.client:id,name', 'tags'])
+            ->whereNull('done_at')
+            ->where('status', '!=', 'done')
+            ->where('updated_at', '<=', Carbon::now()->subDays($staleDays))
+            ->orderBy('updated_at')
+            ->limit(6)
+            ->get();
+
         return Inertia::render('Dashboard', [
             'counts' => [
                 'clients' => Client::query()->count(),
@@ -72,6 +102,13 @@ Route::middleware('auth')->group(function (): void {
             'analytics' => [
                 'weekly' => $weekly,
                 'monthly' => $monthly,
+            ],
+            'pendingNudges' => [
+                'stale_days' => $staleDays,
+                'watch' => $pendingWatch,
+                'needs_attention' => $pendingNeedsAttention,
+                'critical' => $pendingCritical,
+                'focus_issues' => $pendingFocusIssues,
             ],
             'breadcrumbs' => [
                 ['label' => 'Home'],

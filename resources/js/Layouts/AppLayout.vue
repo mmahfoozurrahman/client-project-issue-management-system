@@ -24,6 +24,7 @@ const user = computed(() => page.props.auth?.user);
 const isAdmin = computed(() => Boolean(user.value?.is_admin));
 const currentUrl = computed(() => page.url);
 const siteName = computed(() => page.props.app?.site_name || 'Issue Tracker');
+const pendingNudgeCount = computed(() => Number(page.props.app?.pending_nudge_count ?? 0));
 
 const navItems = computed(() => [
     { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -111,6 +112,13 @@ const isItemActive = (href) => {
                     <p class="section-kicker">{{ title || 'Workspace' }}</p>
                     <Breadcrumbs :items="breadcrumbs" />
                 </div>
+                <Link
+                    v-if="pendingNudgeCount > 0"
+                    href="/issues?status=inprogress"
+                    class="btn btn-sm btn-light border rounded-pill ms-auto"
+                >
+                    {{ pendingNudgeCount }} aging issues
+                </Link>
             </header>
 
             <main class="page-body">

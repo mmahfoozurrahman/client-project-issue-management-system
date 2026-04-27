@@ -7,6 +7,8 @@ import AppLayout from '../../Layouts/AppLayout.vue';
 const props = defineProps({
     columns: Object,
     todayTarget: Object,
+    laneNudges: Object,
+    staleDays: Number,
     projects: Array,
     filters: Object,
     breadcrumbs: Array,
@@ -76,6 +78,14 @@ const todayTargetRate = computed(() => {
 
     return Math.min(Math.round((completed / target) * 100), 100);
 });
+
+const isStale = (issue) => {
+    if (issue.status === 'done') return false;
+    const days = Number(props.staleDays ?? 7);
+    const updated = issue.updated_at ? new Date(issue.updated_at) : null;
+    if (!updated) return false;
+    return updated <= new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+};
 </script>
 
 <template>
@@ -175,6 +185,9 @@ const todayTargetRate = computed(() => {
                         <div>
                             <h4>{{ column.title }}</h4>
                             <small>{{ column.subtitle }}</small>
+                            <small v-if="column.key !== 'done' && (laneNudges?.[column.key] ?? 0)" class="d-block" style="color:#8c6a3a;">
+                                {{ laneNudges?.[column.key] }} item(s) idle > {{ staleDays || 7 }}d
+                            </small>
                         </div>
                         <span class="kanban-count-pill">{{ columns[column.key]?.length || 0 }}</span>
                     </div>
@@ -187,12 +200,15 @@ const todayTargetRate = computed(() => {
                             :key="issue.id"
                             :href="`/issues/${issue.id}`"
                             class="kanban-row-card"
+                            :class="{ 'stale-card': isStale(issue) }"
                         >
                             <div>
                                 <strong>{{ issue.title }}</strong>
                                 <span>{{ issue.project?.client?.name || 'No client' }} / {{ issue.project?.name || 'No project' }}</span>
-                                <small v-if="column.key === 'done'" class="kanban-date-meta">Completed {{ formatDoneDate(issue.done_at) }}</small>
-                                <small v-else class="kanban-date-meta">Created {{ formatIssueDate(issue.created_at) }}</small>
+                                <small class="kanban-date-meta">Created {{ formatIssueDate(issue.created_at) }}</small>
+                                <small v-if="column.key === 'done'" class="kanban-date-meta" style="color:#1f7a6e;font-weight:600;">
+                                    Completed {{ formatDoneDate(issue.done_at) }}
+                                </small>
                                 <div v-if="issue.tags?.length" class="d-flex flex-wrap gap-1 mt-2">
                                     <span v-for="tag in issue.tags" :key="tag.id" class="badge rounded-pill text-bg-light border">{{ tag.name }}</span>
                                 </div>
@@ -326,6 +342,11 @@ const todayTargetRate = computed(() => {
     transform: translateY(-1px);
     border-color: #bfdbd3;
     box-shadow: 0 8px 18px rgba(36, 79, 70, 0.11);
+}
+
+.stale-card {
+    border-color: #e7d9bf;
+    background: linear-gradient(180deg, #fffdf8 0%, #fdf8ef 100%);
 }
 
 .target-widget {

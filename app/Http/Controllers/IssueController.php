@@ -33,8 +33,10 @@ class IssueController extends Controller
             'status' => ['nullable', 'string', Rule::in(['todo', 'inprogress', 'done'])],
             'tag_id' => ['nullable', 'integer', Rule::exists(IssueTag::class, 'id')],
             'q' => ['nullable', 'string', 'max:255'],
+            'at_risk' => ['nullable', 'boolean'],
         ]);
 
+        $staleDays = max((int) config('app.issue_stale_days', 7), 1);
         $query = Issue::query()
             ->with(['project:id,name,client_id', 'project.client:id,name', 'parentIssue:id,title', 'images', 'files', 'links', 'tags'])
             ->withCount(['subIssues', 'images', 'files'])
@@ -65,6 +67,12 @@ class IssueController extends Controller
             });
         }
 
+        if ((bool) $request->input('at_risk')) {
+            $query
+                ->where('status', '!=', 'done')
+                ->where('updated_at', '<=', Carbon::now()->subDays($staleDays));
+        }
+
         $tagQuery = IssueTag::query()->orderBy('name');
         if ($request->filled('project_id')) {
             $tagQuery->where('project_id', (int) $request->input('project_id'));
@@ -79,7 +87,9 @@ class IssueController extends Controller
                 'status' => $request->input('status'),
                 'tag_id' => $request->input('tag_id'),
                 'q' => $request->input('q'),
+                'at_risk' => (bool) $request->input('at_risk'),
             ],
+            'staleDays' => $staleDays,
             'breadcrumbs' => [
                 ['label' => 'Home', 'href' => route('dashboard')],
                 ['label' => 'Issues'],
@@ -105,6 +115,7 @@ class IssueController extends Controller
             ->groupBy('status');
 
         $dailyTarget = max((int) SiteMeta::value('issue_daily_target', (string) config('app.issue_daily_target', 3)), 1);
+        $staleDays = max((int) config('app.issue_stale_days', 7), 1);
         $completedToday = Issue::query()
             ->whereDate('done_at', Carbon::today())
             ->when($project, fn ($query) => $query->where('project_id', $project->id))
@@ -121,6 +132,15 @@ class IssueController extends Controller
                 'completed' => $completedToday,
                 'remaining' => max(max($dailyTarget, 1) - $completedToday, 0),
             ],
+            'laneNudges' => [
+                'todo' => ($issues->get('todo', collect()))
+                    ->filter(fn (Issue $issue) => $issue->updated_at <= Carbon::now()->subDays($staleDays))
+                    ->count(),
+                'inprogress' => ($issues->get('inprogress', collect()))
+                    ->filter(fn (Issue $issue) => $issue->updated_at <= Carbon::now()->subDays($staleDays))
+                    ->count(),
+            ],
+            'staleDays' => $staleDays,
             'projects' => Project::query()->orderBy('name')->get(['id', 'name']),
             'filters' => [
                 'project_id' => $request->input('project_id'),
@@ -170,6 +190,17 @@ class IssueController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
+        $staleDays = max((int) config('app.issue_stale_days', 7), 1);
+        $carryoverIssues = Issue::query()
+            ->with(['project:id,name,client_id', 'project.client:id,name', 'tags'])
+            ->whereDate('created_at', '<', $selectedDate)
+            ->where('status', '!=', 'done')
+            ->where('updated_at', '<=', Carbon::now()->subDays($staleDays))
+            ->when($selectedProjectId, fn ($query) => $query->where('project_id', $selectedProjectId))
+            ->orderBy('updated_at')
+            ->limit(6)
+            ->get();
+
         $statusCounts = collect(['todo', 'inprogress', 'done'])->mapWithKeys(
             fn (string $status) => [$status => (clone $baseCreatedQuery)->where('status', $status)->count()]
         );
@@ -184,6 +215,7 @@ class IssueController extends Controller
                     ->when($selectedProjectId, fn ($query) => $query->where('project_id', $selectedProjectId))
                     ->count(),
             ],
+            'carryoverIssues' => $carryoverIssues,
             'projects' => Project::query()->orderBy('name')->get(['id', 'name']),
             'filters' => [
                 'project_id' => $selectedProjectId,

@@ -8,6 +8,7 @@ const props = defineProps({
     counts: Object,
     statusIssues: Object,
     analytics: Object,
+    pendingNudges: Object,
     breadcrumbs: Array,
 });
 
@@ -30,12 +31,11 @@ const formatIssueDate = (value) => {
     }).format(new Date(value));
 };
 
-const issueDateLabel = (issue) => {
-    if (issue.status === 'done') {
-        return issue.done_at ? `Completed ${formatIssueDate(issue.done_at)}` : 'Completed recently';
-    }
-
-    return `Created ${formatIssueDate(issue.created_at)}`;
+const staleAgeLabel = (issue) => {
+    const updated = issue.updated_at ? new Date(issue.updated_at) : null;
+    if (!updated) return '-';
+    const days = Math.floor((Date.now() - updated.getTime()) / (1000 * 60 * 60 * 24));
+    return days > 0 ? `${days}d idle` : 'today';
 };
 
 const weeklyChart = computed(() => props.analytics?.weekly ?? []);
@@ -138,6 +138,60 @@ const monthlyMax = computed(() => {
             </div>
         </section>
 
+        <section class="panel-card mb-4">
+            <div class="panel-header">
+                <div>
+                    <p class="section-kicker">Gentle Nudges</p>
+                    <h3 class="panel-title">Pending issues that may need attention</h3>
+                </div>
+                <Link href="/issues?at_risk=1" class="btn btn-outline-dark rounded-pill">Open At Risk</Link>
+            </div>
+
+            <div class="status-tabs mb-3">
+                <div class="status-tab-btn">
+                    <strong>Watch</strong>
+                    <small>Early drift</small>
+                    <span class="status-count">{{ pendingNudges?.watch ?? 0 }}</span>
+                </div>
+                <div class="status-tab-btn">
+                    <strong>Needs Attention</strong>
+                    <small>Getting stale</small>
+                    <span class="status-count">{{ pendingNudges?.needs_attention ?? 0 }}</span>
+                </div>
+                <div class="status-tab-btn">
+                    <strong>Critical</strong>
+                    <small>Long idle</small>
+                    <span class="status-count">{{ pendingNudges?.critical ?? 0 }}</span>
+                </div>
+            </div>
+
+            <div class="compact-table-shell">
+                <table class="compact-table">
+                    <thead>
+                        <tr>
+                            <th>Issue</th>
+                            <th>Status</th>
+                            <th>Idle</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="issue in pendingNudges?.focus_issues ?? []" :key="`nudge-${issue.id}`">
+                            <td>{{ issue.title }}</td>
+                            <td><StatusPill :status="issue.status" /></td>
+                            <td>{{ staleAgeLabel(issue) }}</td>
+                            <td class="text-end"><Link :href="`/issues/${issue.id}`" class="btn btn-sm btn-light rounded-pill">Open</Link></td>
+                        </tr>
+                        <tr v-if="!(pendingNudges?.focus_issues?.length)">
+                            <td colspan="4">
+                                <div class="table-empty">No stale issues right now. Great momentum.</div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
         <section class="panel-card">
             <div class="panel-header">
                 <div>
@@ -180,11 +234,9 @@ const monthlyMax = computed(() => {
                                     <span class="table-avatar issue">{{ issue.title.slice(0, 1) }}</span>
                                     <div>
                                         <strong>{{ issue.title }}</strong>
-                                        <small
-                                            class="issue-date-meta"
-                                            :style="issue.status === 'done' ? { color: '#1f7a6e', fontWeight: '600' } : {}"
-                                        >
-                                            {{ issueDateLabel(issue) }}
+                                        <small class="issue-date-meta">Created {{ formatIssueDate(issue.created_at) }}</small>
+                                        <small v-if="issue.status === 'done'" class="issue-date-meta" :style="{ color: '#1f7a6e', fontWeight: '600' }">
+                                            Completed {{ formatIssueDate(issue.done_at) }}
                                         </small>
                                         <div v-if="issue.tags?.length" class="d-flex flex-wrap gap-1 mt-2">
                                             <span v-for="tag in issue.tags" :key="tag.id" class="badge rounded-pill text-bg-light border">{{ tag.name }}</span>

@@ -124,5 +124,6 @@ return [
     ],
 
     'issue_daily_target' => (int) env('ISSUE_DAILY_TARGET', 3),
+    'issue_stale_days' => (int) env('ISSUE_STALE_DAYS', 7),
 
 ];
