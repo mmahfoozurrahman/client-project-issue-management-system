@@ -25,6 +25,7 @@ const isAdmin = computed(() => Boolean(user.value?.is_admin));
 const currentUrl = computed(() => page.url);
 const siteName = computed(() => page.props.app?.site_name || 'Issue Tracker');
 const pendingNudgeCount = computed(() => Number(page.props.app?.pending_nudge_count ?? 0));
+const pendingCriticalCount = computed(() => Number(page.props.app?.pending_critical_count ?? 0));
 
 const navItems = computed(() => [
     { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -114,10 +115,16 @@ const isItemActive = (href) => {
                 </div>
                 <Link
                     v-if="pendingNudgeCount > 0"
-                    href="/issues?status=inprogress"
-                    class="btn btn-sm btn-light border rounded-pill ms-auto"
+                    href="/issues?at_risk=1"
+                    class="btn btn-sm rounded-pill ms-auto"
+                    :class="pendingCriticalCount > 0 ? 'btn-danger' : 'btn-warning'"
                 >
-                    {{ pendingNudgeCount }} aging issues
+                    <template v-if="pendingCriticalCount > 0">
+                        {{ pendingCriticalCount }} critical idle
+                    </template>
+                    <template v-else>
+                        {{ pendingNudgeCount }} aging issues
+                    </template>
                 </Link>
             </header>
 

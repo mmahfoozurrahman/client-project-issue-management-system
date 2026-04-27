@@ -36,7 +36,7 @@ class IssueController extends Controller
             'at_risk' => ['nullable', 'boolean'],
         ]);
 
-        $staleDays = max((int) SiteMeta::value('issue_stale_days', (string) config('app.issue_stale_days', 7)), 1);
+        $staleDays = max((int) SiteMeta::value('issue_stale_days', (string) config('app.issue_stale_days', 3)), 1);
         $query = Issue::query()
             ->with(['project:id,name,client_id', 'project.client:id,name', 'parentIssue:id,title', 'images', 'files', 'links', 'tags'])
             ->withCount(['subIssues', 'images', 'files'])
@@ -115,7 +115,7 @@ class IssueController extends Controller
             ->groupBy('status');
 
         $dailyTarget = max((int) SiteMeta::value('issue_daily_target', (string) config('app.issue_daily_target', 3)), 1);
-        $staleDays = max((int) SiteMeta::value('issue_stale_days', (string) config('app.issue_stale_days', 7)), 1);
+        $staleDays = max((int) SiteMeta::value('issue_stale_days', (string) config('app.issue_stale_days', 3)), 1);
         $completedToday = Issue::query()
             ->whereDate('done_at', Carbon::today())
             ->when($project, fn ($query) => $query->where('project_id', $project->id))
@@ -190,7 +190,7 @@ class IssueController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
-        $staleDays = max((int) SiteMeta::value('issue_stale_days', (string) config('app.issue_stale_days', 7)), 1);
+        $staleDays = max((int) SiteMeta::value('issue_stale_days', (string) config('app.issue_stale_days', 3)), 1);
         $carryoverIssues = Issue::query()
             ->with(['project:id,name,client_id', 'project.client:id,name', 'tags'])
             ->whereDate('created_at', '<', $selectedDate)

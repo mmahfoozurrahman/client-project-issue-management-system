@@ -1,6 +1,6 @@
 <script setup>
 import { computed, reactive, ref } from 'vue';
-import { Head, router } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import StatusPill from '../../Components/StatusPill.vue';
 import AppLayout from '../../Layouts/AppLayout.vue';
 
@@ -16,6 +16,9 @@ const props = defineProps({
 });
 
 const loading = ref(false);
+const page = usePage();
+const staleDays = computed(() => Number(page.props.app?.issue_stale_days ?? 3));
+const criticalDays = computed(() => Number(page.props.app?.issue_critical_days ?? 7));
 const weekdayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const filterState = reactive({
@@ -141,11 +144,23 @@ const formatIssueDate = (value) => {
     }).format(new Date(value));
 };
 
-const staleAgeLabel = (issue) => {
+const staleAgeDays = (issue) => {
     const updated = issue.updated_at ? new Date(issue.updated_at) : null;
-    if (!updated) return '';
+    if (!updated) return 0;
     const days = Math.floor((Date.now() - updated.getTime()) / (1000 * 60 * 60 * 24));
+    return days > 0 ? days : 0;
+};
+
+const staleAgeLabel = (issue) => {
+    const days = staleAgeDays(issue);
     return days > 0 ? `${days}d idle` : 'today';
+};
+
+const carryoverIdleClass = (issue) => {
+    const days = staleAgeDays(issue);
+    if (days >= criticalDays.value) return 'carryover-idle-critical';
+    if (days >= staleDays.value) return 'carryover-idle-watch';
+    return '';
 };
 </script>
 
@@ -263,7 +278,7 @@ const staleAgeLabel = (issue) => {
                         <tr v-for="issue in carryoverIssues ?? []" :key="`carry-${issue.id}`">
                             <td>{{ issue.title }}</td>
                             <td><StatusPill :status="issue.status" /></td>
-                            <td>{{ staleAgeLabel(issue) }}</td>
+                            <td :class="carryoverIdleClass(issue)">{{ staleAgeLabel(issue) }}</td>
                             <td class="text-end"><Link :href="`/issues/${issue.id}`" class="btn btn-sm btn-light rounded-pill">Open</Link></td>
                         </tr>
                         <tr v-if="!(carryoverIssues?.length)">
@@ -485,6 +500,16 @@ const staleAgeLabel = (issue) => {
     border-color: #2a9d8f;
     background: linear-gradient(135deg, #e8f8f3 0%, #f5fbf9 100%);
     box-shadow: 0 8px 18px rgba(36, 80, 70, 0.11);
+}
+
+.carryover-idle-watch {
+    color: #a2611d;
+    font-weight: 600;
+}
+
+.carryover-idle-critical {
+    color: #b42323;
+    font-weight: 700;
 }
 
 @media (max-width: 1000px) {

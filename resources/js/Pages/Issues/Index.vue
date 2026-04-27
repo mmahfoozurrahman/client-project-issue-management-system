@@ -1,6 +1,6 @@
 <script setup>
 import { computed, reactive, ref } from 'vue';
-import { Head, router, useForm } from '@inertiajs/vue3';
+import { Head, router, useForm, usePage } from '@inertiajs/vue3';
 import FormError from '../../Components/FormError.vue';
 import Modal from '../../Components/Modal.vue';
 import SkeletonCard from '../../Components/SkeletonCard.vue';
@@ -19,7 +19,10 @@ const props = defineProps({
 
 const loading = ref(false);
 const modalOpen = ref(false);
+const page = usePage();
 const issueRows = computed(() => props.issues?.data ?? props.issues ?? []);
+const staleDays = computed(() => Number(page.props.app?.issue_stale_days ?? 3));
+const criticalDays = computed(() => Number(page.props.app?.issue_critical_days ?? 7));
 const formatIssueDate = (value) => {
     if (!value) return 'Recently created';
 
@@ -113,12 +116,25 @@ const availableTagNames = computed(() => {
         .map((tag) => tag.name);
 });
 
-const staleAgeLabel = (issue) => {
+const staleAgeDays = (issue) => {
     if (issue.status === 'done') return '';
     const updated = issue.updated_at ? new Date(issue.updated_at) : null;
     if (!updated) return '';
     const days = Math.floor((Date.now() - updated.getTime()) / (1000 * 60 * 60 * 24));
-    return days > 0 ? `${days}d idle` : '';
+    return days > 0 ? days : 0;
+};
+
+const staleAgeLabel = (issue) => {
+    const days = staleAgeDays(issue);
+    return days ? `${days}d idle` : '';
+};
+
+const idleMetaClass = (issue) => {
+    const days = staleAgeDays(issue);
+    if (!days) return '';
+    if (days >= criticalDays.value) return 'issue-idle-critical';
+    if (days >= staleDays.value) return 'issue-idle-watch';
+    return '';
 };
 </script>
 
@@ -196,7 +212,7 @@ const staleAgeLabel = (issue) => {
                                         <small v-if="issue.status === 'done'" class="issue-date-meta" :style="{ color: '#1f7a6e', fontWeight: '600' }">
                                             Completed {{ formatIssueDate(issue.done_at) }}
                                         </small>
-                                        <small v-else-if="staleAgeLabel(issue)" class="issue-date-meta" style="color:#997744;">
+                                        <small v-else-if="staleAgeLabel(issue)" class="issue-date-meta" :class="idleMetaClass(issue)">
                                             {{ staleAgeLabel(issue) }}
                                         </small>
                                         <div v-if="issue.tags?.length" class="d-flex flex-wrap gap-1 mt-2">
@@ -334,3 +350,15 @@ const staleAgeLabel = (issue) => {
         </Modal>
     </AppLayout>
 </template>
+
+<style scoped>
+.issue-idle-watch {
+    color: #a2611d;
+    font-weight: 600;
+}
+
+.issue-idle-critical {
+    color: #b42323;
+    font-weight: 700;
+}
+</style>

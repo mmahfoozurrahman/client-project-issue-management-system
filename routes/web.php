@@ -25,8 +25,10 @@ Route::middleware('guest')->group(function (): void {
 
 Route::middleware('auth')->group(function (): void {
     Route::get('/dashboard', function (Request $request) {
-        $staleDays = max((int) SiteMeta::value('issue_stale_days', (string) config('app.issue_stale_days', 7)), 1);
-        $criticalDays = max((int) SiteMeta::value('issue_critical_days', (string) config('app.issue_critical_days', 14)), $staleDays);
+        $staleDays = max((int) SiteMeta::value('issue_stale_days', (string) config('app.issue_stale_days', 3)), 1);
+        $criticalDays = max((int) SiteMeta::value('issue_critical_days', (string) config('app.issue_critical_days', 7)), $staleDays);
+        $needsAttentionStartDays = $staleDays + max((int) floor(max($criticalDays - $staleDays, 1) / 2), 1);
+        $needsAttentionStartDays = min($needsAttentionStartDays, $criticalDays);
         $statusIssues = collect(['inprogress', 'todo', 'done'])->mapWithKeys(function (string $status) {
             $query = Issue::query()
                 ->with(['project:id,name,client_id', 'project.client:id,name', 'images', 'tags'])
@@ -68,14 +70,14 @@ Route::middleware('auth')->group(function (): void {
         $pendingWatch = Issue::query()
             ->whereNull('done_at')
             ->where('status', '!=', 'done')
-            ->where('updated_at', '<=', Carbon::now()->subDays(max($staleDays - 3, 1)))
-            ->where('updated_at', '>', Carbon::now()->subDays($staleDays))
+            ->where('updated_at', '<=', Carbon::now()->subDays($staleDays))
+            ->where('updated_at', '>', Carbon::now()->subDays($needsAttentionStartDays))
             ->count();
 
         $pendingNeedsAttention = Issue::query()
             ->whereNull('done_at')
             ->where('status', '!=', 'done')
-            ->where('updated_at', '<=', Carbon::now()->subDays($staleDays))
+            ->where('updated_at', '<=', Carbon::now()->subDays($needsAttentionStartDays))
             ->where('updated_at', '>', Carbon::now()->subDays($criticalDays))
             ->count();
 

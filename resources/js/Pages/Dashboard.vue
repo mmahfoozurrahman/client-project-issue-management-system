@@ -38,6 +38,29 @@ const staleAgeLabel = (issue) => {
     return days > 0 ? `${days}d idle` : 'today';
 };
 
+const idleDays = (issue) => {
+    const updated = issue.updated_at ? new Date(issue.updated_at) : null;
+    if (!updated) return 0;
+    return Math.max(Math.floor((Date.now() - updated.getTime()) / (1000 * 60 * 60 * 24)), 0);
+};
+
+const idleSeverity = (issue) => {
+    const days = idleDays(issue);
+    const stale = Number(props.pendingNudges?.stale_days ?? 3);
+    const critical = Number(props.pendingNudges?.critical_days ?? 7);
+
+    if (days >= critical) return 'critical';
+    if (days >= stale) return 'watch';
+    return 'normal';
+};
+
+const idleSeverityClass = (issue) => {
+    const severity = idleSeverity(issue);
+    if (severity === 'critical') return 'idle-critical';
+    if (severity === 'watch') return 'idle-watch';
+    return '';
+};
+
 const weeklyChart = computed(() => props.analytics?.weekly ?? []);
 const monthlyChart = computed(() => props.analytics?.monthly ?? []);
 
@@ -148,17 +171,17 @@ const monthlyMax = computed(() => {
             </div>
 
             <div class="status-tabs mb-3">
-                <div class="status-tab-btn">
+                <div class="status-tab-btn nudge-watch">
                     <strong>Watch</strong>
                     <small>Early drift</small>
                     <span class="status-count">{{ pendingNudges?.watch ?? 0 }}</span>
                 </div>
-                <div class="status-tab-btn">
+                <div class="status-tab-btn nudge-needs">
                     <strong>Needs Attention</strong>
                     <small>Getting stale</small>
                     <span class="status-count">{{ pendingNudges?.needs_attention ?? 0 }}</span>
                 </div>
-                <div class="status-tab-btn">
+                <div class="status-tab-btn nudge-critical">
                     <strong>Critical</strong>
                     <small>Long idle</small>
                     <span class="status-count">{{ pendingNudges?.critical ?? 0 }}</span>
@@ -179,7 +202,7 @@ const monthlyMax = computed(() => {
                         <tr v-for="issue in pendingNudges?.focus_issues ?? []" :key="`nudge-${issue.id}`">
                             <td>{{ issue.title }}</td>
                             <td><StatusPill :status="issue.status" /></td>
-                            <td>{{ staleAgeLabel(issue) }}</td>
+                            <td :class="idleSeverityClass(issue)">{{ staleAgeLabel(issue) }}</td>
                             <td class="text-end"><Link :href="`/issues/${issue.id}`" class="btn btn-sm btn-light rounded-pill">Open</Link></td>
                         </tr>
                         <tr v-if="!(pendingNudges?.focus_issues?.length)">
@@ -307,6 +330,46 @@ const monthlyMax = computed(() => {
     background: linear-gradient(135deg, #e6f6f1 0%, #f4fbf9 100%);
     box-shadow: 0 10px 24px rgba(25, 80, 71, 0.12);
     transform: translateY(-1px);
+}
+
+.status-tab-btn.nudge-watch {
+    background: #fff8eb;
+    border-color: #f2d39b;
+}
+
+.status-tab-btn.nudge-watch .status-count {
+    background: #ffe9c0;
+    color: #8c5a17;
+}
+
+.status-tab-btn.nudge-needs {
+    background: #fff2eb;
+    border-color: #efc2a8;
+}
+
+.status-tab-btn.nudge-needs .status-count {
+    background: #ffd8c4;
+    color: #9c3c20;
+}
+
+.status-tab-btn.nudge-critical {
+    background: #fff0f0;
+    border-color: #efb4b4;
+}
+
+.status-tab-btn.nudge-critical .status-count {
+    background: #ffd0d0;
+    color: #9f1f1f;
+}
+
+.idle-watch {
+    color: #a2611d;
+    font-weight: 600;
+}
+
+.idle-critical {
+    color: #b42323;
+    font-weight: 700;
 }
 
 .analytics-card {

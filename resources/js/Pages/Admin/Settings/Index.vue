@@ -11,8 +11,8 @@ const props = defineProps({
 const form = useForm({
     site_name: props.settings?.site_name ?? '',
     issue_daily_target: props.settings?.issue_daily_target ?? 3,
-    issue_stale_days: props.settings?.issue_stale_days ?? 7,
-    issue_critical_days: props.settings?.issue_critical_days ?? 14,
+    issue_stale_days: props.settings?.issue_stale_days ?? 3,
+    issue_critical_days: props.settings?.issue_critical_days ?? 7,
 });
 
 const submit = () => {

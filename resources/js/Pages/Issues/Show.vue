@@ -24,6 +24,18 @@ const issueImages = ref([...(props.issue.images ?? [])]);
 const issueFiles = ref([...(props.issue.files ?? [])]);
 const issueLinks = ref([...(props.issue.links ?? [])]);
 const issueTags = ref([...(props.issue.tags ?? [])]);
+const isDoneIssue = computed(() => props.issue.status === 'done');
+const formatMetaDate = (value) => {
+    if (!value) return null;
+
+    return new Intl.DateTimeFormat('en-US', {
+        month: 'short',
+        day: '2-digit',
+        year: 'numeric',
+    }).format(new Date(value));
+};
+const createdDateLabel = computed(() => formatMetaDate(props.issue.created_at));
+const completedDateLabel = computed(() => (isDoneIssue.value ? formatMetaDate(props.issue.done_at) : null));
 
 const updateForm = useForm({
     title: props.issue.title,
@@ -313,6 +325,14 @@ const deleteLink = (link) => {
             <div>
                 <span class="pill-tag">Issue Detail</span>
                 <h2>{{ issue.title }}</h2>
+                <div class="d-flex flex-wrap gap-2 mt-2">
+                    <span v-if="createdDateLabel" class="badge rounded-pill text-bg-light border">
+                        Created {{ createdDateLabel }}
+                    </span>
+                    <span v-if="completedDateLabel" class="badge rounded-pill border" style="background:#e6f5ee; color:#176848; border-color:#b7e3cc !important;">
+                        Completed {{ completedDateLabel }}
+                    </span>
+                </div>
                 <!-- <div v-if="issue.description" class="hero-copy rich-display" v-html="issue.description" />
                 <p v-else class="hero-copy">No description added yet.</p> -->
             </div>

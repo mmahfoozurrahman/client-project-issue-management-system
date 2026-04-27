@@ -1,6 +1,6 @@
 <script setup>
 import { computed, reactive, ref } from 'vue';
-import { Head, router } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import SkeletonCard from '../../Components/SkeletonCard.vue';
 import AppLayout from '../../Layouts/AppLayout.vue';
 
@@ -15,6 +15,8 @@ const props = defineProps({
 });
 
 const loading = ref(false);
+const page = usePage();
+const criticalDays = computed(() => Number(page.props.app?.issue_critical_days ?? 7));
 const searchFilters = reactive({
     project_id: props.filters?.project_id ?? '',
 });
@@ -79,12 +81,32 @@ const todayTargetRate = computed(() => {
     return Math.min(Math.round((completed / target) * 100), 100);
 });
 
-const isStale = (issue) => {
-    if (issue.status === 'done') return false;
-    const days = Number(props.staleDays ?? 7);
+const staleLevel = (issue) => {
+    if (issue.status === 'done') return 'none';
+    const days = Number(props.staleDays ?? 3);
+    const critical = Number(criticalDays.value ?? 7);
     const updated = issue.updated_at ? new Date(issue.updated_at) : null;
-    if (!updated) return false;
-    return updated <= new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    if (!updated) return 'none';
+
+    const idleDays = Math.floor((Date.now() - updated.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (idleDays >= critical) return 'critical';
+    if (idleDays >= days) return 'watch';
+    return 'none';
+};
+
+const criticalLaneCount = (columnKey) => (props.columns?.[columnKey] ?? [])
+    .filter((issue) => staleLevel(issue) === 'critical')
+    .length;
+
+const hasCriticalLane = (columnKey) => criticalLaneCount(columnKey) > 0;
+
+const laneHintStyle = (columnKey) => {
+    if (hasCriticalLane(columnKey)) {
+        return { color: '#b42323', fontWeight: 700 };
+    }
+
+    return { color: '#8c6a3a', fontWeight: 600 };
 };
 </script>
 
@@ -185,8 +207,11 @@ const isStale = (issue) => {
                         <div>
                             <h4>{{ column.title }}</h4>
                             <small>{{ column.subtitle }}</small>
-                            <small v-if="column.key !== 'done' && (laneNudges?.[column.key] ?? 0)" class="d-block" style="color:#8c6a3a;">
-                                {{ laneNudges?.[column.key] }} item(s) idle > {{ staleDays || 7 }}d
+                            <small v-if="column.key !== 'done' && (laneNudges?.[column.key] ?? 0)" class="d-block" :style="laneHintStyle(column.key)">
+                                {{ laneNudges?.[column.key] }} item(s) idle >= {{ staleDays || 3 }}d
+                                <template v-if="hasCriticalLane(column.key)">
+                                    · {{ criticalLaneCount(column.key) }} critical (>= {{ criticalDays || 7 }}d)
+                                </template>
                             </small>
                         </div>
                         <span class="kanban-count-pill">{{ columns[column.key]?.length || 0 }}</span>
@@ -200,7 +225,10 @@ const isStale = (issue) => {
                             :key="issue.id"
                             :href="`/issues/${issue.id}`"
                             class="kanban-row-card"
-                            :class="{ 'stale-card': isStale(issue) }"
+                            :class="{
+                                'stale-card': staleLevel(issue) === 'watch',
+                                'stale-card-critical': staleLevel(issue) === 'critical',
+                            }"
                         >
                             <div>
                                 <strong>{{ issue.title }}</strong>
@@ -347,6 +375,11 @@ const isStale = (issue) => {
 .stale-card {
     border-color: #e7d9bf;
     background: linear-gradient(180deg, #fffdf8 0%, #fdf8ef 100%);
+}
+
+.stale-card-critical {
+    border-color: #efb4b4;
+    background: linear-gradient(180deg, #fff5f5 0%, #ffeaea 100%);
 }
 
 .target-widget {
