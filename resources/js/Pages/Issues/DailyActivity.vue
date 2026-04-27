@@ -10,13 +10,16 @@ const props = defineProps({
     summary: Object,
     projects: Array,
     filters: Object,
+    calendar: Object,
     breadcrumbs: Array,
 });
 
 const loading = ref(false);
+const weekdayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const filterState = reactive({
     date: props.filters?.date ?? '',
+    month: props.filters?.month ?? '',
     project_id: props.filters?.project_id ?? '',
     status: props.filters?.status ?? 'inprogress',
 });
@@ -28,6 +31,62 @@ const statusCards = computed(() => [
 ]);
 
 const issueRows = computed(() => props.issues ?? []);
+const monthCounts = computed(() => props.calendar?.counts ?? {});
+
+const monthStartDate = computed(() => {
+    const fallback = filterState.date || new Date().toISOString().slice(0, 10);
+    const source = filterState.month ? `${filterState.month}-01` : fallback;
+
+    return new Date(`${source}T00:00:00`);
+});
+
+const monthLabel = computed(() => new Intl.DateTimeFormat('en-US', {
+    month: 'long',
+    year: 'numeric',
+}).format(monthStartDate.value));
+
+const monthMaxCount = computed(() => {
+    const values = Object.values(monthCounts.value).map((value) => Number(value || 0));
+
+    return Math.max(0, ...values);
+});
+
+const leadingBlankCount = computed(() => {
+    const firstOfMonth = new Date(monthStartDate.value.getFullYear(), monthStartDate.value.getMonth(), 1);
+
+    return firstOfMonth.getDay();
+});
+
+const daysInMonth = computed(() => {
+    const date = monthStartDate.value;
+
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+});
+
+const calendarDays = computed(() => Array.from({ length: daysInMonth.value }, (_, index) => index + 1));
+
+const toMonthKey = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+
+const toDateKey = (year, month, day) => `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+const countForDate = (dateKey) => Number(monthCounts.value[dateKey] ?? 0);
+
+const heatClass = (dateKey) => {
+    const count = countForDate(dateKey);
+    const peak = monthMaxCount.value;
+
+    if (!count || !peak) return 'heat-0';
+
+    const ratio = count / peak;
+    if (ratio >= 0.8) return 'heat-5';
+    if (ratio >= 0.6) return 'heat-4';
+    if (ratio >= 0.4) return 'heat-3';
+    if (ratio >= 0.2) return 'heat-2';
+
+    return 'heat-1';
+};
+
+const isSelectedDate = (dateKey) => filterState.date === dateKey;
 
 const applyFilters = () => {
     loading.value = true;
@@ -42,6 +101,32 @@ const applyFilters = () => {
 
 const chooseStatus = (status) => {
     filterState.status = status;
+    applyFilters();
+};
+
+const selectDate = (day) => {
+    const base = monthStartDate.value;
+    const dateKey = toDateKey(base.getFullYear(), base.getMonth() + 1, day);
+    filterState.date = dateKey;
+    applyFilters();
+};
+
+const shiftMonth = (offset) => {
+    const base = new Date(monthStartDate.value);
+    base.setMonth(base.getMonth() + offset);
+    filterState.month = toMonthKey(base);
+
+    const selectedDay = Number((filterState.date || '').split('-')[2] || 1);
+    const maxDay = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate();
+    const nextDay = Math.min(selectedDay, maxDay);
+    filterState.date = toDateKey(base.getFullYear(), base.getMonth() + 1, nextDay);
+    applyFilters();
+};
+
+const jumpToToday = () => {
+    const now = new Date();
+    filterState.month = toMonthKey(now);
+    filterState.date = toDateKey(now.getFullYear(), now.getMonth() + 1, now.getDate());
     applyFilters();
 };
 
@@ -84,12 +169,37 @@ const formatIssueDate = (value) => {
                     <p class="section-kicker">Filters</p>
                     <h3 class="panel-title">Date and project scope</h3>
                 </div>
+                <button type="button" class="btn btn-outline-dark rounded-pill" @click="jumpToToday">Today</button>
             </div>
             <div class="filters-grid">
-                <div>
-                    <label class="form-label">Date</label>
-                    <input v-model="filterState.date" type="date" class="form-control" @change="applyFilters">
+                <div class="calendar-shell">
+                    <div class="calendar-header">
+                        <button type="button" class="btn btn-sm btn-light border rounded-pill" @click="shiftMonth(-1)">Prev</button>
+                        <strong>{{ monthLabel }}</strong>
+                        <button type="button" class="btn btn-sm btn-light border rounded-pill" @click="shiftMonth(1)">Next</button>
+                    </div>
+
+                    <div class="calendar-weekdays">
+                        <span v-for="label in weekdayLabels" :key="label">{{ label }}</span>
+                    </div>
+
+                    <div class="calendar-grid">
+                        <span v-for="blank in leadingBlankCount" :key="`b-${blank}`" class="calendar-blank" />
+                        <button
+                            v-for="day in calendarDays"
+                            :key="day"
+                            type="button"
+                            class="calendar-day"
+                            :class="[heatClass(toDateKey(monthStartDate.getFullYear(), monthStartDate.getMonth() + 1, day)), { selected: isSelectedDate(toDateKey(monthStartDate.getFullYear(), monthStartDate.getMonth() + 1, day)) }]"
+                            :title="`${toDateKey(monthStartDate.getFullYear(), monthStartDate.getMonth() + 1, day)} • ${countForDate(toDateKey(monthStartDate.getFullYear(), monthStartDate.getMonth() + 1, day))} created`"
+                            @click="selectDate(day)"
+                        >
+                            <span>{{ day }}</span>
+                            <small v-if="countForDate(toDateKey(monthStartDate.getFullYear(), monthStartDate.getMonth() + 1, day))">{{ countForDate(toDateKey(monthStartDate.getFullYear(), monthStartDate.getMonth() + 1, day)) }}</small>
+                        </button>
+                    </div>
                 </div>
+
                 <div>
                     <label class="form-label">Project</label>
                     <select v-model="filterState.project_id" class="form-select" @change="applyFilters">
@@ -227,8 +337,80 @@ const formatIssueDate = (value) => {
 .filters-grid {
     display: grid;
     gap: 1rem;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: minmax(320px, 2fr) minmax(220px, 1fr);
 }
+
+.calendar-shell {
+    border: 1px solid #dbe7e3;
+    border-radius: 1rem;
+    background: #f9fcfb;
+    padding: 0.75rem;
+}
+
+.calendar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.6rem;
+}
+
+.calendar-header strong {
+    color: #25384a;
+}
+
+.calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.35rem;
+    margin-bottom: 0.35rem;
+}
+
+.calendar-weekdays span {
+    font-size: 0.72rem;
+    color: #61707a;
+    text-align: center;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.35rem;
+}
+
+.calendar-blank {
+    height: 52px;
+}
+
+.calendar-day {
+    min-height: 52px;
+    border-radius: 0.65rem;
+    border: 1px solid transparent;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 0.3rem 0.4rem;
+    font-size: 0.85rem;
+    background: #f5faf8;
+    color: #344957;
+}
+
+.calendar-day small {
+    font-size: 0.68rem;
+    opacity: 0.9;
+}
+
+.calendar-day.selected {
+    border-color: #2b8d80;
+    box-shadow: 0 0 0 2px rgba(43, 141, 128, 0.18);
+}
+
+.calendar-day.heat-0 { background: #f6fbf9; }
+.calendar-day.heat-1 { background: #e6f5ef; }
+.calendar-day.heat-2 { background: #c9ecdf; }
+.calendar-day.heat-3 { background: #9fddcb; }
+.calendar-day.heat-4 { background: #73ccb4; color: #113d37; }
+.calendar-day.heat-5 { background: #46b99d; color: #0d332e; }
 
 .status-card-grid {
     display: grid;
@@ -263,6 +445,10 @@ const formatIssueDate = (value) => {
 
 @media (max-width: 1000px) {
     .activity-hero {
+        grid-template-columns: 1fr;
+    }
+
+    .filters-grid {
         grid-template-columns: 1fr;
     }
 }

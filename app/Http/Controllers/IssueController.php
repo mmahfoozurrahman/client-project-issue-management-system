@@ -137,19 +137,32 @@ class IssueController extends Controller
         $request->validate([
             'project_id' => ['nullable', 'integer', Rule::exists(Project::class, 'id')],
             'date' => ['nullable', 'date'],
+            'month' => ['nullable', 'date_format:Y-m'],
             'status' => ['nullable', 'string', Rule::in(['todo', 'inprogress', 'done'])],
         ]);
 
         $selectedDate = $request->filled('date')
             ? Carbon::parse((string) $request->input('date'))->toDateString()
             : Carbon::today()->toDateString();
+        $selectedMonth = $request->filled('month')
+            ? (string) $request->input('month')
+            : Carbon::parse($selectedDate)->format('Y-m');
 
         $selectedProjectId = $request->filled('project_id') ? (int) $request->input('project_id') : null;
         $selectedStatus = $request->filled('status') ? (string) $request->input('status') : 'inprogress';
+        $monthStart = Carbon::createFromFormat('Y-m', $selectedMonth)->startOfMonth();
+        $monthEnd = (clone $monthStart)->endOfMonth();
 
         $baseCreatedQuery = Issue::query()
             ->whereDate('created_at', $selectedDate)
             ->when($selectedProjectId, fn ($query) => $query->where('project_id', $selectedProjectId));
+
+        $calendarCounts = Issue::query()
+            ->selectRaw('DATE(created_at) as date_key, COUNT(*) as total')
+            ->whereBetween('created_at', [$monthStart, $monthEnd])
+            ->when($selectedProjectId, fn ($query) => $query->where('project_id', $selectedProjectId))
+            ->groupBy('date_key')
+            ->pluck('total', 'date_key');
 
         $issues = (clone $baseCreatedQuery)
             ->with(['project:id,name,client_id', 'project.client:id,name', 'tags'])
@@ -175,7 +188,12 @@ class IssueController extends Controller
             'filters' => [
                 'project_id' => $selectedProjectId,
                 'date' => $selectedDate,
+                'month' => $selectedMonth,
                 'status' => $selectedStatus,
+            ],
+            'calendar' => [
+                'month' => $selectedMonth,
+                'counts' => $calendarCounts,
             ],
             'breadcrumbs' => [
                 ['label' => 'Home', 'href' => route('dashboard')],
