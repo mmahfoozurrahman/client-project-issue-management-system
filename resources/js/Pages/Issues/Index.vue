@@ -186,7 +186,12 @@ const availableTagNames = computed(() => {
                                     <span class="table-avatar issue">{{ issue.title.slice(0, 1) }}</span>
                                     <div>
                                         <strong>{{ issue.title }}</strong>
-                                        <small class="issue-date-meta">{{ issueDateLabel(issue) }}</small>
+                                        <small
+                                            class="issue-date-meta"
+                                            :style="issue.status === 'done' ? { color: '#1f7a6e', fontWeight: '600' } : {}"
+                                        >
+                                            {{ issueDateLabel(issue) }}
+                                        </small>
                                         <div v-if="issue.tags?.length" class="d-flex flex-wrap gap-1 mt-2">
                                             <span v-for="tag in issue.tags" :key="tag.id" class="badge rounded-pill text-bg-light border">{{ tag.name }}</span>
                                         </div>
