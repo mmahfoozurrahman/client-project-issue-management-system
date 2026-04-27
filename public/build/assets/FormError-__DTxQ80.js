@@ -1,1 +1,0 @@
-import{F as e,O as t,S as n,_ as r,a as i,g as a,h as o}from"./app-gidvuaae.js";var s={key:0,class:`field-error`,role:`alert`},c={__name:`FormError`,props:{message:{type:String,default:``}},setup(c){return(l,u)=>(n(),o(i,{name:`field-error-fade`},{default:t(()=>[c.message?(n(),r(`div`,s,e(c.message),1)):a(``,!0)]),_:1}))}};export{c as t};
