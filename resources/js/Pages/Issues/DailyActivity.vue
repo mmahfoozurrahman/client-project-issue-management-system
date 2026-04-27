@@ -139,6 +139,14 @@ const formatIssueDate = (value) => {
         year: 'numeric',
     }).format(new Date(value));
 };
+
+const issueDateLabel = (issue) => {
+    if (issue.status === 'done') {
+        return issue.done_at ? `Completed ${formatIssueDate(issue.done_at)}` : 'Completed recently';
+    }
+
+    return `Created ${formatIssueDate(issue.created_at)}`;
+};
 </script>
 
 <template>
@@ -262,7 +270,7 @@ const formatIssueDate = (value) => {
                                     <span class="table-avatar issue">{{ issue.title.slice(0, 1) }}</span>
                                     <div>
                                         <strong>{{ issue.title }}</strong>
-                                        <small class="issue-date-meta">Created {{ formatIssueDate(issue.created_at) }}</small>
+                                        <small class="issue-date-meta">{{ issueDateLabel(issue) }}</small>
                                         <div v-if="issue.tags?.length" class="d-flex flex-wrap gap-1 mt-2">
                                             <span v-for="tag in issue.tags" :key="tag.id" class="badge rounded-pill text-bg-light border">{{ tag.name }}</span>
                                         </div>
