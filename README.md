@@ -11,16 +11,32 @@ The goal is to give each user a private workspace where they can manage their ow
 - **Multi-tenant workspaces:** every client, project, and issue belongs to a specific user.
 - **Super Admin user management:** admins can create, update, and manage users from an admin page.
 - **Client management:** compact table-style client list with create/edit/delete flows.
-- **Project management:** projects belong to clients and include a polished project detail page with paginated top-level issues.
-- **Issue management:** issues include status, rich descriptions, project/client context, screenshots, and nested sub-issues.
-- **Recursive sub-issues:** users can create child issues directly from an issue detail page, including deeper nested children.
-- **Kanban board:** visual Todo / In Progress / Done board for issue flow.
-- **Issue image uploads:** multiple JPG/PNG images can be attached to issues.
+- **Project management:** projects belong to clients and include a project detail page with paginated top-level issues and issue actions.
+- **Issue management:** issues support status updates, project reassignment, parent linking, rich descriptions, and scoped issue context.
+- **Recursive sub-issues:** users can create child issues directly from the issue page, including deeper nested hierarchies.
+- **Kanban board:** visual Todo / In Progress / Done board for scanning and moving work quickly.
+- **Issue attachments:** multiple images and files can be uploaded per issue.
+- **Issue references:** internal and external links can be added to issues for supporting context.
 - **Rich text descriptions:** description fields use a lightweight rich text editor instead of plain textareas.
-- **Compact professional lists:** Clients, Projects, Issues, Dashboard activity, Project Detail issues, and Admin Users use clean table-style panels.
+- **Compact professional lists:** Clients, Projects, Issues, Project Detail issues, and Admin Users use clean table-style panels.
 - **Pagination:** list-style pages include pagination, while Kanban intentionally stays unpaginated for a smoother board experience.
 - **Polished status badges:** Todo, In Progress, and Done use distinct colors so status changes are easy to scan.
-- **Engaging UI:** sidebar navigation, responsive layout, reusable modal, SweetAlert2 toasts, loading states, validation feedback, and a warm card-based visual style.
+- **Engaging UI:** sidebar navigation, responsive layout, reusable modal, SweetAlert2 dialogs, loading states, and inline validation feedback.
+
+## Advanced Enhancements
+
+- **Issue tagging system:** project-scoped tags can be attached to issues and surfaced in list/detail views.
+- **Issues list search upgrades:** filter by project, status, tag, and free-text query across issue title/description.
+- **Done date semantics:** issues track completion timing with `done_at`, and done workflows display both created and completed dates where relevant.
+- **Attachment lifecycle controls:** images, files, and links support inline delete actions from the issue detail experience.
+- **Image gallery modal:** issue screenshots open in a dedicated modal with next/previous navigation for easier review.
+- **Upload policy improvements:** attachment uploads support multi-select and enforce practical size limits, with predictable datetime-prefixed filenames.
+- **Controller/service separation:** issue orchestration logic has been refactored into `IssueService` to keep controller actions slimmer and reusable.
+- **Dashboard engagement layer:** dashboard includes status tabs plus weekly/monthly created-vs-completed analytics visuals.
+- **Kanban engagement layer:** Kanban includes richer progress cues, target tracking, and clearer completion flow indicators.
+- **Daily Activity page:** dedicated date-focused drilldown for created/completed work with calendar heat-style highlights and lane-level inspection.
+- **Configurable execution targets:** daily target and stale/critical thresholds are configurable through admin settings (with environment fallbacks).
+- **Gentle nudge system:** cross-page stale-work cues (topbar, dashboard, issues list, kanban lanes, daily carryover) with escalating visual severity.
 
 ## Tech Stack
 
