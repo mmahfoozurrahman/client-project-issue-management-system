@@ -15,6 +15,7 @@ const props = defineProps({
     issueTags: Array,
     filters: Object,
     breadcrumbs: Array,
+    canCreateIssue: { type: Boolean, default: false },
 });
 
 const loading = ref(false);
@@ -148,7 +149,7 @@ const idleMetaClass = (issue) => {
                     <p class="section-kicker">Issue Library</p>
                     <h3 class="panel-title">Card-first issue browsing with project and status filters</h3>
                 </div>
-                <button class="btn btn-accent rounded-pill" @click="modalOpen = true">Add Issue</button>
+                <button v-if="canCreateIssue" class="btn btn-accent rounded-pill" @click="modalOpen = true">Add Issue</button>
             </div>
 
             <div class="filters-row">

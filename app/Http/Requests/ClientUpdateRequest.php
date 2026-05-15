@@ -24,14 +24,18 @@ class ClientUpdateRequest extends FormRequest
      */
     public function rules(): array
     {
-        /** @var Client $client */
-        $client = $this->route('client');
+        $clientId = $this->route('client');
 
         return [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255', Rule::unique('clients', 'email')
-                ->where(fn ($query) => $query->where('user_id', $this->user()->id))
-                ->ignore($client?->id)],
+            'email' => [
+                'nullable',
+                'email',
+                'max:255',
+                Rule::unique('clients', 'email')
+                    ->where(fn($query) => $query->where('user_id', $this->user()->id))
+                    ->ignore($clientId)
+            ],
         ];
     }
 }

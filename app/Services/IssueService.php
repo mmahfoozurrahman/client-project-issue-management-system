@@ -15,13 +15,15 @@ class IssueService
     {
         return [
             'project:id,name,client_id',
-            'project.client:id,name',
+            'project.client' => function ($query) {
+                $query->withoutGlobalScope('user_owned')->select('id', 'name');
+            },
             'images',
             'files',
             'links',
             'tags',
             'parentIssue:id,title,project_id,parent_id',
-            'subIssues' => fn ($query) => $query
+            'subIssues' => fn($query) => $query
                 ->with(['images', 'files', 'links', 'tags', 'project:id,name'])
                 ->withCount(['subIssues', 'images', 'files'])
                 ->latest(),
@@ -30,7 +32,7 @@ class IssueService
 
     public function resolveParentIssue(?int $parentId, int $projectId, ?int $ignoreIssueId = null): ?Issue
     {
-        if (! $parentId) {
+        if (!$parentId) {
             return null;
         }
 
@@ -76,12 +78,12 @@ class IssueService
 
     public function syncLinks(?array $links, Issue $issue): void
     {
-        if (! is_array($links)) {
+        if (!is_array($links)) {
             return;
         }
 
         $payload = collect($links)
-            ->filter(fn ($link) => is_array($link) && filled($link['url'] ?? null))
+            ->filter(fn($link) => is_array($link) && filled($link['url'] ?? null))
             ->map(function ($link) {
                 $url = trim((string) $link['url']);
 
@@ -105,13 +107,13 @@ class IssueService
     public function loadNestedSubIssues(Issue $issue): void
     {
         $issue->load([
-            'subIssues' => fn ($query) => $query
+            'subIssues' => fn($query) => $query
                 ->with(['images', 'files', 'links', 'tags', 'project:id,name', 'parentIssue:id,title,project_id,parent_id'])
                 ->withCount(['subIssues', 'images', 'files'])
                 ->latest(),
         ]);
 
-        $issue->subIssues->each(fn (Issue $subIssue) => $this->loadNestedSubIssues($subIssue));
+        $issue->subIssues->each(fn(Issue $subIssue) => $this->loadNestedSubIssues($subIssue));
     }
 
     public function parentIssueOptions(Issue $issue): Collection
@@ -171,7 +173,7 @@ class IssueService
                         'id' => $entry->id,
                         'title' => $entry->title,
                         'depth' => $depth,
-                        'label' => str_repeat('- ', $depth).$entry->title,
+                        'label' => str_repeat('- ', $depth) . $entry->title,
                     ],
                     ...$children->all(),
                 ]);
@@ -210,14 +212,14 @@ class IssueService
 
     public function syncTags(?array $tagNames, Issue $issue, int $projectId): void
     {
-        if (! is_array($tagNames)) {
+        if (!is_array($tagNames)) {
             return;
         }
 
         $normalizedNames = collect($tagNames)
-            ->map(fn ($name) => trim((string) $name))
+            ->map(fn($name) => trim((string) $name))
             ->filter()
-            ->unique(fn ($name) => Str::lower($name))
+            ->unique(fn($name) => Str::lower($name))
             ->values();
 
         if ($normalizedNames->isEmpty()) {

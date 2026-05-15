@@ -12,6 +12,7 @@ const props = defineProps({
     projects: Object,
     clients: Array,
     breadcrumbs: Array,
+    canCreateProject: Boolean,
 });
 
 const projectRows = computed(() => props.projects?.data ?? props.projects ?? []);
@@ -89,7 +90,7 @@ const destroyProject = (project) => {
                     <p class="section-kicker">Projects</p>
                     <h3 class="panel-title">Organize work by client-owned project spaces</h3>
                 </div>
-                <button class="btn btn-accent rounded-pill" @click="openCreate">Add Project</button>
+                <button v-if="canCreateProject" class="btn btn-accent rounded-pill" @click="openCreate">Add Project</button>
             </div>
 
             <div class="compact-table-shell">
@@ -120,8 +121,8 @@ const destroyProject = (project) => {
                             <td data-label="Actions">
                                 <div class="table-actions">
                                     <Link :href="`/projects/${project.id}`" class="btn btn-sm btn-light rounded-pill">Open</Link>
-                                    <button class="btn btn-sm btn-outline-dark rounded-pill" @click="openEdit(project)">Edit</button>
-                                    <button class="btn btn-sm btn-outline-danger rounded-pill" @click="destroyProject(project)">Delete</button>
+                                    <button v-if="project.can_edit" class="btn btn-sm btn-outline-dark rounded-pill" @click="openEdit(project)">Edit</button>
+                                    <button v-if="project.can_delete" class="btn btn-sm btn-outline-danger rounded-pill" @click="destroyProject(project)">Delete</button>
                                 </div>
                             </td>
                         </tr>

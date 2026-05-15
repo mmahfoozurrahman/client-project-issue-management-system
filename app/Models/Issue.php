@@ -33,17 +33,24 @@ class Issue extends Model
 
     public function project(): BelongsTo
     {
-        return $this->belongsTo(Project::class);
+        return $this->belongsTo(Project::class)->withoutGlobalScope('user_owned');
     }
 
     public function parentIssue(): BelongsTo
     {
-        return $this->belongsTo(self::class, 'parent_id');
+        return $this->belongsTo(self::class, 'parent_id')->withoutGlobalScope('user_owned');
     }
 
     public function subIssues(): HasMany
     {
-        return $this->hasMany(self::class, 'parent_id');
+        return $this->hasMany(self::class, 'parent_id')->withoutGlobalScope('user_owned');
+    }
+
+    public function resolveRouteBinding($value, $field = null): ?self
+    {
+        return static::withoutGlobalScope('user_owned')
+            ->where($field ?? $this->getRouteKeyName(), $value)
+            ->firstOrFail();
     }
 
     public function images(): HasMany

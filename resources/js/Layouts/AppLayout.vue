@@ -16,12 +16,19 @@ defineProps({
     },
 });
 
+const canAccessProjects = computed(() => Boolean(page.props.auth?.can_access_projects));
+const canAccessClients = computed(() => Boolean(page.props.auth?.can_access_clients));
+
+const showProjectNav = computed(() => isAdmin.value || canAccessProjects.value);
+
 const page = usePage();
 const sidebarOpen = ref(false);
 const logoutForm = useForm({});
 
 const user = computed(() => page.props.auth?.user);
 const isAdmin = computed(() => Boolean(user.value?.is_admin));
+const hasOwnProjects = computed(() => Boolean(page.props.auth?.has_own_projects));
+// const showProjectNav = computed(() => isAdmin.value || hasOwnProjects.value);
 const currentUrl = computed(() => page.url);
 const siteName = computed(() => page.props.app?.site_name || 'Issue Tracker');
 const pendingNudgeCount = computed(() => Number(page.props.app?.pending_nudge_count ?? 0));
@@ -29,8 +36,13 @@ const pendingCriticalCount = computed(() => Number(page.props.app?.pending_criti
 
 const navItems = computed(() => [
     { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { label: 'Clients', href: '/clients', icon: Building2 },
-    { label: 'Projects', href: '/projects', icon: BriefcaseBusiness },
+    // শুধু অ্যাডমিন হলে Clients লিংক দেখাবে
+    ...(isAdmin.value || canAccessClients.value ? [
+        { label: 'Clients', href: route('clients.index'), icon: Building2 },
+    ] : []),
+    ...(showProjectNav.value ? [
+        { label: 'Projects', href: '/projects', icon: BriefcaseBusiness },
+    ] : []),
     { label: 'Issues', href: '/issues', icon: PanelsTopLeft },
     { label: 'Kanban', href: '/kanban', icon: PanelsTopLeft },
     { label: 'Daily Activity', href: '/issues/daily-activity', icon: PanelsTopLeft },
@@ -38,6 +50,8 @@ const navItems = computed(() => [
     ...(isAdmin.value
         ? [
             { label: 'Users', href: '/admin/users', icon: ShieldCheck },
+            { label: 'Roles', href: '/admin/roles', icon: ShieldCheck },
+            { label: 'Permissions', href: '/admin/permissions', icon: Settings },
             { label: 'Settings', href: '/admin/settings', icon: Settings },
         ]
         : []),

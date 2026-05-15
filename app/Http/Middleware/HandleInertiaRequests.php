@@ -25,13 +25,17 @@ class HandleInertiaRequests extends Middleware
         $pendingCriticalCount = 0;
 
         if ($request->user()) {
-            $pendingNudgeCount = Issue::query()
+            $accessibleIds = $request->user()->accessibleProjectIds();
+
+            $pendingNudgeCount = Issue::withoutGlobalScope('user_owned')
+                ->whereIn('project_id', $accessibleIds)
                 ->whereNull('done_at')
                 ->where('status', '!=', 'done')
                 ->where('updated_at', '<=', Carbon::now()->subDays($staleDays))
                 ->count();
 
-            $pendingCriticalCount = Issue::query()
+            $pendingCriticalCount = Issue::withoutGlobalScope('user_owned')
+                ->whereIn('project_id', $accessibleIds)
                 ->whereNull('done_at')
                 ->where('status', '!=', 'done')
                 ->where('updated_at', '<=', Carbon::now()->subDays($criticalDays))
@@ -42,6 +46,9 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'auth' => [
                 'user' => $request->user()?->only(['id', 'name', 'email', 'is_admin', 'avatar_url']),
+                'has_own_projects' => $request->user()?->hasOwnProjects() ?? false,
+                'can_access_projects' => $request->user()?->canAccessProjectsPage() ?? false,
+                'can_access_clients' => $request->user()?->canAccessClientsPage() ?? false
             ],
             'app' => [
                 'site_name' => SiteMeta::value('site_name', 'Issue Tracker'),
@@ -51,8 +58,8 @@ class HandleInertiaRequests extends Middleware
                 'issue_critical_days' => $criticalDays,
             ],
             'flash' => [
-                'success' => fn () => $request->session()->get('success'),
-                'error' => fn () => $request->session()->get('error'),
+                'success' => fn() => $request->session()->get('success'),
+                'error' => fn() => $request->session()->get('error'),
             ],
         ];
     }

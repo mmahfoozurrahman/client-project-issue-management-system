@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, router, useForm } from '@inertiajs/vue3';
+import Swal from 'sweetalert2';
 import FormError from '../../Components/FormError.vue';
 import Modal from '../../Components/Modal.vue';
 import Pagination from '../../Components/Pagination.vue';
@@ -13,6 +14,13 @@ const props = defineProps({
     issues: Object,
     projectTags: Array,
     breadcrumbs: Array,
+    userRole:          { type: String,  default: null },
+    canManageMembers:  { type: Boolean, default: false },
+    canCreateIssue:    { type: Boolean, default: false },
+    projectMembers:    { type: Array,   default: () => [] },
+    addableUsers:      { type: Array,   default: () => [] },
+    roles:             { type: Array,   default: () => [] },
+    canEditRoles:      { type: Boolean, default: false }, // এটি যুক্ত করুন
 });
 
 const modalOpen = ref(false);
@@ -30,6 +38,41 @@ const form = useForm({
     tag_names: [],
 });
 const tagInput = ref('');
+
+const memberModalOpen  = ref(false);
+const memberForm = useForm({ user_id: '', role_id: '' });
+
+const addMember = () => {
+    memberForm.post(`/projects/${props.project.id}/members`, {
+        onSuccess: () => {
+            memberModalOpen.value = false;
+            memberForm.reset();
+        },
+    });
+};
+
+const updateMemberRole = (member, roleId) => {
+    router.put(`/projects/${props.project.id}/members/${member.id}`, { role_id: roleId }, {
+        preserveScroll: true,
+    });
+};
+
+const removeMember = (member) => {
+    Swal.fire({
+        title: `Remove ${member.user?.name}?`,
+        text: 'They will lose access to this project.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Remove',
+        confirmButtonColor: '#b91c1c',
+    }).then(({ isConfirmed }) => {
+        if (isConfirmed) {
+            router.delete(`/projects/${props.project.id}/members/${member.id}`, {
+                preserveScroll: true,
+            });
+        }
+    });
+};
 
 const submit = () => {
     form.post('/issues', {
@@ -86,7 +129,7 @@ const removeTagFromForm = (index) => {
             </div>
             <div class="project-meta-block">
                 <span class="badge text-bg-light rounded-pill px-3 py-2">{{ project.client?.name }}</span>
-                <button class="btn btn-accent rounded-pill" @click="modalOpen = true">Add Issue</button>
+                <button v-if="canCreateIssue" class="btn btn-accent rounded-pill" @click="modalOpen = true">Add Issue</button>
             </div>
         </section>
 
@@ -144,6 +187,104 @@ const removeTagFromForm = (index) => {
 
             <Pagination :links="issues.links" :meta="issues" />
         </section>
+
+        <section v-if="canManageMembers || projectMembers.length" class="panel-card mt-4">
+            <div class="panel-header">
+                <div>
+                    <p class="section-kicker">Project Members</p>
+                    <h3 class="panel-title">Users with access to this project</h3>
+                </div>
+                <button v-if="canManageMembers" class="btn btn-accent rounded-pill" @click="memberModalOpen = true">Add Member</button>
+            </div>
+
+            <div class="compact-table-shell">
+                <table class="compact-table">
+                    <thead>
+                        <tr>
+                            <th>Member</th>
+                            <th>Role</th>
+                            <th v-if="canManageMembers" class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="member in projectMembers" :key="member.id">
+                            <td data-label="Member">
+                                <div class="table-entity">
+                                    <span class="table-avatar">
+                                        {{ member.user?.name?.slice(0, 1) }} 
+                                    </span>
+                                    <div>
+                                        <div class="d-flex align-items-center flex-wrap gap-2">
+                                            <strong class="mb-0">{{ member.user?.name }}</strong> 
+                                            <span v-if="member.user_id === project.user_id" class="badge bg-warning text-dark rounded-pill shadow-sm" style="font-size: 0.7em; font-weight: 600; letter-spacing: 0.5px;">
+                                                👑 Project Creator
+                                            </span>
+                                        </div>
+                                        <small class="d-block text-muted mt-1">{{ member.user?.email }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td data-label="Role">
+                                <select
+                                    v-if="canEditRoles"
+                                    :value="member.role_id"
+                                    class="form-select form-select-sm w-auto"
+                                    @change="updateMemberRole(member, $event.target.value)"
+                                >
+                                    <option v-for="role in roles" :key="role.id" :value="role.id">{{ role.name }}</option>
+                                </select>
+                                <span v-else class="badge rounded-pill text-bg-light border px-3 py-2">{{ member.role?.name }}</span>
+                            </td>
+                            <td v-if="canManageMembers" data-label="Actions">
+                                <div class="table-actions">
+                                    <button
+                                        v-if="canEditRoles || member.user_id !== project.user_id"
+                                        type="button"
+                                        class="btn btn-sm btn-outline-danger rounded-pill"
+                                        @click="removeMember(member)"
+                                    >
+                                        Remove
+                                    </button>
+                                    <span v-else class="text-muted small">Owner</span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr v-if="!projectMembers.length">
+                            <td :colspan="canManageMembers ? 3 : 2">
+                                <div class="table-empty">No members yet. Add the first member to collaborate.</div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <Modal v-model="memberModalOpen" title="Add Member">
+            <form class="vstack gap-3" @submit.prevent="addMember">
+                <div>
+                    <label class="form-label">User</label>
+                    <select v-model="memberForm.user_id" class="form-select" :class="{ 'is-invalid-soft': memberForm.errors.user_id }">
+                        <option value="">Select user</option>
+                        <option v-for="user in addableUsers" :key="user.id" :value="user.id">
+                            {{ user.name }} ({{ user.email }})
+                        </option>
+                    </select>
+                    <FormError :message="memberForm.errors.user_id" />
+                </div>
+                <div>
+                    <label class="form-label">Role</label>
+                    <select v-model="memberForm.role_id" class="form-select" :class="{ 'is-invalid-soft': memberForm.errors.role_id }">
+                        <option value="">Select role</option>
+                        <option v-for="role in roles" :key="role.id" :value="role.id">{{ role.name }}</option>
+                    </select>
+                    <FormError :message="memberForm.errors.role_id" />
+                </div>
+                <button class="btn btn-accent rounded-pill align-self-start" :disabled="memberForm.processing">
+                    <span v-if="memberForm.processing" class="spinner-border spinner-border-sm me-2" />
+                    Add Member
+                </button>
+            </form>
+        </Modal>
 
         <Modal v-model="modalOpen" title="Create Issue">
             <form class="vstack gap-3" @submit.prevent="submit">

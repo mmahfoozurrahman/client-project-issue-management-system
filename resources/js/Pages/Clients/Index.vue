@@ -10,6 +10,7 @@ import AppLayout from '../../Layouts/AppLayout.vue';
 const props = defineProps({
     clients: Object,
     breadcrumbs: Array,
+    canCreateClient: Boolean,
 });
 
 const clientRows = computed(() => props.clients?.data ?? props.clients ?? []);
@@ -41,7 +42,7 @@ const openEdit = (client) => {
 
 const submit = () => {
     if (editingClient.value) {
-        form.put(`/clients/${editingClient.value.id}`, {
+        form.put(route('clients.update', editingClient.value.id), {
             onSuccess: () => {
                 modalOpen.value = false;
                 form.reset();
@@ -50,7 +51,7 @@ const submit = () => {
         return;
     }
 
-    form.post('/clients', {
+    form.post(route('clients.store'), {
         onSuccess: () => {
             modalOpen.value = false;
             form.reset();
@@ -68,7 +69,7 @@ const destroyClient = (client) => {
         confirmButtonColor: '#b91c1c',
     }).then(({ isConfirmed }) => {
         if (isConfirmed) {
-            form.delete(`/clients/${client.id}`);
+            form.delete(route('clients.destroy', client.id));
         }
     });
 };
@@ -84,7 +85,7 @@ const destroyClient = (client) => {
                     <p class="section-kicker">Clients</p>
                     <h3 class="panel-title">Every tenant starts here</h3>
                 </div>
-                <button class="btn btn-accent rounded-pill" @click="openCreate">Add Client</button>
+                <button v-if="canCreateClient" class="btn btn-accent rounded-pill" @click="openCreate">Add Client</button>
             </div>
 
             <div class="compact-table-shell">
@@ -112,9 +113,9 @@ const destroyClient = (client) => {
                             <td data-label="Projects"><span class="table-pill">{{ client.projects_count }} projects</span></td>
                             <td data-label="Actions">
                                 <div class="table-actions">
-                                    <button class="btn btn-sm btn-outline-dark rounded-pill" @click="openEdit(client)">Edit</button>
-                                    <Link href="/projects" class="btn btn-sm btn-light rounded-pill">Projects</Link>
-                                    <button class="btn btn-sm btn-outline-danger rounded-pill" @click="destroyClient(client)">Delete</button>
+                                    <button v-if="client.can_edit" class="btn btn-sm btn-outline-dark rounded-pill" @click="openEdit(client)">Edit</button>
+                                    <Link :href="route('projects.index', client.id)" class="btn btn-sm btn-light rounded-pill">Projects</Link>
+                                    <button v-if="client.can_delete" class="btn btn-sm btn-outline-danger rounded-pill" @click="destroyClient(client)">Delete</button>
                                 </div>
                             </td>
                         </tr>

@@ -16,6 +16,13 @@ const props = defineProps({
     parentIssueOptions: Array,
     projectTags: Array,
     breadcrumbs: Array,
+    userProjectRole:     { type: String,  default: null },
+    canCreate:           { type: Boolean, default: false },
+    canEdit:             { type: Boolean, default: false },
+    canDelete:           { type: Boolean, default: false },
+    canChangeStatus:     { type: Boolean, default: false },
+    canUploadAttachment: { type: Boolean, default: false },
+    canDeleteAttachment: { type: Boolean, default: false },
 });
 
 const nestedIssues = computed(() => props.issue.sub_issues ?? props.issue.subIssues ?? []);
@@ -337,9 +344,9 @@ const deleteLink = (link) => {
                 <p v-else class="hero-copy">No description added yet.</p> -->
             </div>
             <div class="project-meta-block">
-                <button class="btn btn-outline-dark rounded-pill" @click="openChildModal(issue)">Add Sub-Issue</button>
+                <button v-if="canCreate" class="btn btn-outline-dark rounded-pill" @click="openChildModal(issue)">Add Sub-Issue</button>
                 <StatusPill :status="issue.status" />
-                <button class="btn btn-outline-danger rounded-pill" @click="destroyIssue">Delete</button>
+                <button v-if="canDelete" class="btn btn-outline-danger rounded-pill" @click="destroyIssue">Delete</button>
             </div>
         </section>
 
@@ -374,7 +381,7 @@ const deleteLink = (link) => {
 
         <div class="row g-4">
             <div class="col-xl-5">
-                <section class="panel-card h-100">
+                <section v-if="canEdit" class="panel-card h-100">
                     <div class="panel-header">
                         <div>
                             <p class="section-kicker">Edit Issue</p>
@@ -496,6 +503,26 @@ const deleteLink = (link) => {
                         </button>
                     </form>
                 </section>
+
+                <section v-else-if="canChangeStatus" class="panel-card h-100">
+                    <div class="panel-header">
+                        <div>
+                            <p class="section-kicker">Issue Status</p>
+                            <h3 class="panel-title">Update the current status of this issue</h3>
+                        </div>
+                    </div>
+                    <form class="vstack gap-3" @submit.prevent="$inertia.patch(`/issues/${issue.id}/status`, { status: updateForm.status })">
+                        <div>
+                            <label class="form-label">Status</label>
+                            <select v-model="updateForm.status" class="form-select">
+                                <option value="todo">Todo</option>
+                                <option value="inprogress">In Progress</option>
+                                <option value="done">Done</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-accent rounded-pill align-self-start">Update Status</button>
+                    </form>
+                </section>
             </div>
 
             <div class="col-xl-7">
@@ -517,7 +544,7 @@ const deleteLink = (link) => {
                                 tabindex="0"
                                 @click="openImageModal(index)"
                             >
-                            <button type="button" class="btn btn-light btn-sm position-absolute top-0 end-0 m-2" @click.stop="deleteImage(image)">Delete</button>
+                            <button v-if="canDeleteAttachment" type="button" class="btn btn-light btn-sm position-absolute top-0 end-0 m-2" @click.stop="deleteImage(image)">Delete</button>
                         </div>
                     </div>
                 </section>
@@ -540,7 +567,7 @@ const deleteLink = (link) => {
                             <a :href="file.url" target="_blank" rel="noopener noreferrer" class="text-decoration-none">{{ file.original_name || 'Attachment' }}</a>
                             <div class="d-flex align-items-center gap-2">
                                 <small class="text-muted">{{ formatFileSize(file.size) }}</small>
-                                <button type="button" class="btn btn-outline-danger btn-sm" @click="deleteFile(file)">Delete</button>
+                                <button v-if="canDeleteAttachment" type="button" class="btn btn-outline-danger btn-sm" @click="deleteFile(file)">Delete</button>
                             </div>
                         </div>
                     </div>
@@ -564,7 +591,7 @@ const deleteLink = (link) => {
                             <a :href="link.url" target="_blank" rel="noopener noreferrer" class="text-decoration-none">{{ link.label || link.url }}</a>
                             <div class="d-flex align-items-center gap-2">
                                 <small class="text-muted">{{ link.is_external ? 'External' : 'Internal' }}</small>
-                                <button type="button" class="btn btn-outline-danger btn-sm" @click="deleteLink(link)">Delete</button>
+                                <button v-if="canDeleteAttachment" type="button" class="btn btn-outline-danger btn-sm" @click="deleteLink(link)">Delete</button>
                             </div>
                         </div>
                     </div>
@@ -576,13 +603,13 @@ const deleteLink = (link) => {
                             <p class="section-kicker">Nested Issues</p>
                             <h3 class="panel-title">Recursive issue tree</h3>
                         </div>
-                        <button class="btn btn-light rounded-pill" @click="openChildModal(issue)">+ Add Child</button>
+                        <button v-if="canCreate" class="btn btn-light rounded-pill" @click="openChildModal(issue)">+ Add Child</button>
                     </div>
 
                     <div v-if="!nestedIssues.length" class="empty-state-card">
                         <strong>No sub-issues yet</strong>
                         <p>Create a child issue directly from this parent to build the recursive tree.</p>
-                        <button class="btn btn-accent rounded-pill" @click="openChildModal(issue)">Create First Child</button>
+                        <button v-if="canCreate" class="btn btn-accent rounded-pill" @click="openChildModal(issue)">Create First Child</button>
                     </div>
 
                     <IssueTree v-else :issues="nestedIssues" @create-child="openChildModal" />
