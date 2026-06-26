@@ -331,7 +331,7 @@ const deleteLink = (link) => {
         <section class="hero-panel mb-4">
             <div>
                 <span class="pill-tag">Issue Detail</span>
-                <h2>{{ issue.title }}</h2>
+                <h4>{{ issue.title }}</h4>
                 <div class="d-flex flex-wrap gap-2 mt-2">
                     <span v-if="createdDateLabel" class="badge rounded-pill text-bg-light border">
                         Created {{ createdDateLabel }}
