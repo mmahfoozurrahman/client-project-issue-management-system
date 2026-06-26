@@ -331,7 +331,7 @@ const deleteLink = (link) => {
         <section class="hero-panel mb-4">
             <div>
                 <span class="pill-tag">Issue Detail</span>
-                <h4>{{ issue.title }}</h4>
+                <h3>{{ issue.title }}</h3>
                 <div class="d-flex flex-wrap gap-2 mt-2">
                     <span v-if="createdDateLabel" class="badge rounded-pill text-bg-light border">
                         Created {{ createdDateLabel }}
@@ -385,7 +385,7 @@ const deleteLink = (link) => {
                     <div class="panel-header">
                         <div>
                             <p class="section-kicker">Edit Issue</p>
-                            <h3 class="panel-title">Update details, parent links, and attachments</h3>
+                            <h4 class="panel-title">Update details, parent links, and attachments</h4>
                         </div>
                     </div>
 
@@ -530,7 +530,7 @@ const deleteLink = (link) => {
                     <div class="panel-header">
                         <div>
                             <p class="section-kicker">Gallery</p>
-                            <h3 class="panel-title">Attached screenshots and references</h3>
+                            <h4 class="panel-title">Attached screenshots and references</h4>
                         </div>
                     </div>
 
@@ -553,7 +553,7 @@ const deleteLink = (link) => {
                     <div class="panel-header">
                         <div>
                             <p class="section-kicker">Attachments</p>
-                            <h3 class="panel-title">Supporting files for this issue</h3>
+                            <h4 class="panel-title">Supporting files for this issue</h4>
                         </div>
                     </div>
 
@@ -577,7 +577,7 @@ const deleteLink = (link) => {
                     <div class="panel-header">
                         <div>
                             <p class="section-kicker">Links</p>
-                            <h3 class="panel-title">Internal and external references</h3>
+                            <h4 class="panel-title">Internal and external references</h4>
                         </div>
                     </div>
 
@@ -601,7 +601,7 @@ const deleteLink = (link) => {
                     <div class="panel-header">
                         <div>
                             <p class="section-kicker">Nested Issues</p>
-                            <h3 class="panel-title">Recursive issue tree</h3>
+                            <h4 class="panel-title">Recursive issue tree</h4>
                         </div>
                         <button v-if="canCreate" class="btn btn-light rounded-pill" @click="openChildModal(issue)">+ Add Child</button>
                     </div>
