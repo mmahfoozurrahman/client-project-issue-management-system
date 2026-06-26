@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, reactive, ref } from 'vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import Swal from 'sweetalert2';
 import FormError from '../../Components/FormError.vue';
@@ -13,6 +13,7 @@ const props = defineProps({
     project: Object,
     issues: Object,
     projectTags: Array,
+    filters: Object,
     breadcrumbs: Array,
     userRole:          { type: String,  default: null },
     canManageMembers:  { type: Boolean, default: false },
@@ -26,6 +27,9 @@ const props = defineProps({
 const modalOpen = ref(false);
 const issueRows = computed(() => props.issues?.data ?? []);
 const plainText = (value) => String(value || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+const filterForm = reactive({
+    tag_id: props.filters?.tag_id ?? '',
+});
 const form = useForm({
     title: '',
     description: '',
@@ -114,6 +118,13 @@ const addTagToForm = (value = tagInput.value) => {
 const removeTagFromForm = (index) => {
     form.tag_names.splice(index, 1);
 };
+
+const applyFilters = () => {
+    router.get(`/projects/${props.project.id}`, filterForm, {
+        preserveState: true,
+        replace: true,
+    });
+};
 </script>
 
 <template>
@@ -140,6 +151,13 @@ const removeTagFromForm = (index) => {
                     <h3 class="panel-title">Top-level issues in this project</h3>
                 </div>
                 <Link href="/kanban" class="btn btn-outline-dark rounded-pill">Open Kanban</Link>
+            </div>
+
+            <div class="filters-row mb-3">
+                <select v-model="filterForm.tag_id" class="form-select" @change="applyFilters">
+                    <option value="">All tags</option>
+                    <option v-for="tag in projectTags" :key="tag.id" :value="tag.id">{{ tag.name }}</option>
+                </select>
             </div>
 
             <div class="compact-table-shell">

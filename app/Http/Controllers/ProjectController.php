@@ -11,6 +11,8 @@ use App\Models\ProjectMember;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -82,14 +84,26 @@ class ProjectController extends Controller
             ->with('success', "Project {$project->name} created successfully.");
     }
 
-    public function show(Project $project): Response
+    public function show(Request $request, Project $project): Response
     {
         $this->authorize('view', $project);
+
+        $request->validate([
+            'tag_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('issue_tags', 'id')->where(fn($query) => $query->where('project_id', $project->id)),
+            ],
+        ]);
 
         $project->load(['client:id,name']);
 
         $issues = $project->issues()
             ->whereNull('parent_id')
+            ->when(
+                $request->filled('tag_id'),
+                fn($query) => $query->whereHas('tags', fn($tagQuery) => $tagQuery->whereKey((int) $request->input('tag_id')))
+            )
             ->latest()
             ->with(['images', 'files', 'links', 'tags'])
             ->withCount(['subIssues', 'images', 'files'])
@@ -116,6 +130,9 @@ class ProjectController extends Controller
                 ->where('project_id', $project->id)
                 ->orderBy('name')
                 ->get(['id', 'name', 'project_id']),
+            'filters' => [
+                'tag_id' => $request->input('tag_id'),
+            ],
             'userRole' => $userRole,
             'canManageMembers' => $user->canOnProject('project.manage_members', $project->id),
             'canCreateIssue' => $user->canOnProject('issue.create', $project->id),
