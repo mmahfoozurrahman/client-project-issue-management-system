@@ -179,7 +179,12 @@ const destroyProject = (project) => {
                                 <p>Project workspace</p>
                             </div>
                         </div>
-                        <span class="entity-metric-pill">{{ project.issues_count }} issue{{ project.issues_count === 1 ? '' : 's' }}</span>
+                    </div>
+
+                    <div class="entity-card-stats">
+                        <span class="entity-metric-pill entity-metric-pill-strong">
+                            {{ project.issues_count }} issue{{ project.issues_count === 1 ? '' : 's' }}
+                        </span>
                     </div>
 
                     <div class="entity-card-meta">
@@ -305,12 +310,21 @@ const destroyProject = (project) => {
     border-radius: 1.5rem;
     background: linear-gradient(180deg, #ffffff 0%, #fbfcfb 100%);
     box-shadow: 0 14px 30px rgba(22, 45, 38, 0.05);
+    transition: transform 180ms ease, box-shadow 220ms ease, border-color 220ms ease;
+}
+
+.entity-card:hover {
+    transform: translateY(-5px);
+    border-color: rgba(30, 107, 93, 0.22);
+    box-shadow:
+        0 20px 44px rgba(22, 45, 38, 0.1),
+        0 0 0 1px rgba(79, 163, 145, 0.08),
+        0 0 28px rgba(111, 191, 169, 0.14);
 }
 
 .entity-card-top {
     display: flex;
     align-items: flex-start;
-    justify-content: space-between;
     gap: 0.75rem;
 }
 
@@ -367,6 +381,18 @@ const destroyProject = (project) => {
     color: #1f6c5f;
     font-size: 0.79rem;
     font-weight: 700;
+}
+
+.entity-card-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+}
+
+.entity-metric-pill-strong {
+    background: linear-gradient(180deg, #edf8f4 0%, #e4f3ed 100%);
+    border-color: rgba(30, 107, 93, 0.14);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
 }
 
 .entity-card-meta {
