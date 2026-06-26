@@ -51,6 +51,10 @@ class DashboardController extends Controller
             }
         );
 
+        $statusSummary = collect(['inprogress', 'todo', 'done'])->mapWithKeys(
+            fn (string $status) => [$status => $baseQuery()->where('status', $status)->count()]
+        );
+
         $weekly = collect(range(7, 0))->map(function (int $offset) use ($accessibleIds) {
             $start = Carbon::now()->startOfWeek()->subWeeks($offset);
             $end = (clone $start)->endOfWeek();
@@ -111,6 +115,7 @@ class DashboardController extends Controller
                 'issues' => $baseQuery()->count(),
             ],
             'statusIssues' => $statusIssues,
+            'statusSummary' => $statusSummary,
             'analytics' => [
                 'weekly' => $weekly,
                 'monthly' => $monthly,

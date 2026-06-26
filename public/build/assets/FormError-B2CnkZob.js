@@ -1,0 +1,1 @@
+import{A as e,L as t,_ as n,a as r,g as i,h as a,w as o}from"./app-DVpDZObm.js";var s={key:0,class:`field-error`,role:`alert`},c={__name:`FormError`,props:{message:{type:String,default:``}},setup(c){return(l,u)=>(o(),a(r,{name:`field-error-fade`},{default:e(()=>[c.message?(o(),n(`div`,s,t(c.message),1)):i(``,!0)]),_:1}))}};export{c as t};

@@ -1,12 +1,43 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { Head } from '@inertiajs/vue3';
+import {
+    ArcElement,
+    BarController,
+    BarElement,
+    CategoryScale,
+    Chart,
+    DoughnutController,
+    Filler,
+    Legend,
+    LineController,
+    LineElement,
+    LinearScale,
+    PointElement,
+    Tooltip,
+} from 'chart.js';
 import StatusPill from '../Components/StatusPill.vue';
 import AppLayout from '../Layouts/AppLayout.vue';
+
+Chart.register(
+    ArcElement,
+    BarController,
+    BarElement,
+    CategoryScale,
+    DoughnutController,
+    Filler,
+    Legend,
+    LineController,
+    LineElement,
+    LinearScale,
+    PointElement,
+    Tooltip
+);
 
 const props = defineProps({
     counts: Object,
     statusIssues: Object,
+    statusSummary: Object,
     analytics: Object,
     pendingNudges: Object,
     breadcrumbs: Array,
@@ -20,6 +51,14 @@ const statusTabs = [
 ];
 
 const activeIssueRows = computed(() => props.statusIssues?.[activeStatus.value] ?? []);
+const weeklyCanvas = ref(null);
+const monthlyCanvas = ref(null);
+const statusCanvas = ref(null);
+const chartInstances = {
+    weekly: null,
+    monthly: null,
+    status: null,
+};
 
 const formatIssueDate = (value) => {
     if (!value) return 'Recently created';
@@ -63,17 +102,248 @@ const idleSeverityClass = (issue) => {
 
 const weeklyChart = computed(() => props.analytics?.weekly ?? []);
 const monthlyChart = computed(() => props.analytics?.monthly ?? []);
+const statusSummary = computed(() => props.statusSummary ?? {});
 
-const weeklyMax = computed(() => {
-    const peak = Math.max(1, ...weeklyChart.value.map((entry) => Math.max(entry.created ?? 0, entry.completed ?? 0)));
+const weeklyTotals = computed(() => ({
+    created: weeklyChart.value.reduce((sum, entry) => sum + Number(entry.created ?? 0), 0),
+    completed: weeklyChart.value.reduce((sum, entry) => sum + Number(entry.completed ?? 0), 0),
+}));
 
-    return peak;
+const monthlyTotals = computed(() => ({
+    created: monthlyChart.value.reduce((sum, entry) => sum + Number(entry.created ?? 0), 0),
+    completed: monthlyChart.value.reduce((sum, entry) => sum + Number(entry.completed ?? 0), 0),
+}));
+
+const throughputRate = computed(() => {
+    if (!monthlyTotals.value.created) return 0;
+
+    return Math.round((monthlyTotals.value.completed / monthlyTotals.value.created) * 100);
 });
 
-const monthlyMax = computed(() => {
-    const peak = Math.max(1, ...monthlyChart.value.map((entry) => Math.max(entry.created ?? 0, entry.completed ?? 0)));
+const momentumDelta = computed(() => {
+    const latest = weeklyChart.value.at(-1);
+    const previous = weeklyChart.value.at(-2);
 
-    return peak;
+    if (!latest || !previous) return 0;
+
+    return (latest.completed ?? 0) - (previous.completed ?? 0);
+});
+
+const insightCards = computed(() => [
+    {
+        label: '7-week created',
+        value: weeklyTotals.value.created,
+        tone: 'created',
+    },
+    {
+        label: '7-week completed',
+        value: weeklyTotals.value.completed,
+        tone: 'completed',
+    },
+    {
+        label: 'Delivery rate',
+        value: `${throughputRate.value}%`,
+        tone: 'neutral',
+    },
+    {
+        label: 'Weekly trend',
+        value: `${momentumDelta.value >= 0 ? '+' : ''}${momentumDelta.value}`,
+        tone: momentumDelta.value >= 0 ? 'completed' : 'alert',
+    },
+]);
+
+const destroyChart = (key) => {
+    if (chartInstances[key]) {
+        chartInstances[key].destroy();
+        chartInstances[key] = null;
+    }
+};
+
+const buildWeeklyChart = () => {
+    if (!weeklyCanvas.value) return;
+
+    destroyChart('weekly');
+    chartInstances.weekly = new Chart(weeklyCanvas.value, {
+        type: 'line',
+        data: {
+            labels: weeklyChart.value.map((entry) => entry.label),
+            datasets: [
+                {
+                    label: 'Created',
+                    data: weeklyChart.value.map((entry) => entry.created ?? 0),
+                    borderColor: '#7c8cf8',
+                    backgroundColor: 'rgba(124, 140, 248, 0.18)',
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: '#7c8cf8',
+                },
+                {
+                    label: 'Completed',
+                    data: weeklyChart.value.map((entry) => entry.completed ?? 0),
+                    borderColor: '#1f9d8b',
+                    backgroundColor: 'rgba(31, 157, 139, 0.12)',
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: '#1f9d8b',
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { intersect: false, mode: 'index' },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#12342e',
+                    padding: 12,
+                    displayColors: true,
+                },
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { color: '#607078' },
+                },
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0,
+                        color: '#607078',
+                    },
+                    grid: {
+                        color: 'rgba(96, 112, 120, 0.12)',
+                    },
+                },
+            },
+        },
+    });
+};
+
+const buildMonthlyChart = () => {
+    if (!monthlyCanvas.value) return;
+
+    destroyChart('monthly');
+    chartInstances.monthly = new Chart(monthlyCanvas.value, {
+        type: 'bar',
+        data: {
+            labels: monthlyChart.value.map((entry) => entry.label),
+            datasets: [
+                {
+                    label: 'Created',
+                    data: monthlyChart.value.map((entry) => entry.created ?? 0),
+                    backgroundColor: '#9aa7ff',
+                    borderRadius: 10,
+                    borderSkipped: false,
+                    maxBarThickness: 22,
+                },
+                {
+                    label: 'Completed',
+                    data: monthlyChart.value.map((entry) => entry.completed ?? 0),
+                    backgroundColor: '#33b39f',
+                    borderRadius: 10,
+                    borderSkipped: false,
+                    maxBarThickness: 22,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#12342e',
+                    padding: 12,
+                },
+            },
+            scales: {
+                x: {
+                    stacked: false,
+                    grid: { display: false },
+                    ticks: { color: '#607078' },
+                },
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0,
+                        color: '#607078',
+                    },
+                    grid: {
+                        color: 'rgba(96, 112, 120, 0.12)',
+                    },
+                },
+            },
+        },
+    });
+};
+
+const buildStatusChart = () => {
+    if (!statusCanvas.value) return;
+
+    destroyChart('status');
+    chartInstances.status = new Chart(statusCanvas.value, {
+        type: 'doughnut',
+        data: {
+            labels: ['In Progress', 'Todo', 'Done'],
+            datasets: [
+                {
+                    data: [
+                        statusSummary.value.inprogress ?? 0,
+                        statusSummary.value.todo ?? 0,
+                        statusSummary.value.done ?? 0,
+                    ],
+                    backgroundColor: ['#f2b84b', '#7c8cf8', '#1f9d8b'],
+                    hoverOffset: 8,
+                    borderWidth: 0,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%',
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        usePointStyle: true,
+                        boxWidth: 10,
+                        color: '#35505a',
+                    },
+                },
+                tooltip: {
+                    backgroundColor: '#12342e',
+                    padding: 12,
+                },
+            },
+        },
+    });
+};
+
+const renderCharts = async () => {
+    await nextTick();
+    buildWeeklyChart();
+    buildMonthlyChart();
+    buildStatusChart();
+};
+
+onMounted(() => {
+    renderCharts();
+});
+
+watch([weeklyChart, monthlyChart, statusSummary], () => {
+    renderCharts();
+}, { deep: true });
+
+onBeforeUnmount(() => {
+    destroyChart('weekly');
+    destroyChart('monthly');
+    destroyChart('status');
 });
 </script>
 
@@ -112,48 +382,70 @@ const monthlyMax = computed(() => {
                 <span class="badge text-bg-light rounded-pill">Created vs Completed</span>
             </div>
 
+            <div class="insight-strip">
+                <article v-for="item in insightCards" :key="item.label" class="insight-card" :class="`tone-${item.tone}`">
+                    <span>{{ item.label }}</span>
+                    <strong>{{ item.value }}</strong>
+                </article>
+            </div>
+
             <div class="row g-4">
                 <div class="col-xl-6">
                     <div class="analytics-card">
-                        <h4 class="analytics-title">Weekly Activity</h4>
-                        <div class="trend-chart">
-                            <div v-for="point in weeklyChart" :key="`w-${point.label}`" class="trend-column">
-                                <div class="bars">
-                                    <span
-                                        class="bar created"
-                                        :style="{ height: `${Math.max(6, ((point.created ?? 0) / weeklyMax) * 100)}%` }"
-                                        :title="`Created: ${point.created ?? 0}`"
-                                    />
-                                    <span
-                                        class="bar completed"
-                                        :style="{ height: `${Math.max(6, ((point.completed ?? 0) / weeklyMax) * 100)}%` }"
-                                        :title="`Completed: ${point.completed ?? 0}`"
-                                    />
-                                </div>
-                                <small>{{ point.label }}</small>
+                        <div class="analytics-card-header">
+                            <div>
+                                <h4 class="analytics-title">Weekly Activity</h4>
+                                <p class="analytics-subtitle">Created and resolved issue flow across the last seven weeks.</p>
                             </div>
+                            <span class="chart-chip">Live trend</span>
+                        </div>
+                        <div class="chart-shell">
+                            <canvas ref="weeklyCanvas" />
                         </div>
                     </div>
                 </div>
 
                 <div class="col-xl-6">
                     <div class="analytics-card">
-                        <h4 class="analytics-title">Monthly Activity</h4>
-                        <div class="trend-chart">
-                            <div v-for="point in monthlyChart" :key="`m-${point.label}`" class="trend-column">
-                                <div class="bars">
-                                    <span
-                                        class="bar created"
-                                        :style="{ height: `${Math.max(6, ((point.created ?? 0) / monthlyMax) * 100)}%` }"
-                                        :title="`Created: ${point.created ?? 0}`"
-                                    />
-                                    <span
-                                        class="bar completed"
-                                        :style="{ height: `${Math.max(6, ((point.completed ?? 0) / monthlyMax) * 100)}%` }"
-                                        :title="`Completed: ${point.completed ?? 0}`"
-                                    />
-                                </div>
-                                <small>{{ point.label }}</small>
+                        <div class="analytics-card-header">
+                            <div>
+                                <h4 class="analytics-title">Monthly Activity</h4>
+                                <p class="analytics-subtitle">A six-month bar view to compare intake and delivery cadence.</p>
+                            </div>
+                            <span class="chart-chip">6 months</span>
+                        </div>
+                        <div class="chart-shell">
+                            <canvas ref="monthlyCanvas" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <div class="analytics-card analytics-card-wide">
+                        <div class="analytics-card-header">
+                            <div>
+                                <h4 class="analytics-title">Issue Status Mix</h4>
+                                <p class="analytics-subtitle">Current distribution of all accessible issues across the delivery pipeline.</p>
+                            </div>
+                            <span class="chart-chip">Current backlog</span>
+                        </div>
+                        <div class="status-chart-layout">
+                            <div class="status-chart-shell">
+                                <canvas ref="statusCanvas" />
+                            </div>
+                            <div class="status-summary-grid">
+                                <article class="status-summary-item tone-todo">
+                                    <span>Todo</span>
+                                    <strong>{{ statusSummary?.todo ?? 0 }}</strong>
+                                </article>
+                                <article class="status-summary-item tone-created">
+                                    <span>In Progress</span>
+                                    <strong>{{ statusSummary?.inprogress ?? 0 }}</strong>
+                                </article>
+                                <article class="status-summary-item tone-completed">
+                                    <span>Done</span>
+                                    <strong>{{ statusSummary?.done ?? 0 }}</strong>
+                                </article>
                             </div>
                         </div>
                     </div>
@@ -379,49 +671,135 @@ const monthlyMax = computed(() => {
     background: linear-gradient(180deg, #f7fbfa 0%, #eef5f3 100%);
 }
 
+.analytics-card-wide {
+    padding-bottom: 1.25rem;
+}
+
+.analytics-card-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
 .analytics-title {
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.25rem;
     font-size: 1rem;
     font-weight: 700;
     color: #2a3b4c;
 }
 
-.trend-chart {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
-    gap: 0.65rem;
-    align-items: end;
-}
-
-.trend-column {
-    text-align: center;
-}
-
-.trend-column small {
-    display: block;
-    margin-top: 0.4rem;
+.analytics-subtitle {
+    margin: 0;
     color: #607078;
-    font-size: 0.72rem;
+    font-size: 0.87rem;
 }
 
-.bars {
-    height: 120px;
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    gap: 0.25rem;
+.chart-chip {
+    border: 1px solid #d7e3df;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 999px;
+    padding: 0.35rem 0.75rem;
+    color: #35505a;
+    font-size: 0.78rem;
+    font-weight: 600;
 }
 
-.bar {
-    width: 14px;
-    border-radius: 999px 999px 0 0;
+.chart-shell {
+    position: relative;
+    height: 290px;
 }
 
-.bar.created {
-    background: #95a4ff;
+.insight-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.85rem;
+    margin-bottom: 1rem;
 }
 
-.bar.completed {
-    background: #2a9d8f;
+.insight-card,
+.status-summary-item {
+    border-radius: 1rem;
+    padding: 0.95rem 1rem;
+    border: 1px solid #d8e2df;
+    background: rgba(255, 255, 255, 0.72);
+}
+
+.insight-card span,
+.status-summary-item span {
+    display: block;
+    color: #607078;
+    font-size: 0.8rem;
+    margin-bottom: 0.3rem;
+}
+
+.insight-card strong,
+.status-summary-item strong {
+    font-size: 1.45rem;
+    color: #203040;
+}
+
+.tone-created {
+    box-shadow: inset 0 0 0 1px rgba(124, 140, 248, 0.12);
+}
+
+.tone-created strong {
+    color: #6677ef;
+}
+
+.tone-completed {
+    box-shadow: inset 0 0 0 1px rgba(31, 157, 139, 0.12);
+}
+
+.tone-completed strong {
+    color: #1a8577;
+}
+
+.tone-neutral strong {
+    color: #35505a;
+}
+
+.tone-alert strong,
+.tone-todo strong {
+    color: #a36a13;
+}
+
+.status-chart-layout {
+    display: grid;
+    grid-template-columns: minmax(260px, 360px) minmax(0, 1fr);
+    gap: 1.5rem;
+    align-items: center;
+}
+
+.status-chart-shell {
+    position: relative;
+    height: 260px;
+}
+
+.status-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.85rem;
+}
+
+@media (max-width: 991.98px) {
+    .status-chart-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .status-chart-shell {
+        height: 240px;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .analytics-card-header {
+        flex-direction: column;
+    }
+
+    .chart-shell {
+        height: 250px;
+    }
 }
 </style>
