@@ -18,14 +18,27 @@ use Inertia\Response;
 
 class ProjectController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
         abort_unless(auth()->user()->canAccessProjectsPage(), 403);
 
         $accessibleIds = auth()->user()->accessibleProjectIds();
+        $search = trim((string) $request->input('q', ''));
 
         $projects = Project::withoutGlobalScope('user_owned')
             ->whereIn('id', $accessibleIds)
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($innerQuery) use ($search) {
+                    $innerQuery
+                        ->where('name', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%")
+                        ->orWhereHas('client', function ($clientQuery) use ($search) {
+                            $clientQuery
+                                ->withoutGlobalScope('user_owned')
+                                ->where('name', 'like', "%{$search}%");
+                        });
+                });
+            })
             ->with([
                 'client' => function ($query) {
                     $query->withoutGlobalScope('user_owned')->select('id', 'name');
@@ -54,6 +67,9 @@ class ProjectController extends Controller
             'clients' => auth()->user()->is_admin
                 ? Client::withoutGlobalScope('user_owned')->orderBy('name')->get(['id', 'name'])
                 : Client::query()->orderBy('name')->get(['id', 'name']),
+            'filters' => [
+                'q' => $search,
+            ],
             'canCreateProject' => $canCreateProject,
             'breadcrumbs' => [
                 ['label' => 'Home', 'href' => route('dashboard')],

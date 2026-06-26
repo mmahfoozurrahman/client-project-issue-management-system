@@ -6,20 +6,29 @@ use App\Http\Requests\ClientStoreRequest;
 use App\Http\Requests\ClientUpdateRequest;
 use App\Models\Client;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ClientController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
         //abort_unless(auth()->user()->canAccessClientsPage(), 403);
         $this->authorize('viewAny', Client::class);
+        $search = trim((string) $request->input('q', ''));
 
         // 
         $clients = Client::query()
             ->when(auth()->user()->is_admin, function ($query) {
                 $query->withoutGlobalScope('user_owned');
+            })
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($innerQuery) use ($search) {
+                    $innerQuery
+                        ->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                });
             })
             ->withCount('projects')
             ->latest()
@@ -44,6 +53,9 @@ class ClientController extends Controller
 
         return Inertia::render('Clients/Index', [
             'clients' => $clients,
+            'filters' => [
+                'q' => $search,
+            ],
             'canCreateClient' => $canCreateClient, // এই প্রপসটি Vue-তে পাঠালাম
             'breadcrumbs' => [
                 ['label' => 'Home', 'href' => route('dashboard')],
