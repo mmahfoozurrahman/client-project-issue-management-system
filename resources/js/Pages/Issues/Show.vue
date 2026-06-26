@@ -328,10 +328,10 @@ const deleteLink = (link) => {
     <Head :title="issue.title" />
 
     <AppLayout :title="issue.title" :breadcrumbs="breadcrumbs">
-        <section class="hero-panel mb-4">
-            <div>
+        <section class="hero-panel issue-hero-panel mb-4">
+            <div class="issue-hero-copy">
                 <span class="pill-tag">Issue Detail</span>
-                <h3>{{ issue.title }}</h3>
+                <h3 class="issue-hero-title">{{ issue.title }}</h3>
                 <div class="d-flex flex-wrap gap-2 mt-2">
                     <span v-if="createdDateLabel" class="badge rounded-pill text-bg-light border">
                         Created {{ createdDateLabel }}
@@ -343,10 +343,24 @@ const deleteLink = (link) => {
                 <!-- <div v-if="issue.description" class="hero-copy rich-display" v-html="issue.description" />
                 <p v-else class="hero-copy">No description added yet.</p> -->
             </div>
-            <div class="project-meta-block">
-                <button v-if="canCreate" class="btn btn-outline-dark rounded-pill" @click="openChildModal(issue)">Add Sub-Issue</button>
-                <StatusPill :status="issue.status" />
-                <button v-if="canDelete" class="btn btn-outline-danger rounded-pill" @click="destroyIssue">Delete</button>
+            <div class="project-meta-block issue-hero-actions">
+                <div class="issue-hero-actions-top">
+                    <button
+                        v-if="canCreate"
+                        class="btn rounded-pill issue-hero-action-btn issue-hero-add-btn"
+                        @click="openChildModal(issue)"
+                    >
+                        Add Sub-Issue
+                    </button>
+                    <StatusPill :status="issue.status" class="issue-hero-status" />
+                    <button
+                        v-if="canDelete"
+                        class="btn rounded-pill issue-hero-action-btn issue-delete-btn"
+                        @click="destroyIssue"
+                    >
+                        Delete
+                    </button>
+                </div>
             </div>
         </section>
 
@@ -747,3 +761,146 @@ const deleteLink = (link) => {
         </div>
     </Modal>
 </template>
+
+<style scoped>
+.hero-panel {
+    align-items: flex-start;
+}
+
+.issue-hero-panel {
+    gap: 1.5rem;
+}
+
+.issue-hero-copy {
+    flex: 1 1 32rem;
+    min-width: 0;
+}
+
+.issue-hero-title {
+    margin-bottom: 0;
+    line-height: 1.12;
+    overflow-wrap: anywhere;
+}
+
+.issue-hero-actions {
+    display: flex;
+    flex: 0 0 auto;
+    min-width: min(100%, 18rem);
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.issue-hero-actions-top {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.issue-hero-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 3rem;
+    padding: 0.58rem 1.05rem;
+    border-width: 1px;
+    font-size: 0.92rem;
+    font-weight: 500;
+    line-height: 1.1;
+    white-space: nowrap;
+}
+
+.issue-hero-add-btn {
+    border-color: rgba(31, 41, 55, 0.35);
+    background: rgba(255, 255, 255, 0.78);
+    color: #374151;
+}
+
+.issue-hero-add-btn:hover,
+.issue-hero-add-btn:focus {
+    border-color: rgba(31, 41, 55, 0.55);
+    background: rgba(255, 255, 255, 0.96);
+    color: #111827;
+}
+
+.issue-delete-btn {
+    border-color: rgba(239, 68, 68, 0.7);
+    background: rgba(255, 255, 255, 0.82);
+    color: #ef4444;
+}
+
+.issue-delete-btn:hover,
+.issue-delete-btn:focus {
+    border-color: rgba(220, 38, 38, 0.78);
+    background: rgba(254, 242, 242, 0.96);
+    color: #dc2626;
+}
+
+.issue-hero-status {
+    min-height: 2.95rem;
+    padding-inline: 1rem;
+    font-size: 0.92rem;
+}
+
+.issue-delete-btn {
+    align-self: auto;
+}
+
+:deep(.issue-hero-actions .status-pill),
+:deep(.issue-hero-actions .badge),
+:deep(.issue-hero-actions .btn) {
+    flex: 0 0 auto;
+}
+
+:deep(.issue-hero-status.status-pill) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+}
+
+@media (max-width: 991.98px) {
+    .issue-hero-panel {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .issue-hero-copy {
+        flex: initial;
+    }
+
+    .issue-hero-actions {
+        width: 100%;
+        min-width: 0;
+        justify-content: flex-start;
+        align-items: stretch;
+    }
+
+    .issue-hero-actions-top {
+        justify-content: flex-start;
+        width: 100%;
+    }
+
+    .issue-hero-action-btn {
+        width: 100%;
+    }
+
+    :deep(.issue-hero-status.status-pill) {
+        width: 100%;
+        min-height: 3rem;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .issue-hero-title {
+        font-size: clamp(2rem, 6vw, 2.5rem);
+    }
+
+    .issue-hero-actions-top {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
+</style>

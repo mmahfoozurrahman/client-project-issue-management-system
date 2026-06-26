@@ -130,7 +130,7 @@ const isItemActive = (href) => {
                 <Link
                     v-if="pendingNudgeCount > 0"
                     href="/issues?at_risk=1"
-                    class="btn btn-sm rounded-pill ms-auto"
+                    class="btn btn-sm rounded-pill ms-auto topbar-alert"
                     :class="pendingCriticalCount > 0 ? 'btn-danger' : 'btn-warning'"
                 >
                     <template v-if="pendingCriticalCount > 0">
