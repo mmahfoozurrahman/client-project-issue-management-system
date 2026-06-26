@@ -28,6 +28,7 @@ const modalOpen = ref(false);
 const issueRows = computed(() => props.issues?.data ?? []);
 const plainText = (value) => String(value || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 const filterForm = reactive({
+    status: props.filters?.status ?? '',
     tag_id: props.filters?.tag_id ?? '',
 });
 const form = useForm({
@@ -154,6 +155,13 @@ const applyFilters = () => {
             </div>
 
             <div class="filters-row mb-3">
+                <select v-model="filterForm.status" class="form-select" @change="applyFilters">
+                    <option value="">All statuses</option>
+                    <option value="todo">Todo</option>
+                    <option value="inprogress">In Progress</option>
+                    <option value="done">Done</option>
+                </select>
+
                 <select v-model="filterForm.tag_id" class="form-select" @change="applyFilters">
                     <option value="">All tags</option>
                     <option v-for="tag in projectTags" :key="tag.id" :value="tag.id">{{ tag.name }}</option>

@@ -89,6 +89,7 @@ class ProjectController extends Controller
         $this->authorize('view', $project);
 
         $request->validate([
+            'status' => ['nullable', 'string', Rule::in(['todo', 'inprogress', 'done'])],
             'tag_id' => [
                 'nullable',
                 'integer',
@@ -100,6 +101,10 @@ class ProjectController extends Controller
 
         $issues = $project->issues()
             ->whereNull('parent_id')
+            ->when(
+                $request->filled('status'),
+                fn($query) => $query->where('status', $request->string('status')->value())
+            )
             ->when(
                 $request->filled('tag_id'),
                 fn($query) => $query->whereHas('tags', fn($tagQuery) => $tagQuery->whereKey((int) $request->input('tag_id')))
@@ -131,6 +136,7 @@ class ProjectController extends Controller
                 ->orderBy('name')
                 ->get(['id', 'name', 'project_id']),
             'filters' => [
+                'status' => $request->input('status'),
                 'tag_id' => $request->input('tag_id'),
             ],
             'userRole' => $userRole,
