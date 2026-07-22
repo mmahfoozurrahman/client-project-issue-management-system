@@ -32,7 +32,7 @@
                     <option value="done">Done</option>
                 </select>
 
-                <details class="tag-filter-dropdown">
+                <details ref="tagFilterDropdown" class="tag-filter-dropdown">
                     <summary class="form-select">{{ tagFilterLabel }}</summary>
                     <div class="tag-filter-menu">
                         <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
@@ -305,7 +305,7 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import Swal from 'sweetalert2';
 import FormError from '../../Components/FormError.vue';
@@ -350,6 +350,7 @@ const form = useForm({
     tag_names: [],
 });
 const tagInput = ref('');
+const tagFilterDropdown = ref(null);
 
 const memberModalOpen  = ref(false);
 const memberForm = useForm({ user_id: '', role_id: '' });
@@ -434,6 +435,18 @@ const applyFilters = () => {
     });
 };
 
+const closeTagFilterDropdown = () => {
+    if (tagFilterDropdown.value) {
+        tagFilterDropdown.value.open = false;
+    }
+};
+
+const closeTagFilterOnOutsideClick = (event) => {
+    if (tagFilterDropdown.value?.open && !tagFilterDropdown.value.contains(event.target)) {
+        closeTagFilterDropdown();
+    }
+};
+
 const toggleTagFilter = (tagId) => {
     const normalizedId = String(tagId);
     const index = filterForm.tag_ids.indexOf(normalizedId);
@@ -451,6 +464,7 @@ const clearTagFilters = () => {
     if (!filterForm.tag_ids.length) return;
 
     filterForm.tag_ids = [];
+    closeTagFilterDropdown();
     applyFilters();
 };
 
@@ -459,4 +473,7 @@ const tagFilterLabel = computed(() => {
     if (!count) return 'All tags';
     return count === 1 ? '1 tag selected' : `${count} tags selected`;
 });
+
+onMounted(() => document.addEventListener('click', closeTagFilterOnOutsideClick));
+onBeforeUnmount(() => document.removeEventListener('click', closeTagFilterOnOutsideClick));
 </script>

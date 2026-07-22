@@ -136,7 +136,15 @@ class ProjectController extends Controller
                 $request->filled('status'),
                 fn($query) => $query->where('status', $request->string('status')->value())
             )
-            ->when($tagIds, fn($query) => $query->whereHas('tags', fn($tagQuery) => $tagQuery->whereIn('issue_tags.id', $tagIds)))
+            ->when(
+                $tagIds,
+                fn($query) => $query->whereHas(
+                    'tags',
+                    fn($tagQuery) => $tagQuery->whereIn('issue_tags.id', $tagIds),
+                    '=',
+                    count($tagIds)
+                )
+            )
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($searchQuery) use ($search) {
                     $searchQuery

@@ -1558,6 +1558,24 @@ a {
         padding-top: 18px;
     }
 
+    .compact-table tbody td[data-label="Issue"] {
+        display: block;
+        text-align: left;
+    }
+
+    .compact-table tbody td[data-label="Issue"]::before {
+        display: block;
+        margin-bottom: 12px;
+    }
+
+    .compact-table tbody td[data-label="Issue"] .table-entity {
+        justify-content: flex-start;
+    }
+
+    .compact-table tbody td[data-label="Issue"] .table-entity > div {
+        flex: 1;
+    }
+
     .compact-table tbody td::before {
         content: attr(data-label);
         flex: 0 0 84px;
