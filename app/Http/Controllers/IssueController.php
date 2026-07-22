@@ -13,6 +13,7 @@ use App\Models\Project;
 use App\Models\ProjectMember;
 use App\Models\SiteMeta;
 use App\Services\IssueService;
+use App\Services\RichTextSanitizer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -23,7 +24,10 @@ use Inertia\Response;
 
 class IssueController extends Controller
 {
-    public function __construct(private readonly IssueService $issueService)
+    public function __construct(
+        private readonly IssueService $issueService,
+        private readonly RichTextSanitizer $richTextSanitizer,
+    )
     {
     }
 
@@ -300,7 +304,7 @@ class IssueController extends Controller
 
         $issue = Issue::query()->create([
             'title' => $validated['title'],
-            'description' => $validated['description'] ?? null,
+            'description' => $this->richTextSanitizer->sanitize($validated['description'] ?? null),
             'status' => $validated['status'],
             'done_at' => $validated['status'] === 'done' ? now() : null,
             'project_id' => $project->id,
@@ -375,7 +379,7 @@ class IssueController extends Controller
 
         $issue->update([
             'title' => $validated['title'],
-            'description' => $validated['description'] ?? null,
+            'description' => $this->richTextSanitizer->sanitize($validated['description'] ?? null),
             'status' => $nextStatus,
             'done_at' => $doneAt,
             'project_id' => $project->id,

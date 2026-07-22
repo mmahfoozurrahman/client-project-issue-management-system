@@ -10,6 +10,7 @@ use App\Models\Project;
 use App\Models\ProjectMember;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\RichTextSanitizer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -18,6 +19,10 @@ use Inertia\Response;
 
 class ProjectController extends Controller
 {
+    public function __construct(private readonly RichTextSanitizer $richTextSanitizer)
+    {
+    }
+
     public function index(Request $request): Response
     {
         abort_unless(auth()->user()->canAccessProjectsPage(), 403);
@@ -85,7 +90,7 @@ class ProjectController extends Controller
 
         $project = Project::query()->create([
             'name' => $validated['name'],
-            'description' => $validated['description'] ?? null,
+            'description' => $this->richTextSanitizer->sanitize($validated['description'] ?? null),
             'client_id' => $client->id,
         ]);
 
@@ -184,7 +189,7 @@ class ProjectController extends Controller
 
         $project->update([
             'name' => $validated['name'],
-            'description' => $validated['description'] ?? null,
+            'description' => $this->richTextSanitizer->sanitize($validated['description'] ?? null),
             'client_id' => $client->id,
         ]);
 

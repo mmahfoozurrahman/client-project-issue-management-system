@@ -28,6 +28,14 @@ const runCommand = (command) => {
     syncFromDom();
 };
 
+const pastePlainText = (event) => {
+    event.preventDefault();
+
+    const text = event.clipboardData?.getData('text/plain') ?? '';
+    document.execCommand('insertText', false, text);
+    syncFromDom();
+};
+
 watch(() => props.modelValue, async (value) => {
     await nextTick();
 
@@ -53,6 +61,7 @@ watch(() => props.modelValue, async (value) => {
             :data-placeholder="placeholder"
             @input="syncFromDom"
             @blur="syncFromDom"
+            @paste="pastePlainText"
         />
     </div>
 </template>
