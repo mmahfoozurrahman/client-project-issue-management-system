@@ -15,6 +15,7 @@ const props = defineProps({
     projectIssues: Array,
     parentIssueOptions: Array,
     projectTags: Array,
+    matchingIssues: { type: Array, default: () => [] },
     breadcrumbs: Array,
     userProjectRole:     { type: String,  default: null },
     canCreate:           { type: Boolean, default: false },
@@ -540,6 +541,47 @@ const deleteLink = (link) => {
             </div>
 
             <div class="col-xl-5">
+                <section class="panel-card mb-4">
+                    <div class="panel-header">
+                        <div>
+                            <p class="section-kicker">Matching Tags</p>
+                            <h4 class="panel-title">Related issues</h4>
+                        </div>
+                        <span v-if="issueTags.length" class="badge rounded-pill text-bg-light border">
+                            {{ issueTags.length }} {{ issueTags.length === 1 ? 'tag' : 'tags' }} on this issue
+                        </span>
+                    </div>
+
+                    <div v-if="!matchingIssues.length" class="empty-state-card">
+                        <strong>No related issues yet</strong>
+                        <p>Issues in this project that share one or more of these tags will appear here.</p>
+                    </div>
+
+                    <div v-else class="list-group list-group-flush">
+                        <Link
+                            v-for="relatedIssue in matchingIssues"
+                            :key="relatedIssue.id"
+                            :href="`/issues/${relatedIssue.id}`"
+                            class="list-group-item list-group-item-action text-decoration-none d-flex justify-content-between align-items-start gap-3"
+                        >
+                            <div class="min-w-0">
+                                <strong class="d-block text-truncate">{{ relatedIssue.title }}</strong>
+                                <div class="d-flex flex-wrap gap-1 mt-2">
+                                    <span v-for="tag in relatedIssue.matching_tags" :key="tag.id" class="badge rounded-pill text-bg-light border">
+                                        {{ tag.name }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="text-end flex-shrink-0">
+                                <StatusPill :status="relatedIssue.status" size="sm" />
+                                <small class="text-muted d-block mt-2">
+                                    {{ relatedIssue.matching_tag_count }} {{ relatedIssue.matching_tag_count === 1 ? 'matching tag' : 'matching tags' }}
+                                </small>
+                            </div>
+                        </Link>
+                    </div>
+                </section>
+
                 <section class="panel-card mb-4">
                     <div class="panel-header">
                         <div>

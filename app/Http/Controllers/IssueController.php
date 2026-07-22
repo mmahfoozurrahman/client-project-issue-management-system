@@ -330,9 +330,39 @@ class IssueController extends Controller
         $this->issueService->loadNestedSubIssues($issue);
 
         $accessibleIds = auth()->user()->accessibleProjectIds();
+        $issueTagIds = $issue->tags->pluck('id');
+        $matchingIssues = collect();
+
+        if ($issueTagIds->isNotEmpty()) {
+            $matchingIssues = Issue::withoutGlobalScope('user_owned')
+                ->where('project_id', $issue->project_id)
+                ->whereKeyNot($issue->id)
+                ->whereHas('tags', fn ($query) => $query->whereIn('issue_tags.id', $issueTagIds))
+                ->with('tags:id,name')
+                ->latest('updated_at')
+                ->get(['id', 'title', 'status', 'updated_at'])
+                ->map(function (Issue $matchingIssue) use ($issueTagIds) {
+                    $matchingTags = $matchingIssue->tags
+                        ->whereIn('id', $issueTagIds)
+                        ->values();
+
+                    return [
+                        'id' => $matchingIssue->id,
+                        'title' => $matchingIssue->title,
+                        'status' => $matchingIssue->status,
+                        'matching_tag_count' => $matchingTags->count(),
+                        'matching_tags' => $matchingTags->map(fn (IssueTag $tag) => [
+                            'id' => $tag->id,
+                            'name' => $tag->name,
+                        ]),
+                    ];
+                })
+                ->values();
+        }
 
         return Inertia::render('Issues/Show', [
             'issue' => $issue,
+            'matchingIssues' => $matchingIssues,
             'projects' => Project::withoutGlobalScope('user_owned')->whereIn('id', $accessibleIds)->orderBy('name')->get(['id', 'name']),
             'projectIssues' => $this->issueService->issueOptionsForProject($issue->project_id, [$issue->id]),
             'parentIssueOptions' => $this->issueService->parentIssueOptions($issue),
