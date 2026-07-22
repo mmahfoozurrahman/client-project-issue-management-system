@@ -15,7 +15,7 @@
             </div>
         </section>
 
-        <section class="panel-card mb-4">
+        <section v-if="pinnedIssues.length" class="panel-card mb-4">
             <div class="panel-header">
                 <div>
                     <p class="section-kicker">Pinned Issues</p>
@@ -42,7 +42,6 @@
                     </div>
                 </div>
             </div>
-            <div v-else class="table-empty">Pin an issue from the list or its detail page to keep it here.</div>
         </section>
 
         <section class="panel-card">
