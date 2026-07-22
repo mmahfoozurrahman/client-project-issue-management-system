@@ -5,6 +5,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
+import Highlight from '@tiptap/extension-highlight';
 
 const props = defineProps({
     modelValue: { type: String, default: '' },
@@ -27,6 +28,7 @@ const editor = useEditor({
             linkOnPaste: true,
             HTMLAttributes: { rel: 'nofollow noopener noreferrer' },
         }),
+        Highlight,
         Placeholder.configure({ placeholder: props.placeholder }),
     ],
     onUpdate: ({ editor: instance }) => {
@@ -103,6 +105,7 @@ function setLink() {
                 <button type="button" :class="{ active: editor.isActive('italic') }" title="Italic" aria-label="Italic" @click="editor.chain().focus().toggleItalic().run()"><em>I</em></button>
                 <button type="button" :class="{ active: editor.isActive('underline') }" title="Underline" aria-label="Underline" @click="editor.chain().focus().toggleUnderline().run()"><u>U</u></button>
                 <button type="button" :class="{ active: editor.isActive('strike') }" title="Strikethrough" aria-label="Strikethrough" @click="editor.chain().focus().toggleStrike().run()"><s>S</s></button>
+                <button type="button" :class="{ active: editor.isActive('highlight') }" title="Yellow highlight" aria-label="Yellow highlight" @click="editor.chain().focus().toggleHighlight().run()"><mark>Highlight</mark></button>
             </div>
 
             <div class="editor-tool-group">
@@ -159,4 +162,5 @@ function setLink() {
 .rich-editor-surface .ProseMirror pre { margin: .75rem 0; padding: 1rem; overflow-x: auto; border-radius: 8px; background: #1e293b; color: #e2e8f0; }
 .rich-editor-surface .ProseMirror pre code { padding: 0; background: transparent; color: inherit; }
 .rich-editor-surface .ProseMirror a { color: var(--accent); text-decoration: underline; }
+.rich-editor-surface .ProseMirror mark, .rich-display mark { padding: 0 .1em; border-radius: .15em; background: #fef08a; color: inherit; }
 </style>

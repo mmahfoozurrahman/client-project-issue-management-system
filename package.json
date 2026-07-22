@@ -17,6 +17,7 @@
     "dependencies": {
         "@inertiajs/vue3": "^3.0.1",
         "@popperjs/core": "^2.11.8",
+        "@tiptap/extension-highlight": "^3.28.0",
         "@tiptap/extension-link": "^3.28.0",
         "@tiptap/extension-placeholder": "^3.28.0",
         "@tiptap/extension-underline": "^3.28.0",
