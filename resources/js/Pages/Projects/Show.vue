@@ -1,160 +1,3 @@
-<script setup>
-import { computed, reactive, ref } from 'vue';
-import { Head, router, useForm } from '@inertiajs/vue3';
-import Swal from 'sweetalert2';
-import FormError from '../../Components/FormError.vue';
-import Modal from '../../Components/Modal.vue';
-import Pagination from '../../Components/Pagination.vue';
-import RichTextEditor from '../../Components/RichTextEditor.vue';
-import StatusPill from '../../Components/StatusPill.vue';
-import AppLayout from '../../Layouts/AppLayout.vue';
-
-const props = defineProps({
-    project: Object,
-    issues: Object,
-    projectTags: Array,
-    filters: Object,
-    breadcrumbs: Array,
-    userRole:          { type: String,  default: null },
-    canManageMembers:  { type: Boolean, default: false },
-    canCreateIssue:    { type: Boolean, default: false },
-    projectMembers:    { type: Array,   default: () => [] },
-    addableUsers:      { type: Array,   default: () => [] },
-    roles:             { type: Array,   default: () => [] },
-    canEditRoles:      { type: Boolean, default: false }, // এটি যুক্ত করুন
-});
-
-const modalOpen = ref(false);
-const issueRows = computed(() => props.issues?.data ?? []);
-const plainText = (value) => String(value || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-const filterForm = reactive({
-    status: props.filters?.status ?? '',
-    tag_ids: Array.isArray(props.filters?.tag_ids) ? props.filters.tag_ids.map(String) : [],
-    q: props.filters?.q ?? '',
-});
-const form = useForm({
-    title: '',
-    description: '',
-    status: 'todo',
-    project_id: props.project.id,
-    parent_id: '',
-    images: [],
-    files: [],
-    links: [],
-    tag_names: [],
-});
-const tagInput = ref('');
-
-const memberModalOpen  = ref(false);
-const memberForm = useForm({ user_id: '', role_id: '' });
-
-const addMember = () => {
-    memberForm.post(`/projects/${props.project.id}/members`, {
-        onSuccess: () => {
-            memberModalOpen.value = false;
-            memberForm.reset();
-        },
-    });
-};
-
-const updateMemberRole = (member, roleId) => {
-    router.put(`/projects/${props.project.id}/members/${member.id}`, { role_id: roleId }, {
-        preserveScroll: true,
-    });
-};
-
-const removeMember = (member) => {
-    Swal.fire({
-        title: `Remove ${member.user?.name}?`,
-        text: 'They will lose access to this project.',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Remove',
-        confirmButtonColor: '#b91c1c',
-    }).then(({ isConfirmed }) => {
-        if (isConfirmed) {
-            router.delete(`/projects/${props.project.id}/members/${member.id}`, {
-                preserveScroll: true,
-            });
-        }
-    });
-};
-
-const submit = () => {
-    form.post('/issues', {
-        forceFormData: true,
-        onSuccess: () => {
-            modalOpen.value = false;
-            form.reset('title', 'description', 'status', 'parent_id', 'images', 'files', 'tag_names');
-            form.project_id = props.project.id;
-        },
-    });
-};
-
-const onImageChange = (event) => {
-    form.images = Array.from(event.target.files || []);
-};
-
-const onFileChange = (event) => {
-    form.files = Array.from(event.target.files || []);
-};
-
-const addLink = () => {
-    form.links.push({ label: '', url: '' });
-};
-
-const removeLink = (index) => {
-    form.links.splice(index, 1);
-};
-
-const addTagToForm = (value = tagInput.value) => {
-    const normalized = String(value || '').trim();
-    if (!normalized) return;
-    const exists = form.tag_names.some((entry) => entry.toLowerCase() === normalized.toLowerCase());
-    if (!exists) {
-        form.tag_names.push(normalized);
-    }
-    tagInput.value = '';
-};
-
-const removeTagFromForm = (index) => {
-    form.tag_names.splice(index, 1);
-};
-
-const applyFilters = () => {
-    router.get(`/projects/${props.project.id}`, filterForm, {
-        preserveState: true,
-        replace: true,
-    });
-};
-
-const toggleTagFilter = (tagId) => {
-    const normalizedId = String(tagId);
-    const index = filterForm.tag_ids.indexOf(normalizedId);
-
-    if (index === -1) {
-        filterForm.tag_ids.push(normalizedId);
-    } else {
-        filterForm.tag_ids.splice(index, 1);
-    }
-
-    applyFilters();
-};
-
-const clearTagFilters = () => {
-    if (!filterForm.tag_ids.length) return;
-
-    filterForm.tag_ids = [];
-    applyFilters();
-};
-
-const tagFilterLabel = computed(() => {
-    const count = filterForm.tag_ids.length;
-    if (!count) return 'All tags';
-    return count === 1 ? '1 tag selected' : `${count} tags selected`;
-});
-</script>
-
 <template>
     <Head :title="project.name" />
 
@@ -238,7 +81,7 @@ const tagFilterLabel = computed(() => {
                                     <span class="table-avatar issue">{{ issue.title.slice(0, 1) }}</span>
                                     <div>
                                         <strong>{{ issue.title }}</strong>
-                                        <small>{{ plainText(issue.description) || 'No description added yet.' }}</small>
+                                        <!-- <small>{{ plainText(issue.description) || 'No description added yet.' }}</small> -->
                                         <div v-if="issue.tags?.length" class="d-flex flex-wrap gap-1 mt-2">
                                             <span v-for="tag in issue.tags" :key="tag.id" class="badge rounded-pill text-bg-light border">{{ tag.name }}</span>
                                         </div>
@@ -460,3 +303,160 @@ const tagFilterLabel = computed(() => {
         </Modal>
     </AppLayout>
 </template>
+
+<script setup>
+import { computed, reactive, ref } from 'vue';
+import { Head, router, useForm } from '@inertiajs/vue3';
+import Swal from 'sweetalert2';
+import FormError from '../../Components/FormError.vue';
+import Modal from '../../Components/Modal.vue';
+import Pagination from '../../Components/Pagination.vue';
+import RichTextEditor from '../../Components/RichTextEditor.vue';
+import StatusPill from '../../Components/StatusPill.vue';
+import AppLayout from '../../Layouts/AppLayout.vue';
+
+const props = defineProps({
+    project: Object,
+    issues: Object,
+    projectTags: Array,
+    filters: Object,
+    breadcrumbs: Array,
+    userRole:          { type: String,  default: null },
+    canManageMembers:  { type: Boolean, default: false },
+    canCreateIssue:    { type: Boolean, default: false },
+    projectMembers:    { type: Array,   default: () => [] },
+    addableUsers:      { type: Array,   default: () => [] },
+    roles:             { type: Array,   default: () => [] },
+    canEditRoles:      { type: Boolean, default: false }, // এটি যুক্ত করুন
+});
+
+const modalOpen = ref(false);
+const issueRows = computed(() => props.issues?.data ?? []);
+const plainText = (value) => String(value || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+const filterForm = reactive({
+    status: props.filters?.status ?? '',
+    tag_ids: Array.isArray(props.filters?.tag_ids) ? props.filters.tag_ids.map(String) : [],
+    q: props.filters?.q ?? '',
+});
+const form = useForm({
+    title: '',
+    description: '',
+    status: 'todo',
+    project_id: props.project.id,
+    parent_id: '',
+    images: [],
+    files: [],
+    links: [],
+    tag_names: [],
+});
+const tagInput = ref('');
+
+const memberModalOpen  = ref(false);
+const memberForm = useForm({ user_id: '', role_id: '' });
+
+const addMember = () => {
+    memberForm.post(`/projects/${props.project.id}/members`, {
+        onSuccess: () => {
+            memberModalOpen.value = false;
+            memberForm.reset();
+        },
+    });
+};
+
+const updateMemberRole = (member, roleId) => {
+    router.put(`/projects/${props.project.id}/members/${member.id}`, { role_id: roleId }, {
+        preserveScroll: true,
+    });
+};
+
+const removeMember = (member) => {
+    Swal.fire({
+        title: `Remove ${member.user?.name}?`,
+        text: 'They will lose access to this project.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Remove',
+        confirmButtonColor: '#b91c1c',
+    }).then(({ isConfirmed }) => {
+        if (isConfirmed) {
+            router.delete(`/projects/${props.project.id}/members/${member.id}`, {
+                preserveScroll: true,
+            });
+        }
+    });
+};
+
+const submit = () => {
+    form.post('/issues', {
+        forceFormData: true,
+        onSuccess: () => {
+            modalOpen.value = false;
+            form.reset('title', 'description', 'status', 'parent_id', 'images', 'files', 'tag_names');
+            form.project_id = props.project.id;
+        },
+    });
+};
+
+const onImageChange = (event) => {
+    form.images = Array.from(event.target.files || []);
+};
+
+const onFileChange = (event) => {
+    form.files = Array.from(event.target.files || []);
+};
+
+const addLink = () => {
+    form.links.push({ label: '', url: '' });
+};
+
+const removeLink = (index) => {
+    form.links.splice(index, 1);
+};
+
+const addTagToForm = (value = tagInput.value) => {
+    const normalized = String(value || '').trim();
+    if (!normalized) return;
+    const exists = form.tag_names.some((entry) => entry.toLowerCase() === normalized.toLowerCase());
+    if (!exists) {
+        form.tag_names.push(normalized);
+    }
+    tagInput.value = '';
+};
+
+const removeTagFromForm = (index) => {
+    form.tag_names.splice(index, 1);
+};
+
+const applyFilters = () => {
+    router.get(`/projects/${props.project.id}`, filterForm, {
+        preserveState: true,
+        replace: true,
+    });
+};
+
+const toggleTagFilter = (tagId) => {
+    const normalizedId = String(tagId);
+    const index = filterForm.tag_ids.indexOf(normalizedId);
+
+    if (index === -1) {
+        filterForm.tag_ids.push(normalizedId);
+    } else {
+        filterForm.tag_ids.splice(index, 1);
+    }
+
+    applyFilters();
+};
+
+const clearTagFilters = () => {
+    if (!filterForm.tag_ids.length) return;
+
+    filterForm.tag_ids = [];
+    applyFilters();
+};
+
+const tagFilterLabel = computed(() => {
+    const count = filterForm.tag_ids.length;
+    if (!count) return 'All tags';
+    return count === 1 ? '1 tag selected' : `${count} tags selected`;
+});
+</script>
