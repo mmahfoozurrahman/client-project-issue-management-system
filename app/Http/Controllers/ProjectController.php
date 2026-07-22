@@ -111,12 +111,22 @@ class ProjectController extends Controller
 
         $request->validate([
             'status' => ['nullable', 'string', Rule::in(['todo', 'inprogress', 'done'])],
-            'tag_id' => [
-                'nullable',
+            'tag_ids' => ['nullable', 'array'],
+            'tag_ids.*' => [
                 'integer',
+                'distinct',
                 Rule::exists('issue_tags', 'id')->where(fn($query) => $query->where('project_id', $project->id)),
             ],
+            'q' => ['nullable', 'string', 'max:255'],
         ]);
+
+        $tagIds = collect($request->input('tag_ids', []))
+            ->map(fn ($tagId) => (int) $tagId)
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+        $search = trim((string) $request->input('q', ''));
 
         $project->load(['client:id,name']);
 
@@ -126,10 +136,14 @@ class ProjectController extends Controller
                 $request->filled('status'),
                 fn($query) => $query->where('status', $request->string('status')->value())
             )
-            ->when(
-                $request->filled('tag_id'),
-                fn($query) => $query->whereHas('tags', fn($tagQuery) => $tagQuery->whereKey((int) $request->input('tag_id')))
-            )
+            ->when($tagIds, fn($query) => $query->whereHas('tags', fn($tagQuery) => $tagQuery->whereIn('issue_tags.id', $tagIds)))
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($searchQuery) use ($search) {
+                    $searchQuery
+                        ->where('title', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%");
+                });
+            })
             ->latest()
             ->with(['images', 'files', 'links', 'tags'])
             ->withCount(['subIssues', 'images', 'files'])
@@ -158,7 +172,8 @@ class ProjectController extends Controller
                 ->get(['id', 'name', 'project_id']),
             'filters' => [
                 'status' => $request->input('status'),
-                'tag_id' => $request->input('tag_id'),
+                'tag_ids' => $tagIds,
+                'q' => $search,
             ],
             'userRole' => $userRole,
             'canManageMembers' => $user->canOnProject('project.manage_members', $project->id),

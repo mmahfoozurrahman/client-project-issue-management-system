@@ -29,7 +29,8 @@ const issueRows = computed(() => props.issues?.data ?? []);
 const plainText = (value) => String(value || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 const filterForm = reactive({
     status: props.filters?.status ?? '',
-    tag_id: props.filters?.tag_id ?? '',
+    tag_ids: Array.isArray(props.filters?.tag_ids) ? props.filters.tag_ids.map(String) : [],
+    q: props.filters?.q ?? '',
 });
 const form = useForm({
     title: '',
@@ -126,6 +127,32 @@ const applyFilters = () => {
         replace: true,
     });
 };
+
+const toggleTagFilter = (tagId) => {
+    const normalizedId = String(tagId);
+    const index = filterForm.tag_ids.indexOf(normalizedId);
+
+    if (index === -1) {
+        filterForm.tag_ids.push(normalizedId);
+    } else {
+        filterForm.tag_ids.splice(index, 1);
+    }
+
+    applyFilters();
+};
+
+const clearTagFilters = () => {
+    if (!filterForm.tag_ids.length) return;
+
+    filterForm.tag_ids = [];
+    applyFilters();
+};
+
+const tagFilterLabel = computed(() => {
+    const count = filterForm.tag_ids.length;
+    if (!count) return 'All tags';
+    return count === 1 ? '1 tag selected' : `${count} tags selected`;
+});
 </script>
 
 <template>
@@ -154,7 +181,7 @@ const applyFilters = () => {
                 <Link href="/kanban" class="btn btn-outline-dark rounded-pill">Open Kanban</Link>
             </div>
 
-            <div class="filters-row mb-3">
+            <form class="filters-row mb-3" @submit.prevent="applyFilters">
                 <select v-model="filterForm.status" class="form-select" @change="applyFilters">
                     <option value="">All statuses</option>
                     <option value="todo">Todo</option>
@@ -162,11 +189,36 @@ const applyFilters = () => {
                     <option value="done">Done</option>
                 </select>
 
-                <select v-model="filterForm.tag_id" class="form-select" @change="applyFilters">
-                    <option value="">All tags</option>
-                    <option v-for="tag in projectTags" :key="tag.id" :value="tag.id">{{ tag.name }}</option>
-                </select>
-            </div>
+                <details class="tag-filter-dropdown">
+                    <summary class="form-select">{{ tagFilterLabel }}</summary>
+                    <div class="tag-filter-menu">
+                        <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+                            <span class="small text-muted">Select one or more tags</span>
+                            <button type="button" class="btn btn-link btn-sm p-0" @click="clearTagFilters">Clear</button>
+                        </div>
+                        <label v-for="tag in projectTags" :key="tag.id" class="tag-filter-option">
+                            <input
+                                type="checkbox"
+                                :checked="filterForm.tag_ids.includes(String(tag.id))"
+                                @change="toggleTagFilter(tag.id)"
+                            >
+                            <span>{{ tag.name }}</span>
+                        </label>
+                        <p v-if="!projectTags?.length" class="small text-muted mb-0">No tags have been added to this project yet.</p>
+                    </div>
+                </details>
+
+                <div class="d-flex gap-2 flex-grow-1">
+                    <input
+                        v-model="filterForm.q"
+                        type="search"
+                        class="form-control"
+                        placeholder="Search title or description..."
+                        aria-label="Search issue title or description"
+                    >
+                    <button type="submit" class="btn btn-outline-secondary">Search</button>
+                </div>
+            </form>
 
             <div class="compact-table-shell">
                 <table class="compact-table">
