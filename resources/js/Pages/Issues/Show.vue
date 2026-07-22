@@ -118,6 +118,10 @@ const destroyIssue = () => {
     });
 };
 
+const togglePin = () => {
+    router.post(`/issues/${props.issue.id}/pin`, {}, { preserveScroll: true });
+};
+
 const onImageChange = (event) => {
     updateForm.images = Array.from(event.target.files || []);
 };
@@ -354,6 +358,13 @@ const deleteLink = (link) => {
                         Add Sub-Issue
                     </button>
                     <StatusPill :status="issue.status" class="issue-hero-status" />
+                    <button
+                        type="button"
+                        class="btn rounded-pill issue-hero-action-btn issue-hero-add-btn"
+                        @click="togglePin"
+                    >
+                        {{ issue.is_pinned ? 'Unpin Issue' : 'Pin Issue' }}
+                    </button>
                     <button
                         v-if="canDelete"
                         class="btn rounded-pill issue-hero-action-btn issue-delete-btn"

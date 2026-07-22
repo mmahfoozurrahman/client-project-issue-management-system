@@ -15,6 +15,36 @@
             </div>
         </section>
 
+        <section class="panel-card mb-4">
+            <div class="panel-header">
+                <div>
+                    <p class="section-kicker">Pinned Issues</p>
+                    <h3 class="panel-title">Your project bookmarks</h3>
+                </div>
+            </div>
+
+            <div v-if="pinnedIssues.length" class="row g-3">
+                <div v-for="issue in pinnedIssues" :key="issue.id" class="col-md-6 col-xl-4">
+                    <div class="border rounded-4 p-3 h-100 bg-light-subtle d-flex flex-column gap-3">
+                        <div class="d-flex align-items-start gap-2">
+                            <span class="table-avatar issue flex-shrink-0">{{ issue.title.slice(0, 1) }}</span>
+                            <div class="min-w-0">
+                                <Link :href="`/issues/${issue.id}`" class="fw-semibold text-decoration-none text-dark d-block">{{ issue.title }}</Link>
+                                <div v-if="issue.tags?.length" class="d-flex flex-wrap gap-1 mt-2">
+                                    <span v-for="tag in issue.tags" :key="tag.id" class="badge rounded-pill text-bg-light border">{{ tag.name }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between gap-2 mt-auto">
+                            <StatusPill :status="issue.status" />
+                            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" @click="togglePin(issue)">Unpin</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div v-else class="table-empty">Pin an issue from the list or its detail page to keep it here.</div>
+        </section>
+
         <section class="panel-card">
             <div class="panel-header">
                 <div>
@@ -93,6 +123,9 @@
                             <td data-label="Images">{{ issue.images_count ?? 0 }}</td>
                             <td data-label="Action">
                                 <div class="table-actions">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" @click="togglePin(issue)">
+                                        {{ issue.is_pinned ? 'Unpin' : 'Pin' }}
+                                    </button>
                                     <Link :href="`/issues/${issue.id}`" class="btn btn-sm btn-light rounded-pill">Open</Link>
                                 </div>
                             </td>
@@ -318,6 +351,7 @@ import AppLayout from '../../Layouts/AppLayout.vue';
 const props = defineProps({
     project: Object,
     issues: Object,
+    pinnedIssues: { type: Array, default: () => [] },
     projectTags: Array,
     filters: Object,
     breadcrumbs: Array,
@@ -396,6 +430,10 @@ const submit = () => {
             form.project_id = props.project.id;
         },
     });
+};
+
+const togglePin = (issue) => {
+    router.post(`/issues/${issue.id}/pin`, {}, { preserveScroll: true });
 };
 
 const onImageChange = (event) => {

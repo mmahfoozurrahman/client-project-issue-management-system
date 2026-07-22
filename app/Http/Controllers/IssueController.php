@@ -60,6 +60,7 @@ class IssueController extends Controller
                 'tags'
             ])
             ->withCount(['subIssues', 'images', 'files'])
+            ->withExists(['pinnedByUsers as is_pinned' => fn ($pinQuery) => $pinQuery->whereKey($user->id)])
             ->whereNull('parent_id')
             ->latest();
 
@@ -328,6 +329,7 @@ class IssueController extends Controller
 
         $issue->load($this->issueService->detailRelations());
         $this->issueService->loadNestedSubIssues($issue);
+        $issue->setAttribute('is_pinned', $issue->pinnedByUsers()->whereKey(auth()->id())->exists());
 
         $accessibleIds = auth()->user()->accessibleProjectIds();
         $issueTagIds = $issue->tags->pluck('id');
@@ -439,6 +441,22 @@ class IssueController extends Controller
         $issue->delete();
 
         return redirect()->route('projects.show', $project)->with('success', "Issue {$title} deleted successfully.");
+    }
+
+    public function togglePin(Request $request, Issue $issue): RedirectResponse
+    {
+        $this->authorize('view', $issue);
+
+        $pins = $request->user()->pinnedIssues();
+        $isPinned = $pins->whereKey($issue->id)->exists();
+
+        if ($isPinned) {
+            $pins->detach($issue->id);
+        } else {
+            $pins->attach($issue->id);
+        }
+
+        return back()->with('success', $isPinned ? 'Issue unpinned.' : 'Issue pinned.');
     }
 
     public function destroyImage(IssueImage $issueImage): RedirectResponse

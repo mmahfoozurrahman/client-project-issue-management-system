@@ -67,6 +67,10 @@ const applyFilters = () => {
     });
 };
 
+const togglePin = (issue) => {
+    router.post(`/issues/${issue.id}/pin`, {}, { preserveScroll: true });
+};
+
 const submit = () => {
     form.post('/issues', {
         forceFormData: true,
@@ -228,6 +232,9 @@ const idleMetaClass = (issue) => {
                             <td data-label="Sub-issues">{{ issue.sub_issues_count ?? 0 }}</td>
                             <td data-label="Actions">
                                 <div class="table-actions">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" @click="togglePin(issue)">
+                                        {{ issue.is_pinned ? 'Unpin' : 'Pin' }}
+                                    </button>
                                     <Link :href="`/issues/${issue.id}`" class="btn btn-sm btn-light rounded-pill">Open</Link>
                                 </div>
                             </td>

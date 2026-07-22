@@ -49,6 +49,11 @@ class User extends Authenticatable
         return $this->hasMany(Issue::class);
     }
 
+    public function pinnedIssues(): BelongsToMany
+    {
+        return $this->belongsToMany(Issue::class, 'issue_pins')->withTimestamps();
+    }
+
     public function memberProjects(): BelongsToMany
     {
         return $this->belongsToMany(Project::class, 'project_members')

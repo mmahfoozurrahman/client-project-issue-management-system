@@ -72,4 +72,9 @@ class Issue extends Model
     {
         return $this->belongsToMany(IssueTag::class, 'issue_issue_tag');
     }
+
+    public function pinnedByUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'issue_pins')->withTimestamps();
+    }
 }

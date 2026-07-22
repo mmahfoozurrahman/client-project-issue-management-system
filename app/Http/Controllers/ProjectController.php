@@ -155,11 +155,20 @@ class ProjectController extends Controller
             ->latest()
             ->with(['images', 'files', 'links', 'tags'])
             ->withCount(['subIssues', 'images', 'files'])
+            ->withExists(['pinnedByUsers as is_pinned' => fn ($pinQuery) => $pinQuery->whereKey(auth()->id())])
             ->paginate(10)
             ->withQueryString();
 
         $user = auth()->user();
         $userRole = $user->projectRoleOn($project->id);
+
+        $pinnedIssues = $user->pinnedIssues()
+            ->withoutGlobalScope('user_owned')
+            ->where('project_id', $project->id)
+            ->with('tags:id,name')
+            ->withCount(['subIssues', 'images'])
+            ->orderByPivot('created_at', 'desc')
+            ->get();
 
         $projectMembers = $project->projectMembers()
             ->with(['user:id,name,email', 'role:id,name,slug'])
@@ -174,6 +183,7 @@ class ProjectController extends Controller
         return Inertia::render('Projects/Show', [
             'project' => $project,
             'issues' => $issues,
+            'pinnedIssues' => $pinnedIssues,
             'projectTags' => IssueTag::query()
                 ->where('project_id', $project->id)
                 ->orderBy('name')
