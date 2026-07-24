@@ -38,7 +38,7 @@
                         <div class="d-flex align-items-center justify-content-between gap-2 mt-auto">
                             <StatusPill :status="issue.status" />
                             <div class="d-flex align-items-center gap-2">
-                                <button type="button" class="btn btn-sm btn-link text-decoration-none px-0" @click="openQuickRead(issue)">Quick read</button>
+                                <button type="button" class="btn btn-sm btn-light rounded-pill" @click="openQuickRead(issue)">Quick read</button>
                                 <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" @click="togglePin(issue)">Unpin</button>
                             </div>
                         </div>
@@ -128,7 +128,7 @@
                                     <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" @click="togglePin(issue)">
                                         {{ issue.is_pinned ? 'Unpin' : 'Pin' }}
                                     </button>
-                                    <button type="button" class="btn btn-sm btn-link text-decoration-none" @click="openQuickRead(issue)">Quick read</button>
+                                    <button type="button" class="btn btn-sm btn-light rounded-pill" @click="openQuickRead(issue)">Quick read</button>
                                     <Link :href="`/issues/${issue.id}`" class="btn btn-sm btn-light rounded-pill">Open</Link>
                                 </div>
                             </td>
