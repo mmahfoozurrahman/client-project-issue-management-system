@@ -153,7 +153,7 @@ class ProjectController extends Controller
                 });
             })
             ->latest()
-            ->with(['images', 'files', 'links', 'tags'])
+            ->with(['images', 'files', 'links', 'tags', 'user:id,name', 'parentIssue:id,title'])
             ->withCount(['subIssues', 'images', 'files'])
             ->withExists(['pinnedByUsers as is_pinned' => fn ($pinQuery) => $pinQuery->whereKey(auth()->id())])
             ->paginate(10)
@@ -165,8 +165,8 @@ class ProjectController extends Controller
         $pinnedIssues = $user->pinnedIssues()
             ->withoutGlobalScope('user_owned')
             ->where('project_id', $project->id)
-            ->with('tags:id,name')
-            ->withCount(['subIssues', 'images'])
+            ->with(['images', 'files', 'links', 'tags:id,name', 'user:id,name', 'parentIssue:id,title'])
+            ->withCount(['subIssues', 'images', 'files'])
             ->orderByPivot('created_at', 'desc')
             ->get();
 
