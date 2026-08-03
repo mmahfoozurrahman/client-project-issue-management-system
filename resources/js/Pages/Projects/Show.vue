@@ -103,6 +103,7 @@
                             <th>Status</th>
                             <th>Sub-issues</th>
                             <th>Images</th>
+                            <th>Date</th>
                             <th class="text-end">Action</th>
                         </tr>
                     </thead>
@@ -123,6 +124,10 @@
                             <td data-label="Status"><StatusPill :status="issue.status" /></td>
                             <td data-label="Sub-issues">{{ issue.sub_issues_count ?? 0 }}</td>
                             <td data-label="Images">{{ issue.images_count ?? 0 }}</td>
+                            <td data-label="Date">
+                                <div><small class="issue-date-meta">Created {{ formatIssueDate(issue.created_at) }}</small></div>
+                                <div v-if="isUpdated(issue)"><small class="issue-date-meta">Updated {{ formatIssueDate(issue.updated_at) }}</small></div>
+                            </td>
                             <td data-label="Action">
                                 <div class="table-actions">
                                     <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" @click="togglePin(issue)">
@@ -134,7 +139,7 @@
                             </td>
                         </tr>
                         <tr v-if="!issueRows.length">
-                            <td colspan="5">
+                            <td colspan="6">
                                 <div class="table-empty">No top-level issues yet. Add the first issue for this project.</div>
                             </td>
                         </tr>
@@ -437,6 +442,15 @@ const openQuickRead = (issue) => {
 const formatIssueDate = (value) => value
     ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value))
     : 'Unknown date';
+
+const isUpdated = (issue) => {
+    if (!issue?.created_at || !issue?.updated_at) return false;
+
+    const created = new Date(issue.created_at).getTime();
+    const updated = new Date(issue.updated_at).getTime();
+
+    return Math.abs(updated - created) > 60 * 1000;
+};
 const filterForm = reactive({
     status: props.filters?.status ?? '',
     tag_ids: Array.isArray(props.filters?.tag_ids) ? props.filters.tag_ids.map(String) : [],
