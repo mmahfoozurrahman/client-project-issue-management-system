@@ -126,7 +126,7 @@
                             <td data-label="Images">{{ issue.images_count ?? 0 }}</td>
                             <td data-label="Date">
                                 <div><small class="issue-date-meta">Created {{ formatIssueDate(issue.created_at) }}</small></div>
-                                <div v-if="isUpdated(issue)"><small class="issue-date-meta">Updated {{ formatIssueDate(issue.updated_at) }}</small></div>
+                                <div v-if="issue.updated_at"><small class="issue-date-meta">Updated {{ formatIssueDate(issue.updated_at) }}</small></div>
                             </td>
                             <td data-label="Action">
                                 <div class="table-actions">
@@ -442,15 +442,6 @@ const openQuickRead = (issue) => {
 const formatIssueDate = (value) => value
     ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value))
     : 'Unknown date';
-
-const isUpdated = (issue) => {
-    if (!issue?.created_at || !issue?.updated_at) return false;
-
-    const created = new Date(issue.created_at).getTime();
-    const updated = new Date(issue.updated_at).getTime();
-
-    return Math.abs(updated - created) > 60 * 1000;
-};
 const filterForm = reactive({
     status: props.filters?.status ?? '',
     tag_ids: Array.isArray(props.filters?.tag_ids) ? props.filters.tag_ids.map(String) : [],
