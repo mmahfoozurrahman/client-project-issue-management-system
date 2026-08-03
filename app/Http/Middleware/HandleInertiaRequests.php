@@ -48,7 +48,8 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user()?->only(['id', 'name', 'email', 'is_admin', 'avatar_url']),
                 'has_own_projects' => $request->user()?->hasOwnProjects() ?? false,
                 'can_access_projects' => $request->user()?->canAccessProjectsPage() ?? false,
-                'can_access_clients' => $request->user()?->canAccessClientsPage() ?? false
+                'can_access_clients' => $request->user()?->canAccessClientsPage() ?? false,
+                'can_access_tags' => $request->user()?->canAccessTagsPage() ?? false,
             ],
             'app' => [
                 'site_name' => SiteMeta::value('site_name', 'Issue Tracker'),
@@ -58,8 +59,8 @@ class HandleInertiaRequests extends Middleware
                 'issue_critical_days' => $criticalDays,
             ],
             'flash' => [
-                'success' => fn() => $request->session()->get('success'),
-                'error' => fn() => $request->session()->get('error'),
+                'success' => fn () => $request->session()->get('success'),
+                'error' => fn () => $request->session()->get('error'),
             ],
         ];
     }

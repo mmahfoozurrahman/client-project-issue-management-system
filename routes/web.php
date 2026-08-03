@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IssueController;
+use App\Http\Controllers\TagController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectMemberController;
@@ -42,6 +43,7 @@ Route::middleware('auth')->group(function (): void {
     Route::resource('issues', IssueController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
     Route::post('/issues/{issue}/pin', [IssueController::class, 'togglePin'])->name('issues.pin.toggle');
     Route::get('/kanban', [IssueController::class, 'kanban'])->name('kanban');
+    Route::resource('tags', TagController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::delete('/issues/images/{issueImage}', [IssueController::class, 'destroyImage'])->name('issues.images.destroy');
     Route::delete('/issues/files/{issueFile}', [IssueController::class, 'destroyFile'])->name('issues.files.destroy');
     Route::delete('/issues/links/{issueLink}', [IssueController::class, 'destroyLink'])->name('issues.links.destroy');

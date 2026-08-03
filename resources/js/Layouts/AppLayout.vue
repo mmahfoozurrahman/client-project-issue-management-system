@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { useForm, usePage } from '@inertiajs/vue3';
-import { BriefcaseBusiness, Building2, LayoutDashboard, LogOut, Menu, PanelsTopLeft, Settings, ShieldCheck, UserCircle2, X } from 'lucide-vue-next';
+import { BriefcaseBusiness, Building2, LayoutDashboard, LogOut, Menu, PanelsTopLeft, Settings, ShieldCheck, Tag, UserCircle2, X } from 'lucide-vue-next';
 import Breadcrumbs from '../Components/Breadcrumbs.vue';
 import FlashToasts from '../Components/FlashToasts.vue';
 
@@ -18,6 +18,7 @@ defineProps({
 
 const canAccessProjects = computed(() => Boolean(page.props.auth?.can_access_projects));
 const canAccessClients = computed(() => Boolean(page.props.auth?.can_access_clients));
+const canAccessTags = computed(() => Boolean(page.props.auth?.can_access_tags));
 
 const showProjectNav = computed(() => isAdmin.value || canAccessProjects.value);
 
@@ -42,6 +43,9 @@ const navItems = computed(() => [
     ] : []),
     ...(showProjectNav.value ? [
         { label: 'Projects', href: '/projects', icon: BriefcaseBusiness },
+    ] : []),
+    ...(canAccessTags.value ? [
+        { label: 'Tags', href: '/tags', icon: Tag },
     ] : []),
     { label: 'Issues', href: '/issues', icon: PanelsTopLeft },
     { label: 'Kanban', href: '/kanban', icon: PanelsTopLeft },

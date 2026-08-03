@@ -5,11 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
 
@@ -18,7 +18,8 @@ use Illuminate\Support\Facades\Storage;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory;
+    use Notifiable;
 
     /**
      * Get the attributes that should be cast.
@@ -132,6 +133,7 @@ class User extends Authenticatable
 
     protected array $projectPermissionCache = [];
     protected ?array $accessibleProjectIdsCache = null;
+    protected ?array $manageableProjectIdsCache = null;
 
     protected $appends = ['avatar_url'];
 
@@ -141,7 +143,10 @@ class User extends Authenticatable
             return null;
         }
 
-        return Storage::disk('public')->url($this->avatar_path);
+        /** @var FilesystemAdapter $disk */
+        $disk = Storage::disk('public');
+
+        return $disk->url($this->avatar_path);
     }
 
 
@@ -177,6 +182,31 @@ class User extends Authenticatable
             })
             ->exists();
 
+    }
+
+    public function manageableProjectIds(): array
+    {
+        if ($this->manageableProjectIdsCache !== null) {
+            return $this->manageableProjectIdsCache;
+        }
+
+        if ($this->is_admin) {
+            return $this->manageableProjectIdsCache = Project::withoutGlobalScope('user_owned')
+                ->pluck('id')
+                ->all();
+        }
+
+        return $this->manageableProjectIdsCache = ProjectMember::where('user_id', $this->id)
+            ->whereHas('role', function ($query) {
+                $query->whereIn('slug', ['owner', 'developer']);
+            })
+            ->pluck('project_id')
+            ->all();
+    }
+
+    public function canAccessTagsPage(): bool
+    {
+        return $this->is_admin || $this->manageableProjectIds() !== [];
     }
 
     public function hasPermission(string $permission): bool
