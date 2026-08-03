@@ -103,7 +103,6 @@
                             <th>Status</th>
                             <th>Sub-issues</th>
                             <th>Images</th>
-                            <th>Date</th>
                             <th class="text-end">Action</th>
                         </tr>
                     </thead>
@@ -114,7 +113,8 @@
                                     <span class="table-avatar issue">{{ issue.title.slice(0, 1) }}</span>
                                     <div>
                                         <strong>{{ issue.title }}</strong>
-                                        <!-- <small>{{ plainText(issue.description) || 'No description added yet.' }}</small> -->
+                                        <small class="issue-date-meta">Created {{ formatIssueDate(issue.created_at) }}</small>
+                                        <small v-if="issue.updated_at" class="issue-date-meta">Updated {{ formatIssueDate(issue.updated_at) }}</small>
                                         <div v-if="issue.tags?.length" class="d-flex flex-wrap gap-1 mt-2">
                                             <span v-for="tag in issue.tags" :key="tag.id" class="badge rounded-pill text-bg-light border">{{ tag.name }}</span>
                                         </div>
@@ -124,10 +124,6 @@
                             <td data-label="Status"><StatusPill :status="issue.status" /></td>
                             <td data-label="Sub-issues">{{ issue.sub_issues_count ?? 0 }}</td>
                             <td data-label="Images">{{ issue.images_count ?? 0 }}</td>
-                            <td data-label="Date">
-                                <div><small class="issue-date-meta">Created {{ formatIssueDate(issue.created_at) }}</small></div>
-                                <div v-if="issue.updated_at"><small class="issue-date-meta">Updated {{ formatIssueDate(issue.updated_at) }}</small></div>
-                            </td>
                             <td data-label="Action">
                                 <div class="table-actions">
                                     <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" @click="togglePin(issue)">
@@ -139,7 +135,7 @@
                             </td>
                         </tr>
                         <tr v-if="!issueRows.length">
-                            <td colspan="6">
+                            <td colspan="5">
                                 <div class="table-empty">No top-level issues yet. Add the first issue for this project.</div>
                             </td>
                         </tr>
