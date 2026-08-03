@@ -78,6 +78,20 @@ const imageModalOpen = ref(false);
 const activeImageIndex = ref(0);
 const updateTagInput = ref('');
 const childTagInput = ref('');
+const updateTagSuggestions = computed(() => {
+    if (!updateTagInput.value.trim()) return [];
+    const query = updateTagInput.value.trim().toLowerCase();
+    return (props.projectTags ?? []).filter(
+        (tag) => tag.name.toLowerCase().includes(query) && !updateForm.tag_names.some((t) => t.toLowerCase() === tag.name.toLowerCase())
+    );
+});
+const childTagSuggestions = computed(() => {
+    if (!childTagInput.value.trim()) return [];
+    const query = childTagInput.value.trim().toLowerCase();
+    return (props.projectTags ?? []).filter(
+        (tag) => tag.name.toLowerCase().includes(query) && !childForm.tag_names.some((t) => t.toLowerCase() === tag.name.toLowerCase())
+    );
+});
 const formatFileSize = (value) => {
     if (!value && value !== 0) {
         return 'Unknown size';
@@ -493,26 +507,30 @@ const deleteLink = (link) => {
                         <div>
                             <label class="form-label">Tags</label>
                             <small class="text-muted d-block mb-2">Project-based tags for search and categorization.</small>
-                            <div class="d-flex gap-2 mb-2">
+                            <div class="d-flex gap-2 mb-2 position-relative">
                                 <input
                                     v-model="updateTagInput"
                                     type="text"
                                     class="form-control"
                                     placeholder="Type tag and press Enter"
                                     @keyup.enter.prevent="addUpdateTag()"
+                                    autocomplete="off"
                                 >
                                 <button type="button" class="btn btn-outline-secondary" @click="addUpdateTag()">Add</button>
-                            </div>
-                            <div v-if="projectTags?.length" class="d-flex flex-wrap gap-1 mb-2">
-                                <button
-                                    v-for="tag in projectTags"
-                                    :key="tag.id"
-                                    type="button"
-                                    class="btn btn-sm btn-light border rounded-pill"
-                                    @click="addUpdateTag(tag.name)"
-                                >
-                                    + {{ tag.name }}
-                                </button>
+                                <div v-if="updateTagSuggestions.length" class="position-absolute top-100 start-0 mt-1 w-100 bg-white border rounded shadow-sm" style="z-index: 1000; max-height: 200px; overflow-y: auto;">
+                                    <button
+                                        v-for="tag in updateTagSuggestions"
+                                        :key="tag.id"
+                                        type="button"
+                                        class="w-100 text-start px-3 py-2 border-0 bg-white text-decoration-none d-flex align-items-center gap-2"
+                                        style="cursor: pointer; font-size: 0.9rem;"
+                                        @click.prevent="addUpdateTag(tag.name)"
+                                        @mouseover="$event.currentTarget.style.backgroundColor = '#f5f5f5'"
+                                        @mouseout="$event.currentTarget.style.backgroundColor = 'white'"
+                                    >
+                                        <span class="badge bg-light text-dark">{{ tag.name }}</span>
+                                    </button>
+                                </div>
                             </div>
                             <div v-if="updateForm.tag_names.length" class="d-flex flex-wrap gap-1">
                                 <span v-for="(tag, index) in updateForm.tag_names" :key="`${tag}-${index}`" class="badge rounded-pill text-bg-light border d-inline-flex align-items-center gap-1 px-2 py-1">
@@ -759,26 +777,30 @@ const deleteLink = (link) => {
                 <div>
                     <label class="form-label">Tags</label>
                     <small class="text-muted d-block mb-2">Project-based tags for search and categorization.</small>
-                    <div class="d-flex gap-2 mb-2">
+                    <div class="d-flex gap-2 mb-2 position-relative">
                         <input
                             v-model="childTagInput"
                             type="text"
                             class="form-control"
                             placeholder="Type tag and press Enter"
                             @keyup.enter.prevent="addChildTag()"
+                            autocomplete="off"
                         >
                         <button type="button" class="btn btn-outline-secondary" @click="addChildTag()">Add</button>
-                    </div>
-                    <div v-if="projectTags?.length" class="d-flex flex-wrap gap-1 mb-2">
-                        <button
-                            v-for="tag in projectTags"
-                            :key="`child-${tag.id}`"
-                            type="button"
-                            class="btn btn-sm btn-light border rounded-pill"
-                            @click="addChildTag(tag.name)"
-                        >
-                            + {{ tag.name }}
-                        </button>
+                        <div v-if="childTagSuggestions.length" class="position-absolute top-100 start-0 mt-1 w-100 bg-white border rounded shadow-sm" style="z-index: 1000; max-height: 200px; overflow-y: auto;">
+                            <button
+                                v-for="tag in childTagSuggestions"
+                                :key="`child-suggest-${tag.id}`"
+                                type="button"
+                                class="w-100 text-start px-3 py-2 border-0 bg-white text-decoration-none d-flex align-items-center gap-2"
+                                style="cursor: pointer; font-size: 0.9rem;"
+                                @click.prevent="addChildTag(tag.name)"
+                                @mouseover="$event.currentTarget.style.backgroundColor = '#f5f5f5'"
+                                @mouseout="$event.currentTarget.style.backgroundColor = 'white'"
+                            >
+                                <span class="badge bg-light text-dark">{{ tag.name }}</span>
+                            </button>
+                        </div>
                     </div>
                     <div v-if="childForm.tag_names.length" class="d-flex flex-wrap gap-1">
                         <span v-for="(tag, index) in childForm.tag_names" :key="`child-${tag}-${index}`" class="badge rounded-pill text-bg-light border d-inline-flex align-items-center gap-1 px-2 py-1">
