@@ -27,8 +27,7 @@ class IssueController extends Controller
     public function __construct(
         private readonly IssueService $issueService,
         private readonly RichTextSanitizer $richTextSanitizer,
-    )
-    {
+    ) {
     }
 
     public function index(Request $request): Response
@@ -76,13 +75,13 @@ class IssueController extends Controller
 
         if ($request->filled('tag_id')) {
             $tagId = (int) $request->input('tag_id');
-            $query->whereHas('tags', fn($q) => $q->whereKey($tagId));
+            $query->whereHas('tags', fn ($q) => $q->whereKey($tagId));
         }
 
         if ($request->filled('q')) {
             $term = trim((string) $request->input('q'));
             $query->where(
-                fn($q) => $q
+                fn ($q) => $q
                     ->where('title', 'like', "%{$term}%")
                     ->orWhere('description', 'like', "%{$term}%")
             );
@@ -117,7 +116,7 @@ class IssueController extends Controller
             ],
             'staleDays' => $staleDays,
             'canCreateIssue' => $user->is_admin || ProjectMember::where('user_id', $user->id)
-                ->whereHas('role.permissions', fn($q) => $q->where('slug', 'issue.create'))
+                ->whereHas('role.permissions', fn ($q) => $q->where('slug', 'issue.create'))
                 ->exists(),
             'breadcrumbs' => [
                 ['label' => 'Home', 'href' => route('dashboard')],
@@ -152,7 +151,7 @@ class IssueController extends Controller
             ])
             ->withCount(['subIssues', 'images', 'files'])
             ->whereNull('parent_id')
-            ->when($project, fn($q) => $q->where('project_id', $project->id))
+            ->when($project, fn ($q) => $q->where('project_id', $project->id))
             ->orderBy('created_at', 'desc')
             ->get()
             ->groupBy('status');
@@ -162,7 +161,7 @@ class IssueController extends Controller
         $completedToday = Issue::withoutGlobalScope('user_owned')
             ->whereIn('project_id', $accessibleIds)
             ->whereDate('done_at', Carbon::today())
-            ->when($project, fn($q) => $q->where('project_id', $project->id))
+            ->when($project, fn ($q) => $q->where('project_id', $project->id))
             ->count();
 
         return Inertia::render('Issues/Kanban', [
@@ -177,8 +176,8 @@ class IssueController extends Controller
                 'remaining' => max($dailyTarget - $completedToday, 0),
             ],
             'laneNudges' => [
-                'todo' => $issues->get('todo', collect())->filter(fn(Issue $i) => $i->updated_at <= Carbon::now()->subDays($staleDays))->count(),
-                'inprogress' => $issues->get('inprogress', collect())->filter(fn(Issue $i) => $i->updated_at <= Carbon::now()->subDays($staleDays))->count(),
+                'todo' => $issues->get('todo', collect())->filter(fn (Issue $i) => $i->updated_at <= Carbon::now()->subDays($staleDays))->count(),
+                'inprogress' => $issues->get('inprogress', collect())->filter(fn (Issue $i) => $i->updated_at <= Carbon::now()->subDays($staleDays))->count(),
             ],
             'staleDays' => $staleDays,
             'projects' => Project::withoutGlobalScope('user_owned')->whereIn('id', $accessibleIds)->orderBy('name')->get(['id', 'name']),
@@ -214,16 +213,16 @@ class IssueController extends Controller
         $monthStart = Carbon::createFromFormat('Y-m', $selectedMonth)->startOfMonth();
         $monthEnd = (clone $monthStart)->endOfMonth();
 
-        $base = fn() => Issue::withoutGlobalScope('user_owned')
+        $base = fn () => Issue::withoutGlobalScope('user_owned')
             ->whereIn('project_id', $accessibleIds)
             ->whereDate('created_at', $selectedDate)
-            ->when($selectedProjectId, fn($q) => $q->where('project_id', $selectedProjectId));
+            ->when($selectedProjectId, fn ($q) => $q->where('project_id', $selectedProjectId));
 
         $calendarCounts = Issue::withoutGlobalScope('user_owned')
             ->whereIn('project_id', $accessibleIds)
             ->selectRaw('DATE(created_at) as date_key, COUNT(*) as total')
             ->whereBetween('created_at', [$monthStart, $monthEnd])
-            ->when($selectedProjectId, fn($q) => $q->where('project_id', $selectedProjectId))
+            ->when($selectedProjectId, fn ($q) => $q->where('project_id', $selectedProjectId))
             ->groupBy('date_key')
             ->pluck('total', 'date_key');
 
@@ -249,13 +248,13 @@ class IssueController extends Controller
             ->whereDate('created_at', '<', $selectedDate)
             ->where('status', '!=', 'done')
             ->where('updated_at', '<=', Carbon::now()->subDays($staleDays))
-            ->when($selectedProjectId, fn($q) => $q->where('project_id', $selectedProjectId))
+            ->when($selectedProjectId, fn ($q) => $q->where('project_id', $selectedProjectId))
             ->orderBy('updated_at')
             ->limit(6)
             ->get();
 
         $statusCounts = collect(['todo', 'inprogress', 'done'])->mapWithKeys(
-            fn(string $status) => [$status => $base()->where('status', $status)->count()]
+            fn (string $status) => [$status => $base()->where('status', $status)->count()]
         );
 
         return Inertia::render('Issues/DailyActivity', [
@@ -266,7 +265,7 @@ class IssueController extends Controller
                 'completed_total' => Issue::withoutGlobalScope('user_owned')
                     ->whereIn('project_id', $accessibleIds)
                     ->whereDate('done_at', $selectedDate)
-                    ->when($selectedProjectId, fn($q) => $q->where('project_id', $selectedProjectId))
+                    ->when($selectedProjectId, fn ($q) => $q->where('project_id', $selectedProjectId))
                     ->count(),
             ],
             'carryoverIssues' => $carryoverIssues,
@@ -341,7 +340,6 @@ class IssueController extends Controller
                 ->whereKeyNot($issue->id)
                 ->whereHas('tags', fn ($query) => $query->whereIn('issue_tags.id', $issueTagIds))
                 ->with('tags:id,name')
-                ->latest('updated_at')
                 ->get(['id', 'title', 'status', 'updated_at'])
                 ->map(function (Issue $matchingIssue) use ($issueTagIds) {
                     $matchingTags = $matchingIssue->tags
@@ -360,6 +358,8 @@ class IssueController extends Controller
                     ];
                 })
                 ->values();
+
+            $matchingIssues = $this->issueService->sortMatchingIssues($matchingIssues);
         }
 
         return Inertia::render('Issues/Show', [

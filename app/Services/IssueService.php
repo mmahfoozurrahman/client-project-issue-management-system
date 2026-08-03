@@ -23,7 +23,7 @@ class IssueService
             'links',
             'tags',
             'parentIssue:id,title,project_id,parent_id',
-            'subIssues' => fn($query) => $query
+            'subIssues' => fn ($query) => $query
                 ->with(['images', 'files', 'links', 'tags', 'project:id,name'])
                 ->withCount(['subIssues', 'images', 'files'])
                 ->latest(),
@@ -83,7 +83,7 @@ class IssueService
         }
 
         $payload = collect($links)
-            ->filter(fn($link) => is_array($link) && filled($link['url'] ?? null))
+            ->filter(fn ($link) => is_array($link) && filled($link['url'] ?? null))
             ->map(function ($link) {
                 $url = trim((string) $link['url']);
 
@@ -107,13 +107,32 @@ class IssueService
     public function loadNestedSubIssues(Issue $issue): void
     {
         $issue->load([
-            'subIssues' => fn($query) => $query
+            'subIssues' => fn ($query) => $query
                 ->with(['images', 'files', 'links', 'tags', 'project:id,name', 'parentIssue:id,title,project_id,parent_id'])
                 ->withCount(['subIssues', 'images', 'files'])
                 ->latest(),
         ]);
 
-        $issue->subIssues->each(fn(Issue $subIssue) => $this->loadNestedSubIssues($subIssue));
+        $issue->subIssues->each(fn (Issue $subIssue) => $this->loadNestedSubIssues($subIssue));
+    }
+
+    public function sortMatchingIssues(Collection $matchingIssues): Collection
+    {
+        $numberedIssues = $matchingIssues
+            ->filter(fn ($issue) => $this->extractLeadingIssueNumber($issue['title'] ?? '') !== null)
+            ->sortBy(function ($issue) {
+                return $this->extractLeadingIssueNumber($issue['title'] ?? '');
+            }, SORT_NUMERIC)
+            ->values();
+
+        $unnumberedIssues = $matchingIssues
+            ->reject(fn ($issue) => $this->extractLeadingIssueNumber($issue['title'] ?? '') !== null)
+            ->sortByDesc(fn ($issue) => $issue['updated_at'] ?? null)
+            ->values();
+
+        return $numberedIssues
+            ->merge($unnumberedIssues)
+            ->values();
     }
 
     public function parentIssueOptions(Issue $issue): Collection
@@ -131,6 +150,21 @@ class IssueService
             ->get(['id', 'title', 'parent_id']);
 
         return $this->flattenIssueOptions($issues, null, 0, $excludedIds)->values();
+    }
+
+    private function extractLeadingIssueNumber(?string $title): ?int
+    {
+        if (!is_string($title) || trim($title) === '') {
+            return null;
+        }
+
+        preg_match('/^\s*(\d+)\s*\./u', $title, $matches);
+
+        if (!isset($matches[1])) {
+            return null;
+        }
+
+        return (int) $matches[1];
     }
 
     private function descendantIssueIds(Issue $issue): array
@@ -217,9 +251,9 @@ class IssueService
         }
 
         $normalizedNames = collect($tagNames)
-            ->map(fn($name) => trim((string) $name))
+            ->map(fn ($name) => trim((string) $name))
             ->filter()
-            ->unique(fn($name) => Str::lower($name))
+            ->unique(fn ($name) => Str::lower($name))
             ->values();
 
         if ($normalizedNames->isEmpty()) {
