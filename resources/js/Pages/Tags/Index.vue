@@ -1,14 +1,16 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, reactive, ref } from 'vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import Swal from 'sweetalert2';
 import FormError from '../../Components/FormError.vue';
 import Modal from '../../Components/Modal.vue';
+import Pagination from '../../Components/Pagination.vue';
 import AppLayout from '../../Layouts/AppLayout.vue';
 
 const props = defineProps({
-    tags: { type: Array, default: () => [] },
+    tags: { type: Object, default: () => ({}) },
     projects: { type: Array, default: () => [] },
+    filters: { type: Object, default: () => ({}) },
     breadcrumbs: { type: Array, default: () => [] },
 });
 
@@ -19,7 +21,26 @@ const activeTag = ref(null);
 const createForm = useForm({ project_id: '', name: '' });
 const editForm = useForm({ name: '' });
 
+const tagRows = computed(() => props.tags?.data ?? []);
 const defaultProjectId = computed(() => props.projects?.[0]?.id ?? '');
+
+const filterForm = reactive({
+    project_id: props.filters?.project_id ?? '',
+    q: props.filters?.q ?? '',
+});
+
+const applyFilters = () => {
+    router.get('/tags', filterForm, {
+        preserveState: true,
+        replace: true,
+    });
+};
+
+const clearFilters = () => {
+    filterForm.project_id = '';
+    filterForm.q = '';
+    applyFilters();
+};
 
 const openCreate = () => {
     createForm.project_id = defaultProjectId.value;
@@ -80,6 +101,26 @@ const destroyTag = (tag) => {
                 <button class="btn btn-accent rounded-pill" @click="openCreate">+ Create Tag</button>
             </div>
 
+            <form class="filters-row" @submit.prevent="applyFilters">
+                <select v-model="filterForm.project_id" class="form-select" @change="applyFilters">
+                    <option value="">All projects</option>
+                    <option v-for="project in projects" :key="project.id" :value="project.id">
+                        {{ project.name }}
+                    </option>
+                </select>
+
+                <div class="d-flex gap-2 grow">
+                    <input
+                        v-model="filterForm.q"
+                        type="search"
+                        class="form-control"
+                        placeholder="Search by tag name or slug..."
+                    >
+                    <button type="submit" class="btn btn-outline-secondary">Search</button>
+                    <button type="button" class="btn btn-light border" @click="clearFilters">Clear</button>
+                </div>
+            </form>
+
             <div class="compact-table-shell">
                 <table class="compact-table">
                     <thead>
@@ -93,32 +134,34 @@ const destroyTag = (tag) => {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="(tag, index) in tags" :key="tag.id">
-                            <td>{{ index + 1 }}</td>
-                            <td>
+                        <tr v-for="(tag, index) in tagRows" :key="tag.id">
+                            <td data-label="#">{{ (tags.from ?? 1) + index }}</td>
+                            <td data-label="Name">
                                 <strong>{{ tag.name }}</strong><br>
                                 <small class="text-muted">{{ tag.slug }}</small>
                             </td>
-                            <td>{{ tag.project?.name ?? 'Unknown project' }}</td>
-                            <td>
+                            <td data-label="Project">{{ tag.project?.name ?? 'Unknown project' }}</td>
+                            <td data-label="Issues">
                                 <span class="badge rounded-pill text-bg-light border px-3 py-2">
                                     {{ tag.issues_count ?? 0 }} issue(s)
                                 </span>
                             </td>
-                            <td>{{ new Date(tag.created_at).toLocaleDateString() }}</td>
-                            <td class="text-end">
+                            <td data-label="Created">{{ new Date(tag.created_at).toLocaleDateString() }}</td>
+                            <td data-label="Actions" class="text-end">
                                 <div class="table-actions justify-content-end">
                                     <button class="btn btn-sm btn-light rounded-pill" @click="openEdit(tag)">Edit</button>
                                     <button class="btn btn-sm btn-outline-danger rounded-pill" @click="destroyTag(tag)">Delete</button>
                                 </div>
                             </td>
                         </tr>
-                        <tr v-if="!tags.length">
+                        <tr v-if="!tagRows.length">
                             <td colspan="6"><div class="table-empty">No tags found.</div></td>
                         </tr>
                     </tbody>
                 </table>
             </div>
+
+            <Pagination :links="tags.links ?? []" :meta="tags" />
         </section>
 
         <Modal v-model="createModalOpen" title="Create Tag">

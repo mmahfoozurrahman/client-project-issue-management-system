@@ -41,12 +41,13 @@ a {
     height: 100vh;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: flex-start;
+    gap: 16px;
     padding: 24px;
     background: linear-gradient(180deg, #14312d 0%, #1f4d46 100%);
     color: #f8fafc;
     z-index: 30;
-    overflow-y: auto;
+    overflow: hidden;
 }
 
 .sidebar-brand,
@@ -88,8 +89,16 @@ a {
 .sidebar-nav {
     display: grid;
     gap: 10px;
-    margin: 28px 0 auto;
+    margin: 12px 0 0;
     min-height: 0;
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.sidebar-user {
+    flex-shrink: 0;
+    margin-top: 8px;
 }
 
 .sidebar-link {
@@ -871,6 +880,13 @@ a {
     inset: 0;
 }
 
+.sidebar-backdrop {
+    z-index: 25;
+    background: linear-gradient(135deg, rgba(8, 23, 31, 0.34), rgba(20, 50, 47, 0.36));
+    backdrop-filter: blur(10px) saturate(140%);
+    -webkit-backdrop-filter: blur(10px) saturate(140%);
+}
+
 .modal-shell {
     z-index: 1055;
     display: grid;
@@ -1340,6 +1356,7 @@ a {
         left: -100%;
         width: min(320px, 90vw);
         transition: left 0.25s ease;
+        box-shadow: 18px 0 48px rgba(8, 23, 31, 0.32);
     }
 
     .sidebar-panel.open {

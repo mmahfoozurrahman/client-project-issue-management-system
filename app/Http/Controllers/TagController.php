@@ -7,6 +7,7 @@ use App\Models\Project;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -20,6 +21,14 @@ class TagController extends Controller
 
         abort_unless($user->canAccessTagsPage(), 403);
 
+        $request->validate([
+            'project_id' => ['nullable', 'integer', Rule::in($manageableProjectIds)],
+            'q' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $projectId = $request->filled('project_id') ? (int) $request->input('project_id') : null;
+        $queryText = trim((string) $request->input('q', ''));
+
         $projects = Project::withoutGlobalScope('user_owned')
             ->whereIn('id', $manageableProjectIds)
             ->orderBy('name')
@@ -27,14 +36,27 @@ class TagController extends Controller
 
         $tags = IssueTag::query()
             ->whereIn('project_id', $manageableProjectIds)
+            ->when($projectId, fn ($query) => $query->where('project_id', $projectId))
+            ->when($queryText !== '', function ($query) use ($queryText) {
+                $query->where(function ($innerQuery) use ($queryText) {
+                    $innerQuery
+                        ->where('name', 'like', "%{$queryText}%")
+                        ->orWhere('slug', 'like', "%{$queryText}%");
+                });
+            })
             ->with(['project:id,name'])
             ->withCount('issues')
             ->orderBy('name')
-            ->get(['id', 'project_id', 'name', 'slug', 'created_at']);
+            ->paginate(10)
+            ->withQueryString();
 
         return Inertia::render('Tags/Index', [
             'tags' => $tags,
             'projects' => $projects,
+            'filters' => [
+                'project_id' => $request->input('project_id'),
+                'q' => $request->input('q'),
+            ],
             'breadcrumbs' => [
                 ['label' => 'Home', 'href' => route('dashboard')],
                 ['label' => 'Tags'],
@@ -63,15 +85,22 @@ class TagController extends Controller
         $slug = Str::slug($name);
         $slug = filled($slug) ? $slug : Str::lower(Str::replace(' ', '-', $name));
 
-        IssueTag::query()->firstOrCreate(
-            [
-                'project_id' => $projectId,
-                'slug' => $slug,
-            ],
-            [
-                'name' => $name,
-            ]
-        );
+        $exists = IssueTag::query()
+            ->where('project_id', $projectId)
+            ->where('slug', $slug)
+            ->exists();
+
+        if ($exists) {
+            throw ValidationException::withMessages([
+                'name' => 'This tag already exists for the selected project.',
+            ]);
+        }
+
+        IssueTag::query()->create([
+            'project_id' => $projectId,
+            'name' => $name,
+            'slug' => $slug,
+        ]);
 
         return back()->with('success', 'Tag saved successfully.');
     }
@@ -84,19 +113,24 @@ class TagController extends Controller
         abort_unless($user->canAccessTagsPage() && in_array($tag->project_id, $manageableProjectIds, true), 403);
 
         $validated = $request->validate([
-            'name' => [
-                'required',
-                'string',
-                'max:50',
-                Rule::unique('issue_tags', 'slug')
-                    ->where(fn ($query) => $query->where('project_id', $tag->project_id))
-                    ->ignore($tag->id),
-            ],
+            'name' => ['required', 'string', 'max:50'],
         ]);
 
         $name = trim($validated['name']);
         $slug = Str::slug($name);
         $slug = filled($slug) ? $slug : Str::lower(Str::replace(' ', '-', $name));
+
+        $exists = IssueTag::query()
+            ->where('project_id', $tag->project_id)
+            ->where('slug', $slug)
+            ->whereKeyNot($tag->id)
+            ->exists();
+
+        if ($exists) {
+            throw ValidationException::withMessages([
+                'name' => 'This tag already exists for this project.',
+            ]);
+        }
 
         $tag->update([
             'name' => $name,
