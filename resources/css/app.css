@@ -1,14 +1,14 @@
 @import 'bootstrap/dist/css/bootstrap.min.css';
 
 :root {
-    --app-bg: #f4efe5;
-    --panel-bg: rgba(255, 255, 255, 0.86);
-    --panel-border: rgba(103, 80, 54, 0.12);
-    --ink: #1f2937;
-    --muted: #6b7280;
-    --accent: #0f766e;
-    --accent-deep: #115e59;
-    --shadow: 0 20px 50px rgba(77, 56, 31, 0.12);
+    --app-bg: #eef6f5;
+    --panel-bg: rgba(255, 255, 255, 0.76);
+    --panel-border: rgba(82, 122, 127, 0.16);
+    --ink: #183a3a;
+    --muted: #607879;
+    --accent: #147c79;
+    --accent-deep: #0f5f5d;
+    --shadow: 0 20px 50px rgba(28, 85, 88, 0.12);
 }
 
 * {
@@ -19,9 +19,10 @@ body {
     margin: 0;
     color: var(--ink);
     background:
-        radial-gradient(circle at top left, rgba(218, 165, 32, 0.14), transparent 34%),
-        radial-gradient(circle at bottom right, rgba(15, 118, 110, 0.14), transparent 28%),
-        linear-gradient(135deg, #f8f4ed 0%, #efe5d4 100%);
+        radial-gradient(circle at 8% 5%, rgba(255, 255, 255, 0.96), transparent 30%),
+        radial-gradient(circle at 88% 12%, rgba(154, 220, 221, 0.28), transparent 28%),
+        radial-gradient(circle at 55% 92%, rgba(188, 229, 223, 0.38), transparent 34%),
+        linear-gradient(135deg, #f9fdfc 0%, #e5f1ef 52%, #d7ebe7 100%);
     font-family: 'Segoe UI', sans-serif;
 }
 
@@ -43,11 +44,28 @@ a {
     flex-direction: column;
     justify-content: flex-start;
     gap: 16px;
-    padding: 24px;
-    background: linear-gradient(180deg, #14312d 0%, #1f4d46 100%);
-    color: #f8fafc;
+    padding: 24px 18px;
+    background:
+        radial-gradient(circle at 14% 0%, rgba(255, 255, 255, 0.9), transparent 33%),
+        radial-gradient(circle at 96% 100%, rgba(137, 211, 205, 0.32), transparent 40%),
+        linear-gradient(160deg, rgba(255, 255, 255, 0.76), rgba(224, 243, 240, 0.6));
+    border-right: 1px solid rgba(255, 255, 255, 0.86);
+    box-shadow: 16px 0 48px rgba(29, 89, 91, 0.1), inset -1px 0 rgba(89, 157, 157, 0.1);
+    color: #173d3d;
     z-index: 30;
     overflow: hidden;
+    isolation: isolate;
+    backdrop-filter: blur(24px) saturate(140%);
+    -webkit-backdrop-filter: blur(24px) saturate(140%);
+}
+
+.sidebar-panel::before {
+    position: absolute;
+    inset: 0;
+    content: '';
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(115deg, rgba(255, 255, 255, 0.34), transparent 42%);
 }
 
 .sidebar-brand,
@@ -79,7 +97,7 @@ a {
     text-transform: uppercase;
     letter-spacing: 0.12em;
     font-size: 0.72rem;
-    color: rgba(255, 255, 255, 0.68);
+    color: #598082;
 }
 
 .section-kicker {
@@ -93,7 +111,15 @@ a {
     min-height: 0;
     flex: 1 1 auto;
     overflow-y: auto;
-    padding-right: 4px;
+    overscroll-behavior: contain;
+    padding: 4px 2px 14px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    mask-image: linear-gradient(to bottom, transparent, #000 10px, #000 calc(100% - 10px), transparent);
+}
+
+.sidebar-nav::-webkit-scrollbar {
+    display: none;
 }
 
 .sidebar-user {
@@ -105,23 +131,32 @@ a {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px 14px;
-    border-radius: 16px;
+    padding: 13px 14px;
+    border: 1px solid transparent;
+    border-radius: 17px;
     text-decoration: none;
-    color: rgba(255, 255, 255, 0.82);
-    transition: 0.2s ease;
+    color: #406568;
+    transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .sidebar-link:hover,
 .sidebar-link.active {
-    background: rgba(255, 255, 255, 0.12);
-    color: #fff;
+    background: rgba(255, 255, 255, 0.68);
+    border-color: rgba(255, 255, 255, 0.86);
+    box-shadow: 0 8px 22px rgba(38, 112, 111, 0.1), inset 0 1px rgba(255, 255, 255, 0.8);
+    color: #125e5c;
+}
+
+.sidebar-link:hover {
+    transform: translateX(2px);
 }
 
 .sidebar-user-card {
     justify-content: flex-start;
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.52);
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    border-radius: 20px;
+    box-shadow: inset 0 1px rgba(255, 255, 255, 0.7);
     padding: 14px;
     margin-bottom: 12px;
 }
@@ -139,10 +174,34 @@ a {
     width: 48px;
     height: 48px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.76);
+    border: 2px solid rgba(255, 255, 255, 0.86);
+    box-shadow: 0 5px 14px rgba(31, 94, 94, 0.15);
     display: grid;
     place-items: center;
     overflow: hidden;
+}
+
+.sidebar-user-card strong {
+    color: #174b4b;
+}
+
+.sidebar-user-card p {
+    color: #638082;
+    font-size: 0.88rem;
+}
+
+.sidebar-user .btn-outline-light {
+    color: #176461;
+    border-color: rgba(23, 100, 97, 0.48);
+    background: rgba(255, 255, 255, 0.24);
+}
+
+.sidebar-user .btn-outline-light:hover,
+.sidebar-user .btn-outline-light:focus {
+    color: #fff;
+    border-color: #176461;
+    background: #176461;
 }
 
 .sidebar-avatar img,
@@ -882,9 +941,11 @@ a {
 
 .sidebar-backdrop {
     z-index: 25;
-    background: linear-gradient(135deg, rgba(8, 23, 31, 0.34), rgba(20, 50, 47, 0.36));
-    backdrop-filter: blur(10px) saturate(140%);
-    -webkit-backdrop-filter: blur(10px) saturate(140%);
+    background:
+        radial-gradient(circle at 12% 5%, rgba(255, 255, 255, 0.68), transparent 38%),
+        linear-gradient(135deg, rgba(218, 244, 241, 0.58), rgba(242, 252, 251, 0.42));
+    backdrop-filter: blur(16px) saturate(150%) brightness(1.06);
+    -webkit-backdrop-filter: blur(16px) saturate(150%) brightness(1.06);
 }
 
 .modal-shell {
