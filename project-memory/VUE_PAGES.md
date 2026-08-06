@@ -14,7 +14,7 @@ All frontend pages live in `resources/js/Pages/`. Laravel controllers return the
 | `Issues/Show.vue` | `/issues/{issue}` | `IssueController@show` | Full issue detail, editing, rich text, tags, uploads, links, image gallery, related issues, and sub-issue tree. |
 | `Issues/Kanban.vue` | `/kanban` | `IssueController@kanban` | Status-board workflow for Todo, In Progress, and Done issues. |
 | `Issues/DailyActivity.vue` | `/issues/daily-activity` | `IssueController@dailyActivity` | Date-focused created/completed issue activity and heatmap view. |
-| `Tags/Index.vue` | `/tags` | `TagController@index` | Project-scoped tag management with filtering, pagination, and create/edit modals. |
+| `Tags/Index.vue` | `/tags` | `TagController@index` | Project-scoped tag management with filtering, pagination, issue count links to filtered issues, and create/edit modals. |
 | `Profile/Show.vue` | `/profile` | `ProfileController@show` | Logged-in user profile and avatar updates. |
 | `Auth/Login.vue` | `/login` | `AuthenticatedSessionController@create` | Guest login screen. |
 

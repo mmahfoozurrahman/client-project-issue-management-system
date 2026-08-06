@@ -1,6 +1,6 @@
 <script setup>
 import { computed, reactive, ref } from 'vue';
-import { Head, router, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import Swal from 'sweetalert2';
 import FormError from '../../Components/FormError.vue';
 import Modal from '../../Components/Modal.vue';
@@ -143,9 +143,13 @@ const destroyTag = (tag) => {
                             </td>
                             <td data-label="Project">{{ tag.project?.name ?? 'Unknown project' }}</td>
                             <td data-label="Issues">
-                                <span class="badge rounded-pill text-bg-light border px-3 py-2">
+                                <Link
+                                    :href="`/issues?tag_id=${tag.id}${tag.project_id ? `&project_id=${tag.project_id}` : ''}`"
+                                    class="badge rounded-pill text-bg-light border px-3 py-2 text-decoration-none text-dark hover-shadow"
+                                    title="View issues with this tag"
+                                >
                                     {{ tag.issues_count ?? 0 }} issue(s)
-                                </span>
+                                </Link>
                             </td>
                             <td data-label="Created">{{ formatDate(tag.created_at) }}</td>
                             <td data-label="Actions" class="text-end">

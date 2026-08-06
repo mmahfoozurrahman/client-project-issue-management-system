@@ -4,11 +4,18 @@ This is a newest-first record of features and meaningful product changes, consol
 
 ## Current snapshot
 
-- **Latest commit:** Tag management listing ordered by most recently created (`created_at` DESC).
+- **Latest commit:** `087ff83` - global date formatting utility extraction and human readable tag dates.
 - **Workflow:** Clients -> Projects -> Issues -> Sub-Issues.
 - **Stack:** Laravel 13, PHP 8.3+, MySQL, Vue 3, Inertia.js, Vite, Bootstrap 5, SweetAlert2, TipTap, and Chart.js.
 
 ## Feature history (newest first)
+
+### Tag issue count link to filtered issue list
+
+**Last updated:** 7th August, 2026
+
+- Linked the issue count pill (`{count} issue(s)`) in Tag Management (`/tags`) to the issues list page (`/issues?tag_id={id}&project_id={project_id}`).
+- Allows users to quickly filter and inspect issues associated with a specific tag directly from the tag management table.
 
 ### Tag management listing order & human-readable date formatting
 
@@ -150,6 +157,8 @@ This is a newest-first record of features and meaningful product changes, consol
 
 | Date | Commit | Change |
 | --- | --- | --- |
+| 7th August, 2026 | `087ff83` | Global date formatting utility extraction and human readable dates |
+| 7th August, 2026 | `3d533cf` | Tag management listing order by most recently created |
 | 4th August, 2026 | `5cf318f` | Autocomplete suggestions to tag input fields on issue show page |
 | 4th August, 2026 | `5ccfa56` | Latest project issue-list date-column refinement |
 | 4th August, 2026 | `7c2e873` | Initial project issue-list date column |
