@@ -10,12 +10,12 @@ This is a newest-first record of features and meaningful product changes, consol
 
 ## Feature history (newest first)
 
-### Tag issue count link to filtered issue list
+### Tag issue count link & premium filter search input layout
 
 **Last updated:** 7th August, 2026
 
 - Linked the issue count pill (`{count} issue(s)`) in Tag Management (`/tags`) to the issues list page (`/issues?tag_id={id}&project_id={project_id}`).
-- Allows users to quickly filter and inspect issues associated with a specific tag directly from the tag management table.
+- Refactored `.filters-row` from fixed 220px max grid columns to a flexible flex layout with auto-expanding search inputs and rounded pill controls for a premium, spacious search experience across Tag, Issue, and Project listing pages.
 
 ### Tag management listing order & human-readable date formatting
 

@@ -179,7 +179,7 @@ const idleMetaClass = (issue) => {
                         placeholder="Search issue title/description..."
                         @keyup.enter="applyFilters"
                     >
-                    <button type="button" class="btn btn-outline-secondary" @click="applyFilters">Search</button>
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" @click="applyFilters">Search</button>
                 </div>
             </div>
 

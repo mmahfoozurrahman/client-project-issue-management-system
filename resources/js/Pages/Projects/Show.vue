@@ -91,7 +91,7 @@
                         placeholder="Search title or description..."
                         aria-label="Search issue title or description"
                     >
-                    <button type="submit" class="btn btn-outline-secondary">Search</button>
+                    <button type="submit" class="btn btn-outline-secondary rounded-pill px-4">Search</button>
                 </div>
             </form>
 

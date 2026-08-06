@@ -117,8 +117,8 @@ const destroyTag = (tag) => {
                         class="form-control"
                         placeholder="Search by tag name or slug..."
                     >
-                    <button type="submit" class="btn btn-outline-secondary">Search</button>
-                    <button type="button" class="btn btn-light border" @click="clearFilters">Clear</button>
+                    <button type="submit" class="btn btn-outline-secondary rounded-pill px-4">Search</button>
+                    <button type="button" class="btn btn-light border rounded-pill px-3" @click="clearFilters">Clear</button>
                 </div>
             </form>
 
