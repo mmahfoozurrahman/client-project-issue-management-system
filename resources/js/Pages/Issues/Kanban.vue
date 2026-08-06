@@ -3,6 +3,7 @@ import { computed, reactive, ref } from 'vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import SkeletonCard from '../../Components/SkeletonCard.vue';
 import AppLayout from '../../Layouts/AppLayout.vue';
+import { formatIssueDate } from '../../utils/date';
 
 const props = defineProps({
     columns: Object,
@@ -38,25 +39,7 @@ const kanbanColumns = [
     { key: 'done', title: 'Done', subtitle: 'Completed wins' },
 ];
 
-const formatIssueDate = (value) => {
-    if (!value) return 'Recently created';
-
-    return new Intl.DateTimeFormat('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-    }).format(new Date(value));
-};
-
-const formatDoneDate = (value) => {
-    if (!value) return 'Recently completed';
-
-    return new Intl.DateTimeFormat('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-    }).format(new Date(value));
-};
+const formatDoneDate = (value) => formatIssueDate(value, 'Recently completed');
 
 const totalIssues = computed(() => kanbanColumns.reduce((sum, column) => sum + (props.columns?.[column.key]?.length ?? 0), 0));
 const doneCount = computed(() => props.columns?.done?.length ?? 0);

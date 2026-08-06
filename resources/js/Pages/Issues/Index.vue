@@ -8,6 +8,7 @@ import Pagination from '../../Components/Pagination.vue';
 import RichTextEditor from '../../Components/RichTextEditor.vue';
 import StatusPill from '../../Components/StatusPill.vue';
 import AppLayout from '../../Layouts/AppLayout.vue';
+import { formatIssueDate } from '../../utils/date';
 
 const props = defineProps({
     issues: Object,
@@ -24,15 +25,6 @@ const page = usePage();
 const issueRows = computed(() => props.issues?.data ?? props.issues ?? []);
 const staleDays = computed(() => Number(page.props.app?.issue_stale_days ?? 3));
 const criticalDays = computed(() => Number(page.props.app?.issue_critical_days ?? 7));
-const formatIssueDate = (value) => {
-    if (!value) return 'Recently created';
-
-    return new Intl.DateTimeFormat('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-    }).format(new Date(value));
-};
 
 const searchFilters = reactive({
     project_id: props.filters?.project_id ?? '',

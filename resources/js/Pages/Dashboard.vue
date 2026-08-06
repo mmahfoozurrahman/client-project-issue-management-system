@@ -18,6 +18,7 @@ import {
 } from 'chart.js';
 import StatusPill from '../Components/StatusPill.vue';
 import AppLayout from '../Layouts/AppLayout.vue';
+import { formatIssueDate } from '../utils/date';
 
 Chart.register(
     ArcElement,
@@ -58,16 +59,6 @@ const chartInstances = {
     weekly: null,
     monthly: null,
     status: null,
-};
-
-const formatIssueDate = (value) => {
-    if (!value) return 'Recently created';
-
-    return new Intl.DateTimeFormat('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-    }).format(new Date(value));
 };
 
 const staleAgeLabel = (issue) => {

@@ -1,0 +1,1 @@
+function e(e,t=`-`){if(!e)return t;let n=new Date(e);return Number.isNaN(n.getTime())?t:new Intl.DateTimeFormat(`en-US`,{month:`short`,day:`numeric`,year:`numeric`}).format(n)}function t(t,n=`Unknown date`){return e(t,n)}export{t as n,e as t};

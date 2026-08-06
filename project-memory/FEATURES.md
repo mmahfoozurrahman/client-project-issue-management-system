@@ -10,11 +10,12 @@ This is a newest-first record of features and meaningful product changes, consol
 
 ## Feature history (newest first)
 
-### Tag management listing order update
+### Tag management listing order & human-readable date formatting
 
 **Last updated:** 7th August, 2026
 
 - Updated Tag Management (`/tags`) list query to order tags by most recently created (`created_at` DESC, `id` DESC) instead of alphabetically.
+- Extracted date formatting into global reusable helper functions in `resources/js/utils/date.js` (`formatDate`, `formatIssueDate`) and refactored Vue pages to use it.
 
 ### Tag input autocomplete suggestions
 

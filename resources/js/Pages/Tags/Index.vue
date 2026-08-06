@@ -6,6 +6,7 @@ import FormError from '../../Components/FormError.vue';
 import Modal from '../../Components/Modal.vue';
 import Pagination from '../../Components/Pagination.vue';
 import AppLayout from '../../Layouts/AppLayout.vue';
+import { formatDate } from '../../utils/date';
 
 const props = defineProps({
     tags: { type: Object, default: () => ({}) },
@@ -146,7 +147,7 @@ const destroyTag = (tag) => {
                                     {{ tag.issues_count ?? 0 }} issue(s)
                                 </span>
                             </td>
-                            <td data-label="Created">{{ new Date(tag.created_at).toLocaleDateString() }}</td>
+                            <td data-label="Created">{{ formatDate(tag.created_at) }}</td>
                             <td data-label="Actions" class="text-end">
                                 <div class="table-actions justify-content-end">
                                     <button class="btn btn-sm btn-light rounded-pill" @click="openEdit(tag)">Edit</button>

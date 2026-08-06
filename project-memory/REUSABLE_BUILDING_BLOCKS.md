@@ -19,6 +19,12 @@ This reference maps the reusable frontend and backend pieces to where they are c
 | `SkeletonCard.vue` | Loading placeholder card. | Issues Index and Kanban. |
 | `IssueCard.vue` | Reusable compact issue card with status badge. | Available for issue-card views; currently no direct page import was found. |
 
+## Frontend JS utility modules
+
+| Utility module | Exported functions | Purpose | Used by |
+| --- | --- | --- | --- |
+| `resources/js/utils/date.js` | `formatDate`, `formatIssueDate` | Global date formatting helpers for human-readable dates (e.g. `Aug 7, 2026`). | `Tags/Index`, `Projects/Show`, `Issues/Index`, `Issues/Show`, `Issues/Kanban`, `Dashboard`. |
+
 ## Laravel services
 
 | Service | Responsibility | Used by |

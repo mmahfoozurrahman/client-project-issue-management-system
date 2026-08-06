@@ -8,6 +8,7 @@ import RichTextEditor from '../../Components/RichTextEditor.vue';
 import StatusPill from '../../Components/StatusPill.vue';
 import IssueTree from '../../Components/IssueTree.vue';
 import AppLayout from '../../Layouts/AppLayout.vue';
+import { formatDate } from '../../utils/date';
 
 const props = defineProps({
     issue: Object,
@@ -33,15 +34,7 @@ const issueFiles = ref([...(props.issue.files ?? [])]);
 const issueLinks = ref([...(props.issue.links ?? [])]);
 const issueTags = ref([...(props.issue.tags ?? [])]);
 const isDoneIssue = computed(() => props.issue.status === 'done');
-const formatMetaDate = (value) => {
-    if (!value) return null;
-
-    return new Intl.DateTimeFormat('en-US', {
-        month: 'short',
-        day: '2-digit',
-        year: 'numeric',
-    }).format(new Date(value));
-};
+const formatMetaDate = (value) => (value ? formatDate(value, null) : null);
 const createdDateLabel = computed(() => formatMetaDate(props.issue.created_at));
 const completedDateLabel = computed(() => (isDoneIssue.value ? formatMetaDate(props.issue.done_at) : null));
 

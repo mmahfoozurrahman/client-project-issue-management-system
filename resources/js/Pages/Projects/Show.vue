@@ -411,6 +411,7 @@ import Pagination from '../../Components/Pagination.vue';
 import RichTextEditor from '../../Components/RichTextEditor.vue';
 import StatusPill from '../../Components/StatusPill.vue';
 import AppLayout from '../../Layouts/AppLayout.vue';
+import { formatIssueDate } from '../../utils/date';
 
 const props = defineProps({
     project: Object,
@@ -437,9 +438,6 @@ const openQuickRead = (issue) => {
     activeIssue.value = issue;
     quickReadModalOpen.value = true;
 };
-const formatIssueDate = (value) => value
-    ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value))
-    : 'Unknown date';
 const filterForm = reactive({
     status: props.filters?.status ?? '',
     tag_ids: Array.isArray(props.filters?.tag_ids) ? props.filters.tag_ids.map(String) : [],
