@@ -4,11 +4,23 @@ This is a newest-first record of features and meaningful product changes, consol
 
 ## Current snapshot
 
-- **Latest commit:** `5ccfa56` - project issue-list date-column refinements.
+- **Latest commit:** Tag management listing ordered by most recently created (`created_at` DESC).
 - **Workflow:** Clients -> Projects -> Issues -> Sub-Issues.
 - **Stack:** Laravel 13, PHP 8.3+, MySQL, Vue 3, Inertia.js, Vite, Bootstrap 5, SweetAlert2, TipTap, and Chart.js.
 
 ## Feature history (newest first)
+
+### Tag management listing order update
+
+**Last updated:** 7th August, 2026
+
+- Updated Tag Management (`/tags`) list query to order tags by most recently created (`created_at` DESC, `id` DESC) instead of alphabetically.
+
+### Tag input autocomplete suggestions
+
+**Last updated:** 4th August, 2026
+
+- Added autocomplete suggestions to tag input fields on the issue show page for smoother tag selection.
 
 ### Project issue-list date column
 
@@ -137,6 +149,7 @@ This is a newest-first record of features and meaningful product changes, consol
 
 | Date | Commit | Change |
 | --- | --- | --- |
+| 4th August, 2026 | `5cf318f` | Autocomplete suggestions to tag input fields on issue show page |
 | 4th August, 2026 | `5ccfa56` | Latest project issue-list date-column refinement |
 | 4th August, 2026 | `7c2e873` | Initial project issue-list date column |
 | 4th August, 2026 | `9e5f88b` | Filterable/paginated tag management and duplicate validation |

@@ -46,7 +46,8 @@ class TagController extends Controller
             })
             ->with(['project:id,name'])
             ->withCount('issues')
-            ->orderBy('name')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
             ->paginate(10)
             ->withQueryString();
 

@@ -6,6 +6,7 @@ use App\Models\Concerns\UserOwned;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Model;
 
 class Issue extends Model
@@ -76,5 +77,10 @@ class Issue extends Model
     public function pinnedByUsers(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'issue_pins')->withTimestamps();
+    }
+
+    public function aiSource(): HasOne
+    {
+        return $this->hasOne(IssueAiSource::class);
     }
 }
