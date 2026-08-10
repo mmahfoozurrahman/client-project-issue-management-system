@@ -51,7 +51,7 @@ class ProjectController extends Controller
             ])
             ->withCount('issues')
             ->latest()
-            ->paginate(10)
+            ->paginate(12)
             ->withQueryString();
 
 
