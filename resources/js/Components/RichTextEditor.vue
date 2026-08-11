@@ -6,6 +6,7 @@ import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import Highlight from '@tiptap/extension-highlight';
+import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table';
 
 const props = defineProps({
     modelValue: { type: String, default: '' },
@@ -30,6 +31,12 @@ const editor = useEditor({
         }),
         Highlight,
         Placeholder.configure({ placeholder: props.placeholder }),
+        Table.configure({
+            resizable: true,
+        }),
+        TableRow,
+        TableHeader,
+        TableCell,
     ],
     onUpdate: ({ editor: instance }) => {
         if (!sourceMode.value) {
@@ -129,6 +136,17 @@ function setLink() {
                 <button v-if="editor.isActive('link')" type="button" title="Remove link" aria-label="Remove link" @click="editor.chain().focus().unsetLink().run()">Unlink</button>
             </div>
 
+            <div class="editor-tool-group">
+                <button type="button" :class="{ active: editor.isActive('table') }" title="Insert Table" aria-label="Insert Table" @click="editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()">⊞ Table</button>
+                <template v-if="editor.isActive('table')">
+                    <button type="button" title="Add Row Below" aria-label="Add Row Below" @click="editor.chain().focus().addRowAfter().run()">+Row</button>
+                    <button type="button" title="Delete Row" aria-label="Delete Row" @click="editor.chain().focus().deleteRow().run()">-Row</button>
+                    <button type="button" title="Add Column Right" aria-label="Add Column Right" @click="editor.chain().focus().addColumnAfter().run()">+Col</button>
+                    <button type="button" title="Delete Column" aria-label="Delete Column" @click="editor.chain().focus().deleteColumn().run()">-Col</button>
+                    <button type="button" title="Delete Table" aria-label="Delete Table" @click="editor.chain().focus().deleteTable().run()">✕ Table</button>
+                </template>
+            </div>
+
             <div class="editor-tool-group editor-tool-group-end">
                 <button type="button" :disabled="!canUndo" title="Undo" aria-label="Undo" @click="editor.chain().focus().undo().run()">↶</button>
                 <button type="button" :disabled="!canRedo" title="Redo" aria-label="Redo" @click="editor.chain().focus().redo().run()">↷</button>
@@ -143,7 +161,7 @@ function setLink() {
 
 <style scoped>
 .rich-editor-toolbar { gap: 6px; }
-.editor-tool-group { display: flex; gap: 4px; padding-right: 6px; border-right: 1px solid rgba(148, 163, 184, .3); }
+.editor-tool-group { display: flex; gap: 4px; padding-right: 6px; border-right: 1px solid rgba(148, 163, 184, .3); flex-wrap: wrap; align-items: center; }
 .editor-tool-group-end { margin-left: auto; border-right: 0; padding-right: 0; }
 .rich-editor-toolbar button.active { background: var(--accent); color: #fff; }
 .rich-editor-toolbar button:disabled { cursor: not-allowed; opacity: .45; }
@@ -152,7 +170,7 @@ function setLink() {
 </style>
 
 <style>
-.rich-editor-surface .ProseMirror { min-height: 130px; padding: 14px 16px; outline: none; color: #1f2937; }
+.rich-editor-surface .ProseMirror { min-height: 130px; padding: 14px 16px; outline: none; color: #1f2937; overflow-x: auto; }
 .rich-editor-surface .ProseMirror p.is-editor-empty:first-child::before { color: #94a3b8; content: attr(data-placeholder); float: left; height: 0; pointer-events: none; }
 .rich-editor-surface .ProseMirror h2 { margin: .75rem 0 .4rem; font-size: 1.3rem; font-weight: 700; }
 .rich-editor-surface .ProseMirror h3 { margin: .65rem 0 .35rem; font-size: 1.1rem; font-weight: 700; }
@@ -163,4 +181,67 @@ function setLink() {
 .rich-editor-surface .ProseMirror pre code { padding: 0; background: transparent; color: inherit; }
 .rich-editor-surface .ProseMirror a { color: var(--accent); text-decoration: underline; }
 .rich-editor-surface .ProseMirror mark, .rich-display mark { padding: 0 .1em; border-radius: .15em; background: #fef08a; color: inherit; }
+
+/* Table Styles for TipTap Canvas and Rich Display */
+.rich-editor-surface .ProseMirror table,
+.rich-display table {
+    border-collapse: collapse;
+    margin: 1rem 0;
+    overflow: hidden;
+    table-layout: auto;
+    width: 100%;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+}
+
+.rich-editor-surface .ProseMirror th,
+.rich-editor-surface .ProseMirror td,
+.rich-display th,
+.rich-display td {
+    border: 1px solid #cbd5e1;
+    box-sizing: border-box;
+    min-width: 1em;
+    padding: 8px 12px;
+    position: relative;
+    vertical-align: top;
+}
+
+.rich-editor-surface .ProseMirror th,
+.rich-display th {
+    background-color: #f1f5f9;
+    font-weight: 600;
+    text-align: left;
+    color: #334155;
+}
+
+.rich-editor-surface .ProseMirror td > p,
+.rich-editor-surface .ProseMirror th > p,
+.rich-display td > p,
+.rich-display th > p {
+    margin: 0;
+}
+
+.rich-editor-surface .ProseMirror .selectedCell:after {
+    background: rgba(200, 200, 255, 0.4);
+    content: "";
+    left: 0; right: 0; top: 0; bottom: 0;
+    pointer-events: none;
+    position: absolute;
+    z-index: 2;
+}
+
+.rich-editor-surface .ProseMirror .column-resize-handle {
+    background-color: var(--accent, #2563eb);
+    bottom: -2px;
+    pointer-events: none;
+    position: absolute;
+    right: -2px;
+    top: 0;
+    width: 4px;
+}
+
+.rich-display {
+    overflow-x: auto;
+}
 </style>
+

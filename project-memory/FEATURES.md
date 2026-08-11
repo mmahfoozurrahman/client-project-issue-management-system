@@ -10,6 +10,15 @@ This is a newest-first record of features and meaningful product changes, consol
 
 ## Feature history (newest first)
 
+### Rich-text table support & copy-paste structure retention
+
+**Last updated:** 11th August, 2026
+
+- Added TipTap table extensions (`@tiptap/extension-table`) to `RichTextEditor.vue`, supporting full table insertion and editing controls (`⊞ Table`, `+Row`, `-Row`, `+Col`, `-Col`, `✕ Table`).
+- Updated `RichTextSanitizer.php` HTML whitelist to permit table elements (`table`, `thead`, `tbody`, `tfoot`, `tr`, `th`, `td`, `caption`, `colgroup`, `col`) while stripping unsafe tags.
+- Added responsive table CSS styles for `.ProseMirror` editor canvas and `.rich-display` preview elements.
+- Enabled seamless copy-pasting of formatted table data from external sources (Excel, Word, web pages) into issue descriptions.
+
 ### Tag issue count link & premium filter search input layout
 
 **Last updated:** 7th August, 2026
@@ -157,6 +166,7 @@ This is a newest-first record of features and meaningful product changes, consol
 
 | Date | Commit | Change |
 | --- | --- | --- |
+| 11th August, 2026 | Working | Rich-text table support and copy-paste structure retention |
 | 7th August, 2026 | `087ff83` | Global date formatting utility extraction and human readable dates |
 | 7th August, 2026 | `3d533cf` | Tag management listing order by most recently created |
 | 4th August, 2026 | `5cf318f` | Autocomplete suggestions to tag input fields on issue show page |

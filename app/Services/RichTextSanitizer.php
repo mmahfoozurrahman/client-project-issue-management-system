@@ -77,6 +77,7 @@ class RichTextSanitizer
             if (! in_array($tag, [
                 'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'strike', 'del', 'mark',
                 'h2', 'h3', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'a',
+                'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td', 'caption', 'colgroup', 'col',
             ], true)) {
                 $this->unwrap($child);
                 continue;

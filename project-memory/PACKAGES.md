@@ -45,6 +45,7 @@ This list records the direct packages declared in `composer.json` and `package.j
 | `@tiptap/extension-link` | `^3.28.0` | Link handling in the rich-text editor. |
 | `@tiptap/extension-placeholder` | `^3.28.0` | Placeholder text for empty editor content. |
 | `@tiptap/extension-underline` | `^3.28.0` | Underline formatting in the editor. |
+| `@tiptap/extension-table` | `^3.28.0` | Table creation, row/cell manipulation, and tabular copy-paste handling. |
 | `@vitejs/plugin-vue` | `^6.0.5` | Vite support for Vue single-file components. |
 
 ### Development/build dependencies
