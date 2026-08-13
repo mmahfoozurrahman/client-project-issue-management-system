@@ -159,35 +159,34 @@ const destroyClient = (client) => {
                 <p class="search-hint">{{ searchHint }}</p>
             </div>
 
-            <div v-if="clientRows.length" class="entity-card-grid">
-                <article v-for="client in clientRows" :key="client.id" class="entity-card">
-                    <div class="entity-card-top">
-                        <div class="entity-card-heading">
-                            <span class="entity-avatar entity-avatar-client">{{ initials(client.name) }}</span>
-                            <div class="entity-copy">
-                                <h4>{{ client.name }}</h4>
-                                <p>Tenant workspace owner</p>
-                            </div>
+            <div v-if="clientRows.length" class="client-list">
+                <div class="client-list-labels" aria-hidden="true">
+                    <span>Client</span><span>Contact</span><span>Portfolio</span><span />
+                </div>
+
+                <article v-for="client in clientRows" :key="client.id" class="client-row">
+                    <div class="client-identity">
+                        <span class="entity-avatar entity-avatar-client">{{ initials(client.name) }}</span>
+                        <div class="entity-copy">
+                            <h4>{{ client.name }}</h4>
+                            <p>Tenant workspace owner</p>
                         </div>
                     </div>
 
-                    <div class="entity-card-stats">
-                        <span class="entity-metric-pill entity-metric-pill-strong">
-                            {{ client.projects_count }} project{{ client.projects_count === 1 ? '' : 's' }}
-                        </span>
+                    <div class="client-contact">
+                        <span class="meta-label">Email address</span>
+                        <strong>{{ client.email || 'No email provided' }}</strong>
                     </div>
 
-                    <div class="entity-card-meta">
-                        <div class="meta-pill">
-                            <span class="meta-label">Email</span>
-                            <strong>{{ client.email || 'No email provided' }}</strong>
-                        </div>
+                    <div class="client-portfolio">
+                        <span class="project-count">{{ client.projects_count }}</span>
+                        <span>project{{ client.projects_count === 1 ? '' : 's' }}</span>
                     </div>
 
                     <div class="entity-actions">
-                        <button v-if="client.can_edit" class="btn btn-sm btn-outline-dark rounded-pill" @click="openEdit(client)">Edit</button>
-                        <Link :href="`/projects?q=${encodeURIComponent(client.name)}`" class="btn btn-sm btn-light rounded-pill">Projects</Link>
-                        <button v-if="client.can_delete" class="btn btn-sm btn-outline-danger rounded-pill" @click="destroyClient(client)">Delete</button>
+                        <Link :href="`/projects?q=${encodeURIComponent(client.name)}`" class="btn btn-sm btn-accent rounded-pill">View projects</Link>
+                        <button v-if="client.can_edit" class="btn btn-sm btn-light action-icon" @click="openEdit(client)">Edit</button>
+                        <button v-if="client.can_delete" class="btn btn-sm btn-light action-icon action-delete" @click="destroyClient(client)">Delete</button>
                     </div>
                 </article>
             </div>
@@ -273,45 +272,64 @@ const destroyClient = (client) => {
     color: #6d7f76;
 }
 
-.entity-card-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(255px, 1fr));
-    gap: 1rem;
+.client-list {
     margin-bottom: 1.5rem;
-}
-
-.entity-card {
-    display: flex;
-    flex-direction: column;
-    gap: 0.9rem;
-    padding: 1rem;
     border: 1px solid rgba(25, 55, 47, 0.1);
-    border-radius: 1.5rem;
-    background: linear-gradient(180deg, #ffffff 0%, #fbfcfb 100%);
-    box-shadow: 0 14px 30px rgba(22, 45, 38, 0.05);
-    transition: transform 180ms ease, box-shadow 220ms ease, border-color 220ms ease;
+    border-radius: 1.35rem;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.55);
 }
 
-.entity-card:hover {
-    transform: translateY(-5px);
-    border-color: rgba(30, 107, 93, 0.22);
-    box-shadow:
-        0 20px 44px rgba(22, 45, 38, 0.1),
-        0 0 0 1px rgba(79, 163, 145, 0.08),
-        0 0 28px rgba(111, 191, 169, 0.14);
+.client-list-labels,
+.client-row {
+    display: grid;
+    grid-template-columns: minmax(230px, 1.7fr) minmax(185px, 1.4fr) minmax(110px, 0.7fr) auto;
+    align-items: center;
+    column-gap: 1.25rem;
 }
 
-.entity-card-top {
+.client-list-labels {
+    padding: 0.7rem 1.25rem;
+    border-bottom: 1px solid rgba(25, 55, 47, 0.08);
+    background: rgba(238, 246, 242, 0.72);
+    color: #789087;
+    font-size: 0.67rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.client-row {
+    position: relative;
+    min-height: 100px;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid rgba(25, 55, 47, 0.08);
+    background: rgba(255, 255, 255, 0.5);
+    transition: background 180ms ease, box-shadow 180ms ease;
+}
+
+.client-row::before {
+    position: absolute;
+    top: 20%; bottom: 20%; left: 0;
+    width: 3px;
+    border-radius: 0 5px 5px 0;
+    background: transparent;
+    content: '';
+    transition: background 180ms ease;
+}
+
+.client-row:last-child { border-bottom: 0; }
+.client-row:hover {
+    z-index: 1;
+    background: #fff;
+    box-shadow: 0 10px 26px rgba(22, 45, 38, 0.07);
+}
+.client-row:hover::before { background: #247b6e; }
+
+.client-identity {
     display: flex;
     align-items: flex-start;
     gap: 0.75rem;
-}
-
-.entity-card-heading {
-    display: flex;
-    align-items: center;
-    gap: 0.8rem;
-    min-width: 0;
 }
 
 .entity-avatar {
@@ -342,44 +360,43 @@ const destroyClient = (client) => {
     margin: 0.15rem 0 0;
     font-size: 0.76rem;
     color: #77867f;
+    line-height: 1.45;
 }
 
-.entity-metric-pill,
-.meta-pill {
+.client-contact {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+}
+
+.client-contact strong {
+    overflow: hidden;
+    color: #3d5349;
+    font-size: 0.88rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.client-portfolio {
     display: inline-flex;
     align-items: center;
     gap: 0.45rem;
-    border-radius: 999px;
-    padding: 0.45rem 0.75rem;
-    border: 1px solid rgba(30, 107, 93, 0.08);
-    background: #edf6f2;
-    color: #1f6c5f;
+    color: #597168;
     font-size: 0.79rem;
-    font-weight: 700;
+    white-space: nowrap;
 }
 
-.entity-card-stats {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.55rem;
-}
-
-.entity-metric-pill-strong {
-    background: linear-gradient(180deg, #edf8f4 0%, #e4f3ed 100%);
-    border-color: rgba(30, 107, 93, 0.14);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
-}
-
-.entity-card-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.55rem;
-}
-
-.meta-pill {
-    background: #f7faf8;
-    color: #3d5349;
-    font-weight: 600;
+.project-count {
+    display: inline-grid;
+    width: 2rem;
+    height: 2rem;
+    place-items: center;
+    border-radius: 0.65rem;
+    background: #e8f4ef;
+    color: #1f6c5f;
+    font-size: 0.85rem;
+    font-weight: 800;
 }
 
 .meta-label {
@@ -393,8 +410,11 @@ const destroyClient = (client) => {
     display: flex;
     flex-wrap: wrap;
     gap: 0.55rem;
-    margin-top: auto;
+    justify-content: flex-end;
 }
+
+.action-icon { border-color: rgba(25, 55, 47, 0.1); color: #566961; }
+.action-delete:hover { border-color: #dc5a63; color: #c33c47; }
 
 .entity-empty-state {
     display: flex;
@@ -414,8 +434,21 @@ const destroyClient = (client) => {
         border-radius: 1.2rem;
     }
 
-    .entity-card-top {
-        flex-direction: column;
+    .client-list-labels { display: none; }
+
+    .client-row {
+        grid-template-columns: 1fr;
+        gap: 0.85rem;
+        padding: 1rem;
     }
+
+    .client-contact {
+        display: grid;
+        grid-template-columns: 80px 1fr;
+        align-items: center;
+    }
+
+    .client-portfolio { width: fit-content; }
+    .entity-actions { justify-content: flex-start; }
 }
 </style>
