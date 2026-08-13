@@ -84,6 +84,9 @@ class IssueController extends Controller
                 fn ($q) => $q
                     ->where('title', 'like', "%{$term}%")
                     ->orWhere('description', 'like', "%{$term}%")
+                    ->orWhereHas('links', fn ($linkQuery) => $linkQuery
+                        ->where('url', 'like', "%{$term}%")
+                        ->orWhere('label', 'like', "%{$term}%"))
             );
         }
 
@@ -103,10 +106,21 @@ class IssueController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
 
+        $issueSearchSuggestions = Issue::withoutGlobalScope('user_owned')
+            ->whereIn('project_id', $accessibleIds)
+            ->whereNull('parent_id')
+            ->with([
+                'project:id,name',
+                'links:id,issue_id,url,label',
+            ])
+            ->latest()
+            ->get(['id', 'project_id', 'title']);
+
         return Inertia::render('Issues/Index', [
             'issues' => $query->paginate(10)->withQueryString(),
             'projects' => $accessibleProjects,
             'issueTags' => $tagQuery->get(['id', 'name', 'project_id']),
+            'issueSearchSuggestions' => $issueSearchSuggestions,
             'filters' => [
                 'project_id' => $request->input('project_id'),
                 'status' => $request->input('status'),
