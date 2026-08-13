@@ -81,12 +81,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'employee' => [
                 'issue.view',
                 'issue.create',
-                'issue.change_status',
                 'project.view',
                 'client.list',
             ],
             'client' => [
                 'issue.view',
+                'issue.change_status',
                 'project.view',
                 'project.list',
                 'project.create',

@@ -42,7 +42,12 @@ class IssuePolicy
 
     public function changeStatus(User $user, Issue $issue): bool
     {
-        return $user->canOnProject('issue.change_status', $issue->project_id);
+        if ($issue->project->user_id === $user->id) {
+            return true;
+        }
+
+        return in_array($user->projectRoleOn($issue->project_id), ['owner', 'developer', 'client'], true)
+            && $user->canOnProject('issue.change_status', $issue->project_id);
     }
 
     public function uploadAttachment(User $user, Issue $issue): bool

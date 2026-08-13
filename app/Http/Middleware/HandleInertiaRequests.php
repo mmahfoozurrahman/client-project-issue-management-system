@@ -23,6 +23,7 @@ class HandleInertiaRequests extends Middleware
         $criticalDays = max((int) SiteMeta::value('issue_critical_days', (string) config('app.issue_critical_days', 7)), $staleDays);
         $pendingNudgeCount = 0;
         $pendingCriticalCount = 0;
+        $statusChangeProjectIds = [];
 
         if ($request->user()) {
             $accessibleIds = $request->user()->accessibleProjectIds();
@@ -40,6 +41,17 @@ class HandleInertiaRequests extends Middleware
                 ->where('status', '!=', 'done')
                 ->where('updated_at', '<=', Carbon::now()->subDays($criticalDays))
                 ->count();
+
+            $statusChangeProjectIds = $request->user()->is_admin
+                ? $accessibleIds
+                : array_values(array_unique(array_merge(
+                    $request->user()->projects()->pluck('id')->all(),
+                    \App\Models\ProjectMember::where('user_id', $request->user()->id)
+                        ->whereHas('role', fn ($query) => $query->whereIn('slug', ['owner', 'developer', 'client']))
+                        ->whereHas('role.permissions', fn ($query) => $query->where('slug', 'issue.change_status'))
+                        ->pluck('project_id')
+                        ->all(),
+                )));
         }
 
         return [
@@ -50,6 +62,7 @@ class HandleInertiaRequests extends Middleware
                 'can_access_projects' => $request->user()?->canAccessProjectsPage() ?? false,
                 'can_access_clients' => $request->user()?->canAccessClientsPage() ?? false,
                 'can_access_tags' => $request->user()?->canAccessTagsPage() ?? false,
+                'status_change_project_ids' => $statusChangeProjectIds,
             ],
             'app' => [
                 'site_name' => SiteMeta::value('site_name', 'Issue Tracker'),
