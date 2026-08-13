@@ -12,6 +12,7 @@ This reference maps the reusable frontend and backend pieces to where they are c
 | `FlashToasts.vue` | Shows shared success/error flash messages from Laravel. | Used by `AppLayout`. |
 | `FormError.vue` | Renders an Inertia form field error. | Login; Clients; Projects; Project Show; Issues Index/Show; Tags; Profile; Admin Users; Roles; Permissions; Settings. |
 | `Modal.vue` | Reusable modal dialog. | Clients; Projects; Project Show; Issues Index/Show; Tags; Admin Users; Roles; Permissions. |
+| `IssueQuickReadModal.vue` | Shared issue preview dialog with attachments, links, full-issue navigation, and permission-aware status updates. | Project Show; Dashboard; Issues Index; Daily Activity; Kanban. |
 | `Pagination.vue` | Renders Laravel paginator links and metadata. | Clients; Projects; Project Show issues; Issues Index; Tags; Admin Users. |
 | `RichTextEditor.vue` | TipTap rich-text input with editor toolbar and validation state. | Projects Index; Project Show issue creation; Issues Index; Issue Show editing and child-issue creation. |
 | `StatusPill.vue` | Consistent Todo / In Progress / Done badge. | Dashboard; Project Show; Issues Index/Show; Daily Activity; `IssueCard`; `IssueTree`. |
@@ -63,6 +64,7 @@ Policy registration is handled in `app/Providers/AppServiceProvider.php`. In add
 
 - authenticated user profile data and avatar URL;
 - navigation-level access flags for projects, clients, and tags;
+- project IDs where the current user may change issue status (used by `IssueQuickReadModal`);
 - site name and stale/critical issue thresholds;
 - stale-work and critical-work nudge counters; and
 - success/error flash messages.
@@ -90,4 +92,4 @@ flowchart LR
 - Use an existing component when the visual pattern and interaction are already the same—for example, use `Modal`, `Pagination`, `FormError`, and `StatusPill` rather than recreating them in a page.
 - Use a Form Request for a repeated or meaningful write operation instead of placing detailed validation directly in a controller.
 - Put cross-action workflow logic in a service when it is not specific to a single HTTP endpoint.
-- Add to a policy when the rule decides whether a user may act on a specific client, project, or issue.
+- Add to a policy when the rule decides whether a user may act on a specific client, project, or issue. For issue status changes, `IssuePolicy` permits Super Admins, project owners, Developers, and Clients with `issue.change_status`; Employees are excluded.

@@ -143,6 +143,15 @@ This is a newest-first record of features and meaningful product changes, consol
 - Added issue search and richer issue intelligence across Dashboard, Kanban, and Daily Activity.
 - Refined issue detail, Kanban, hierarchy/tree, and nested sub-issue interfaces.
 
+### Workspace-wide issue Quick Read
+
+**Last updated:** 13th August, 2026
+
+- Added one shared Quick Read modal for Project Show, Dashboard, Issues Index, Daily Activity, and Kanban.
+- The modal shows issue details, tags, attachment/link previews, counts, and links to the full issue at both the top and bottom.
+- Added a compact status-change control to the modal. It is available to Super Admins, project owners, Developers, and Clients; Employees cannot change issue status.
+- The `issue.change_status` permission remains the server-side capability check. Migrations keep it assigned to Clients and remove it from Employees.
+
 ### Issue media and references
 
 **Last updated:** 11th April, 2026

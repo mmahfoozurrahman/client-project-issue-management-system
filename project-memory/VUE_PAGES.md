@@ -6,14 +6,14 @@ All frontend pages live in `resources/js/Pages/`. Laravel controllers return the
 
 | Vue page | Route | Controller | Purpose |
 | --- | --- | --- | --- |
-| `Dashboard.vue` | `/dashboard` | `DashboardController@index` | Workspace overview, issue analytics, status summaries, and activity information. |
+| `Dashboard.vue` | `/dashboard` | `DashboardController@index` | Workspace overview, issue analytics, status summaries, activity information, and Quick Read issue previews. |
 | `Clients/Index.vue` | `/clients` | `ClientController@index` | Paginated client listing with create/edit/delete modal flows. |
 | `Projects/Index.vue` | `/projects` | `ProjectController@index` | Project listing, filtering, and create/edit workflows. |
-| `Projects/Show.vue` | `/projects/{project}` | `ProjectController@show` | Project overview, issue list/date column, quick read, member management, and issue creation. |
-| `Issues/Index.vue` | `/issues` | `IssueController@index` | Filterable, searchable, paginated issue listing and create-issue modal. |
+| `Projects/Show.vue` | `/projects/{project}` | `ProjectController@show` | Project overview, issue list/date column, shared Quick Read, member management, and issue creation. |
+| `Issues/Index.vue` | `/issues` | `IssueController@index` | Filterable, searchable, paginated issue listing, Quick Read, and create-issue modal. |
 | `Issues/Show.vue` | `/issues/{issue}` | `IssueController@show` | Full issue detail, editing, rich text, tags, uploads, links, image gallery, related issues, and sub-issue tree. |
-| `Issues/Kanban.vue` | `/kanban` | `IssueController@kanban` | Status-board workflow for Todo, In Progress, and Done issues. |
-| `Issues/DailyActivity.vue` | `/issues/daily-activity` | `IssueController@dailyActivity` | Date-focused created/completed issue activity and heatmap view. |
+| `Issues/Kanban.vue` | `/kanban` | `IssueController@kanban` | Status-board workflow for Todo, In Progress, and Done issues with per-card Quick Read. |
+| `Issues/DailyActivity.vue` | `/issues/daily-activity` | `IssueController@dailyActivity` | Date-focused created/completed issue activity, heatmap view, and Quick Read. |
 | `Tags/Index.vue` | `/tags` | `TagController@index` | Project-scoped tag management with filtering, pagination, issue count links to filtered issues, and create/edit modals. |
 | `Profile/Show.vue` | `/profile` | `ProfileController@show` | Logged-in user profile and avatar updates. |
 | `Auth/Login.vue` | `/login` | `AuthenticatedSessionController@create` | Guest login screen. |

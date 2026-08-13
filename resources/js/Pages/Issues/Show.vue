@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
-import { Head, router, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import Swal from 'sweetalert2';
 import FormError from '../../Components/FormError.vue';
 import Modal from '../../Components/Modal.vue';
@@ -406,7 +406,14 @@ const deleteLink = (link) => {
             <div class="context-stat">
                 <span>Tags</span>
                 <div v-if="issueTags.length" class="d-flex flex-wrap gap-1 mt-1">
-                    <span v-for="tag in issueTags" :key="tag.id" class="badge rounded-pill text-bg-light border">{{ tag.name }}</span>
+                    <Link
+                        v-for="tag in issueTags"
+                        :key="tag.id"
+                        :href="`/issues?tag_id=${tag.id}&project_id=${issue.project_id}`"
+                        class="badge rounded-pill text-bg-light border text-decoration-none"
+                    >
+                        {{ tag.name }}
+                    </Link>
                 </div>
                 <strong v-else>No tags</strong>
             </div>
