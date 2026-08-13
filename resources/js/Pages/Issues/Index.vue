@@ -206,6 +206,7 @@ const idleMetaClass = (issue) => {
                             placeholder="Search title, description, or link..."
                             autocomplete="off"
                             @input="showIssueSuggestions = true"
+                            @search="applyFilters"
                             @keyup.enter="applyFilters"
                         >
                         <div v-if="showIssueSuggestions && matchingIssueSuggestions.length" class="position-absolute top-100 start-0 mt-1 w-100 bg-white border rounded shadow-sm" style="z-index: 1000; max-height: 240px; overflow-y: auto;">

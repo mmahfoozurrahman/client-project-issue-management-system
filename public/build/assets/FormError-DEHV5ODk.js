@@ -1,1 +1,0 @@
-import{F as e,G as t,O as n,_ as r,o as i,v as a,y as o}from"./app-5ehQQ2Bb.js";var s={key:0,class:`field-error`,role:`alert`},c={__name:`FormError`,props:{message:{type:String,default:``}},setup(c){return(l,u)=>(n(),r(i,{name:`field-error-fade`},{default:e(()=>[c.message?(n(),o(`div`,s,t(c.message),1)):a(``,!0)]),_:1}))}};export{c as t};
