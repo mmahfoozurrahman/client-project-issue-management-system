@@ -10,6 +10,22 @@ This is a newest-first record of features and meaningful product changes, consol
 
 ## Feature history (newest first)
 
+### Responsive pinned-issues carousel
+
+**Last updated:** 13th August, 2026
+
+- Changed the Project Show page's pinned-issues card grid into a single-row horizontal carousel, preventing pinned issues from wrapping onto a second row.
+- Added accessible previous/next controls that appear only when the card rail has additional content to scroll; touch, trackpad, and standard horizontal scrolling remain supported.
+- Added desktop, tablet, and mobile card sizing plus layout containment so carousel overflow stays inside the rail and cannot widen the project page.
+
+### Workspace-wide clickable issue tags
+
+**Last updated:** 13th August, 2026
+
+- Made displayed issue tags clickable throughout the workspace, including the Dashboard, issue list, project issue lists, Kanban, Daily Activity, Quick Read modal, related-issue panel, and nested issue tree.
+- Each tag opens the issue list using the existing scoped filters: `/issues?tag_id={id}&project_id={project_id}`.
+- Tag-management controls and editable tag inputs remain unchanged; the Tag Management page already links its issue-count pill to the filtered list.
+
 ### Tag Management autocomplete suggestions
 
 **Last updated:** 13th August, 2026

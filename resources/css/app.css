@@ -32,7 +32,7 @@ a {
 .app-shell {
     min-height: 100vh;
     display: grid;
-    grid-template-columns: 320px 1fr;
+    grid-template-columns: 320px minmax(0, 1fr);
 }
 
 .sidebar-panel {
@@ -162,6 +162,7 @@ a {
 .main-panel {
     padding: 24px;
     min-width: 0;
+    width: 100%;
 }
 
 .topbar {
@@ -180,7 +181,9 @@ a {
 
 .page-body {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 24px;
+    min-width: 0;
 }
 
 .panel-card,
@@ -290,6 +293,81 @@ a {
 
 .panel-header {
     margin-bottom: 18px;
+}
+
+.pinned-issues-header {
+    align-items: flex-end;
+}
+
+.pinned-issues-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.pinned-scroll-button {
+    width: 40px;
+    height: 40px;
+    display: inline-grid;
+    place-items: center;
+    padding: 0;
+    border: 1px solid rgba(15, 118, 110, 0.2);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.84);
+    color: var(--accent-deep);
+    box-shadow: 0 8px 18px rgba(77, 56, 31, 0.08);
+    transition: transform 0.18s ease, background 0.18s ease, opacity 0.18s ease;
+}
+
+.pinned-scroll-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    background: rgba(15, 118, 110, 0.12);
+}
+
+.pinned-scroll-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.38;
+}
+
+.pinned-scroll-button svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2.25;
+}
+
+.pinned-issues-track {
+    display: flex;
+    gap: 16px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    contain: inline-size;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: inline proximity;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding: 2px;
+}
+
+.pinned-issues-track::-webkit-scrollbar {
+    display: none;
+}
+
+.pinned-issue-slide {
+    flex: 0 0 calc((100% - 32px) / 3);
+    min-width: 300px;
+    scroll-snap-align: start;
+}
+
+.pinned-issue-card {
+    min-height: 100%;
 }
 
 .issue-grid,
@@ -1440,6 +1518,14 @@ a {
         flex-shrink: 0;
     }
 
+    .pinned-issues-header {
+        align-items: flex-start;
+    }
+
+    .pinned-issue-slide {
+        flex-basis: calc((100% - 16px) / 2);
+    }
+
     .issue-context-strip {
         grid-template-columns: repeat(2, minmax(160px, 1fr));
     }
@@ -1561,6 +1647,29 @@ a {
     .panel-header > a.btn {
         width: 100%;
         justify-content: center;
+    }
+
+    .pinned-issues-header {
+        gap: 10px;
+    }
+
+    .pinned-issues-controls {
+        width: auto;
+    }
+
+    .pinned-scroll-button {
+        width: 38px;
+        height: 38px;
+    }
+
+    .pinned-issues-track {
+        gap: 12px;
+        margin-inline: -2px;
+    }
+
+    .pinned-issue-slide {
+        flex-basis: min(88%, 340px);
+        min-width: 0;
     }
 
     .filters-row > .form-select,

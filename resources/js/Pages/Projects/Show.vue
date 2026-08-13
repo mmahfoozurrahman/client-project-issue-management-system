@@ -16,16 +16,36 @@
         </section>
 
         <section v-if="pinnedIssues.length" class="panel-card mb-4">
-            <div class="panel-header">
+            <div class="panel-header pinned-issues-header">
                 <div>
                     <p class="section-kicker">Pinned Issues</p>
                     <h3 class="panel-title">Your project bookmarks</h3>
                 </div>
+                <div v-if="showPinnedControls" class="pinned-issues-controls" aria-label="Pinned issues navigation">
+                    <button
+                        type="button"
+                        class="pinned-scroll-button"
+                        :disabled="!canScrollPinnedLeft"
+                        aria-label="Show earlier pinned issues"
+                        @click="scrollPinnedIssues(-1)"
+                    >
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+                    </button>
+                    <button
+                        type="button"
+                        class="pinned-scroll-button"
+                        :disabled="!canScrollPinnedRight"
+                        aria-label="Show more pinned issues"
+                        @click="scrollPinnedIssues(1)"
+                    >
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+                    </button>
+                </div>
             </div>
 
-            <div v-if="pinnedIssues.length" class="row g-3">
-                <div v-for="issue in pinnedIssues" :key="issue.id" class="col-md-6 col-xl-4">
-                    <div class="border rounded-4 p-3 h-100 bg-light-subtle d-flex flex-column gap-3">
+            <div v-if="pinnedIssues.length" ref="pinnedIssuesTrack" class="pinned-issues-track" @scroll.passive="updatePinnedScrollState">
+                <article v-for="issue in pinnedIssues" :key="issue.id" class="pinned-issue-slide">
+                    <div class="pinned-issue-card border rounded-4 p-3 bg-light-subtle d-flex flex-column gap-3">
                         <div class="d-flex align-items-start gap-2">
                             <span class="table-avatar issue flex-shrink-0">{{ issue.title.slice(0, 1) }}</span>
                             <div class="min-w-0">
@@ -43,7 +63,7 @@
                             </div>
                         </div>
                     </div>
-                </div>
+                </article>
             </div>
         </section>
 
@@ -346,7 +366,7 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import Swal from 'sweetalert2';
 import FormError from '../../Components/FormError.vue';
@@ -377,6 +397,10 @@ const props = defineProps({
 const modalOpen = ref(false);
 const quickReadModalOpen = ref(false);
 const activeIssue = ref(null);
+const pinnedIssuesTrack = ref(null);
+const canScrollPinnedLeft = ref(false);
+const canScrollPinnedRight = ref(false);
+const showPinnedControls = ref(false);
 const issueRows = computed(() => props.issues?.data ?? []);
 const plainText = (value) => String(value || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 const openQuickRead = (issue) => {
@@ -451,6 +475,25 @@ const submit = () => {
 const togglePin = (issue) => {
     router.post(`/issues/${issue.id}/pin`, {}, { preserveScroll: true });
 };
+
+const updatePinnedScrollState = () => {
+    const track = pinnedIssuesTrack.value;
+    if (!track) return;
+
+    const scrollable = track.scrollWidth > track.clientWidth + 1;
+    showPinnedControls.value = scrollable;
+    canScrollPinnedLeft.value = scrollable && track.scrollLeft > 1;
+    canScrollPinnedRight.value = scrollable && track.scrollLeft + track.clientWidth < track.scrollWidth - 1;
+};
+
+const scrollPinnedIssues = (direction) => {
+    const track = pinnedIssuesTrack.value;
+    if (!track) return;
+
+    track.scrollBy({ left: direction * Math.round(track.clientWidth * 0.85), behavior: 'smooth' });
+};
+
+const handlePinnedIssuesResize = () => nextTick(updatePinnedScrollState);
 
 const onImageChange = (event) => {
     form.images = Array.from(event.target.files || []);
@@ -528,6 +571,14 @@ const tagFilterLabel = computed(() => {
     return count === 1 ? '1 tag selected' : `${count} tags selected`;
 });
 
-onMounted(() => document.addEventListener('click', closeTagFilterOnOutsideClick));
-onBeforeUnmount(() => document.removeEventListener('click', closeTagFilterOnOutsideClick));
+onMounted(() => {
+    document.addEventListener('click', closeTagFilterOnOutsideClick);
+    window.addEventListener('resize', handlePinnedIssuesResize);
+    nextTick(updatePinnedScrollState);
+});
+
+onBeforeUnmount(() => {
+    document.removeEventListener('click', closeTagFilterOnOutsideClick);
+    window.removeEventListener('resize', handlePinnedIssuesResize);
+});
 </script>
