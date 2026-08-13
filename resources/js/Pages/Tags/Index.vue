@@ -10,6 +10,7 @@ import { formatDate } from '../../utils/date';
 
 const props = defineProps({
     tags: { type: Object, default: () => ({}) },
+    tagSuggestions: { type: Array, default: () => [] },
     projects: { type: Array, default: () => [] },
     filters: { type: Object, default: () => ({}) },
     breadcrumbs: { type: Array, default: () => [] },
@@ -18,6 +19,7 @@ const props = defineProps({
 const createModalOpen = ref(false);
 const editModalOpen = ref(false);
 const activeTag = ref(null);
+const showTagSuggestions = ref(false);
 
 const createForm = useForm({ project_id: '', name: '' });
 const editForm = useForm({ name: '' });
@@ -30,6 +32,21 @@ const filterForm = reactive({
     q: props.filters?.q ?? '',
 });
 
+const matchingTagSuggestions = computed(() => {
+    const query = filterForm.q.trim().toLowerCase();
+    if (!query) return [];
+
+    return props.tagSuggestions
+        .filter((tag) => {
+            const isInSelectedProject = !filterForm.project_id
+                || String(tag.project_id) === String(filterForm.project_id);
+
+            return isInSelectedProject
+                && (tag.name.toLowerCase().includes(query) || tag.slug.toLowerCase().includes(query));
+        })
+        .slice(0, 8);
+});
+
 const applyFilters = () => {
     router.get('/tags', filterForm, {
         preserveState: true,
@@ -40,6 +57,13 @@ const applyFilters = () => {
 const clearFilters = () => {
     filterForm.project_id = '';
     filterForm.q = '';
+    showTagSuggestions.value = false;
+    applyFilters();
+};
+
+const selectTagSuggestion = (tag) => {
+    filterForm.q = tag.name;
+    showTagSuggestions.value = false;
     applyFilters();
 };
 
@@ -111,12 +135,31 @@ const destroyTag = (tag) => {
                 </select>
 
                 <div class="d-flex gap-2 grow">
-                    <input
-                        v-model="filterForm.q"
-                        type="search"
-                        class="form-control"
-                        placeholder="Search by tag name or slug..."
-                    >
+                    <div class="position-relative flex-grow-1">
+                        <input
+                            v-model="filterForm.q"
+                            type="search"
+                            class="form-control"
+                            placeholder="Search by tag name or slug..."
+                            autocomplete="off"
+                            @input="showTagSuggestions = true"
+                        >
+                        <div v-if="showTagSuggestions && matchingTagSuggestions.length" class="position-absolute top-100 start-0 mt-1 w-100 bg-white border rounded shadow-sm" style="z-index: 1000; max-height: 240px; overflow-y: auto;">
+                            <button
+                                v-for="tag in matchingTagSuggestions"
+                                :key="tag.id"
+                                type="button"
+                                class="w-100 text-start px-3 py-2 border-0 bg-white text-decoration-none d-flex align-items-center justify-content-between gap-2"
+                                style="cursor: pointer; font-size: 0.9rem;"
+                                @click="selectTagSuggestion(tag)"
+                                @mouseover="$event.currentTarget.style.backgroundColor = '#f5f5f5'"
+                                @mouseout="$event.currentTarget.style.backgroundColor = 'white'"
+                            >
+                                <span class="badge bg-light text-dark">{{ tag.name }}</span>
+                                <small class="text-muted">{{ tag.project?.name }}</small>
+                            </button>
+                        </div>
+                    </div>
                     <button type="submit" class="btn btn-outline-secondary rounded-pill px-4">Search</button>
                     <button type="button" class="btn btn-light border rounded-pill px-3" @click="clearFilters">Clear</button>
                 </div>

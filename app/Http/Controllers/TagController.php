@@ -51,8 +51,15 @@ class TagController extends Controller
             ->paginate(10)
             ->withQueryString();
 
+        $tagSuggestions = IssueTag::query()
+            ->whereIn('project_id', $manageableProjectIds)
+            ->with('project:id,name')
+            ->orderBy('name')
+            ->get(['id', 'project_id', 'name', 'slug']);
+
         return Inertia::render('Tags/Index', [
             'tags' => $tags,
+            'tagSuggestions' => $tagSuggestions,
             'projects' => $projects,
             'filters' => [
                 'project_id' => $request->input('project_id'),

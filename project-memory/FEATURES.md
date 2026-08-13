@@ -10,6 +10,12 @@ This is a newest-first record of features and meaningful product changes, consol
 
 ## Feature history (newest first)
 
+### Tag Management autocomplete suggestions
+
+**Last updated:** 13th August, 2026
+
+- Added existing-tag autocomplete suggestions to the Tag Management search field, scoped to the selected project when one is chosen.
+
 ### Rich-text table support & copy-paste structure retention
 
 **Last updated:** 11th August, 2026
