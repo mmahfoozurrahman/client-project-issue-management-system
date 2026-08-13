@@ -1,6 +1,6 @@
 <script setup>
 import { computed, reactive, ref } from 'vue';
-import { Head, router, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import StatusPill from '../../Components/StatusPill.vue';
 import IssueQuickReadModal from '../../Components/IssueQuickReadModal.vue';
 import AppLayout from '../../Layouts/AppLayout.vue';
@@ -330,7 +330,7 @@ const carryoverIdleClass = (issue) => {
                                             Completed {{ formatIssueDate(issue.done_at) }}
                                         </small>
                                         <div v-if="issue.tags?.length" class="d-flex flex-wrap gap-1 mt-2">
-                                            <span v-for="tag in issue.tags" :key="tag.id" class="badge rounded-pill text-bg-light border">{{ tag.name }}</span>
+                                            <Link v-for="tag in issue.tags" :key="tag.id" :href="`/issues?tag_id=${tag.id}&project_id=${issue.project_id}`" class="badge rounded-pill text-bg-light border text-decoration-none">{{ tag.name }}</Link>
                                         </div>
                                     </div>
                                 </div>

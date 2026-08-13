@@ -30,7 +30,7 @@
 
             <div v-if="issue.tags?.length">
                 <p class="section-kicker mb-2">Tags</p>
-                <div class="d-flex flex-wrap gap-1"><span v-for="tag in issue.tags" :key="tag.id" class="badge rounded-pill text-bg-light border">{{ tag.name }}</span></div>
+                <div class="d-flex flex-wrap gap-1"><Link v-for="tag in issue.tags" :key="tag.id" :href="`/issues?tag_id=${tag.id}&project_id=${issue.project_id}`" class="badge rounded-pill text-bg-light border text-decoration-none">{{ tag.name }}</Link></div>
             </div>
 
             <div class="row g-3 text-center">

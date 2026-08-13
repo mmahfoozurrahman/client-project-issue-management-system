@@ -1,6 +1,6 @@
 <script setup>
 import { computed, reactive, ref } from 'vue';
-import { Head, router, useForm, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import FormError from '../../Components/FormError.vue';
 import IssueQuickReadModal from '../../Components/IssueQuickReadModal.vue';
 import Modal from '../../Components/Modal.vue';
@@ -270,7 +270,7 @@ const idleMetaClass = (issue) => {
                                             {{ staleAgeLabel(issue) }}
                                         </small>
                                         <div v-if="issue.tags?.length" class="d-flex flex-wrap gap-1 mt-2">
-                                            <span v-for="tag in issue.tags" :key="tag.id" class="badge rounded-pill text-bg-light border">{{ tag.name }}</span>
+                                            <Link v-for="tag in issue.tags" :key="tag.id" :href="`/issues?tag_id=${tag.id}&project_id=${issue.project_id}`" class="badge rounded-pill text-bg-light border text-decoration-none">{{ tag.name }}</Link>
                                         </div>
                                     </div>
                                 </div>

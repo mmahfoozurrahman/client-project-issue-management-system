@@ -31,7 +31,7 @@
                             <div class="min-w-0">
                                 <Link :href="`/issues/${issue.id}`" class="fw-semibold text-decoration-none text-dark d-block">{{ issue.title }}</Link>
                                 <div v-if="issue.tags?.length" class="d-flex flex-wrap gap-1 mt-2">
-                                    <span v-for="tag in issue.tags" :key="tag.id" class="badge rounded-pill text-bg-light border">{{ tag.name }}</span>
+                                    <Link v-for="tag in issue.tags" :key="tag.id" :href="`/issues?tag_id=${tag.id}&project_id=${issue.project_id}`" class="badge rounded-pill text-bg-light border text-decoration-none">{{ tag.name }}</Link>
                                 </div>
                             </div>
                         </div>
@@ -118,7 +118,7 @@
                                             Completed {{ formatIssueDate(issue.updated_at) }}
                                         </small>
                                         <div v-if="issue.tags?.length" class="d-flex flex-wrap gap-1 mt-2">
-                                            <span v-for="tag in issue.tags" :key="tag.id" class="badge rounded-pill text-bg-light border">{{ tag.name }}</span>
+                                            <Link v-for="tag in issue.tags" :key="tag.id" :href="`/issues?tag_id=${tag.id}&project_id=${issue.project_id}`" class="badge rounded-pill text-bg-light border text-decoration-none">{{ tag.name }}</Link>
                                         </div>
                                     </div>
                                 </div>
@@ -347,7 +347,7 @@
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
-import { Head, router, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import Swal from 'sweetalert2';
 import FormError from '../../Components/FormError.vue';
 import IssueQuickReadModal from '../../Components/IssueQuickReadModal.vue';

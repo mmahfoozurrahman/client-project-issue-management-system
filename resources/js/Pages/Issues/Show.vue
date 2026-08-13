@@ -596,9 +596,9 @@ const deleteLink = (link) => {
                             <div class="min-w-0">
                                 <strong class="d-block text-truncate">{{ relatedIssue.title }}</strong>
                                 <div class="d-flex flex-wrap gap-1 mt-2">
-                                    <span v-for="tag in relatedIssue.matching_tags" :key="tag.id" class="badge rounded-pill text-bg-light border">
+                                    <Link v-for="tag in relatedIssue.matching_tags" :key="tag.id" :href="`/issues?tag_id=${tag.id}&project_id=${relatedIssue.project_id}`" class="badge rounded-pill text-bg-light border text-decoration-none">
                                         {{ tag.name }}
-                                    </span>
+                                    </Link>
                                 </div>
                             </div>
                             <div class="text-end flex-shrink-0">

@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue';
+import { Link } from '@inertiajs/vue3';
 import { Plus } from 'lucide-vue-next';
 import StatusPill from './StatusPill.vue';
 
@@ -36,12 +37,12 @@ const issueNumber = (index) => [...props.path, index + 1].join('-');
                         <span class="nested-depth-marker">{{ issueNumber(index) }}</span>
                         <div>
                             <strong>{{ issue.title }}</strong>
-                            <div v-if="issue.tags?.length" class="d-flex flex-wrap gap-1 mt-1">
-                                <span v-for="tag in issue.tags" :key="tag.id" class="badge rounded-pill text-bg-light border">{{ tag.name }}</span>
-                            </div>
                             <!--small>{{ plainText(issue.description) || 'No description added yet.' }}</small-->
                         </div>
                     </Link>
+                    <div v-if="issue.tags?.length" class="d-flex flex-wrap gap-1 mt-1">
+                        <Link v-for="tag in issue.tags" :key="tag.id" :href="`/issues?tag_id=${tag.id}&project_id=${issue.project_id}`" class="badge rounded-pill text-bg-light border text-decoration-none">{{ tag.name }}</Link>
+                    </div>
                     <div class="nested-issue-meta">
                         <StatusPill :status="issue.status" size="sm" />
                         <span>{{ getChildren(issue).length }} children</span>
