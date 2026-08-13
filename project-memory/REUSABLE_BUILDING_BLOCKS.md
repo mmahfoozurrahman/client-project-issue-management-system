@@ -12,11 +12,11 @@ This reference maps the reusable frontend and backend pieces to where they are c
 | `FlashToasts.vue` | Shows shared success/error flash messages from Laravel. | Used by `AppLayout`. |
 | `FormError.vue` | Renders an Inertia form field error. | Login; Clients; Projects; Project Show; Issues Index/Show; Tags; Profile; Admin Users; Roles; Permissions; Settings. |
 | `Modal.vue` | Reusable modal dialog. | Clients; Projects; Project Show; Issues Index/Show; Tags; Admin Users; Roles; Permissions. |
-| `IssueQuickReadModal.vue` | Shared issue preview dialog with attachments, links, full-issue navigation, and permission-aware status updates. | Project Show; Dashboard; Issues Index; Daily Activity; Kanban. |
+| `IssueQuickReadModal.vue` | Shared issue preview dialog with attachments, links, full-issue navigation, clickable tag filters, and permission-aware status updates. | Project Show; Dashboard; Issues Index; Daily Activity; Kanban. |
 | `Pagination.vue` | Renders Laravel paginator links and metadata. | Clients; Projects; Project Show issues; Issues Index; Tags; Admin Users. |
 | `RichTextEditor.vue` | TipTap rich-text input with editor toolbar and validation state. | Projects Index; Project Show issue creation; Issues Index; Issue Show editing and child-issue creation. |
 | `StatusPill.vue` | Consistent Todo / In Progress / Done badge. | Dashboard; Project Show; Issues Index/Show; Daily Activity; `IssueCard`; `IssueTree`. |
-| `IssueTree.vue` | Recursive nested issue/sub-issue tree. | Issue Show. |
+| `IssueTree.vue` | Recursive nested issue/sub-issue tree with tag links to the filtered issue list. | Issue Show. |
 | `SkeletonCard.vue` | Loading placeholder card. | Issues Index and Kanban. |
 | `IssueCard.vue` | Reusable compact issue card with status badge. | Available for issue-card views; currently no direct page import was found. |
 

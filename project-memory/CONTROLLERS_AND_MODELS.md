@@ -10,7 +10,7 @@ This document explains the Laravel HTTP controllers and Eloquent models that dri
 | `ClientController` | Lists, creates, updates, and deletes user-owned clients. | `/clients` -> `Clients/Index`. |
 | `ProjectController` | Lists projects; creates, shows, updates, and deletes projects; supplies project-specific issue/member data. | `/projects` -> `Projects/Index`; `/projects/{project}` -> `Projects/Show`. |
 | `ProjectMemberController` | Adds, updates, removes, and searches project members. | `/projects/{project}/members/*`. |
-| `IssueController` | Core issue lifecycle: lists/filtering, Kanban, daily activity, create/update/delete, details, pinning, attachments, links, and policy-protected status changes. | `/issues` -> `Issues/Index`; `/issues/{issue}` -> `Issues/Show`; `/kanban` -> `Issues/Kanban`; `/issues/daily-activity` -> `Issues/DailyActivity`. |
+| `IssueController` | Core issue lifecycle: lists/filtering (including `tag_id` and `project_id`), Kanban, daily activity, create/update/delete, details, pinning, attachments, links, and policy-protected status changes. | `/issues` -> `Issues/Index`; `/issues/{issue}` -> `Issues/Show`; `/kanban` -> `Issues/Kanban`; `/issues/daily-activity` -> `Issues/DailyActivity`. |
 | `TagController` | Lists, filters, creates, updates, and deletes project-scoped tags. | `/tags` -> `Tags/Index`. |
 | `ProfileController` | Shows and updates the logged-in user profile and avatar. | `/profile` -> `Profile/Show`. |
 | `Auth\AuthenticatedSessionController` | Shows login form, authenticates sessions, and logs users out. | `/login` -> `Auth/Login`; `POST /logout`. |
