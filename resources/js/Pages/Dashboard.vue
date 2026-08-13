@@ -17,6 +17,7 @@ import {
     Tooltip,
 } from 'chart.js';
 import StatusPill from '../Components/StatusPill.vue';
+import IssueQuickReadModal from '../Components/IssueQuickReadModal.vue';
 import AppLayout from '../Layouts/AppLayout.vue';
 import { formatIssueDate } from '../utils/date';
 
@@ -45,6 +46,8 @@ const props = defineProps({
 });
 
 const activeStatus = ref('inprogress');
+const quickReadModalOpen = ref(false);
+const activeIssue = ref(null);
 const statusTabs = [
     { key: 'inprogress', label: 'In Progress', subtitle: 'Active focus lane' },
     { key: 'todo', label: 'Todo', subtitle: 'Upcoming commitments' },
@@ -52,6 +55,10 @@ const statusTabs = [
 ];
 
 const activeIssueRows = computed(() => props.statusIssues?.[activeStatus.value] ?? []);
+const openQuickRead = (issue) => {
+    activeIssue.value = issue;
+    quickReadModalOpen.value = true;
+};
 const weeklyCanvas = ref(null);
 const monthlyCanvas = ref(null);
 const statusCanvas = ref(null);
@@ -486,7 +493,7 @@ onBeforeUnmount(() => {
                             <td>{{ issue.title }}</td>
                             <td><StatusPill :status="issue.status" /></td>
                             <td :class="idleSeverityClass(issue)">{{ staleAgeLabel(issue) }}</td>
-                            <td class="text-end"><Link :href="`/issues/${issue.id}`" class="btn btn-sm btn-light rounded-pill">Open</Link></td>
+                            <td class="text-end"><div class="table-actions justify-content-end"><button type="button" class="btn btn-sm btn-light rounded-pill" @click="openQuickRead(issue)">Quick read</button><Link :href="`/issues/${issue.id}`" class="btn btn-sm btn-light rounded-pill">Open</Link></div></td>
                         </tr>
                         <tr v-if="!(pendingNudges?.focus_issues?.length)">
                             <td colspan="4">
@@ -555,6 +562,7 @@ onBeforeUnmount(() => {
                             <td data-label="Status"><StatusPill :status="issue.status" /></td>
                             <td data-label="Action">
                                 <div class="table-actions">
+                                    <button type="button" class="btn btn-sm btn-light rounded-pill" @click="openQuickRead(issue)">Quick read</button>
                                     <Link :href="`/issues/${issue.id}`" class="btn btn-sm btn-light rounded-pill">Open</Link>
                                 </div>
                             </td>
@@ -568,6 +576,7 @@ onBeforeUnmount(() => {
                 </table>
             </div>
         </section>
+        <IssueQuickReadModal v-model="quickReadModalOpen" :issue="activeIssue" />
     </AppLayout>
 </template>
 

@@ -38,9 +38,11 @@ class DashboardController extends Controller
                             $query->withoutGlobalScope('user_owned')->select('id', 'name');
                         },
                         'images',
+                        'files',
+                        'links',
                         'tags'
                     ])
-                    ->withCount(['subIssues', 'images'])
+                    ->withCount(['subIssues', 'images', 'files'])
                     ->where('status', $status);
 
                 $status === 'done'
@@ -100,8 +102,12 @@ class DashboardController extends Controller
                 'project.client' => function ($query) {
                     $query->withoutGlobalScope('user_owned')->select('id', 'name');
                 },
+                'images',
+                'files',
+                'links',
                 'tags'
             ])
+            ->withCount(['subIssues', 'images', 'files'])
             ->whereNull('done_at')->where('status', '!=', 'done')
             ->where('updated_at', '<=', Carbon::now()->subDays($staleDays))
             ->orderBy('updated_at')

@@ -2,6 +2,7 @@
 import { computed, reactive, ref } from 'vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import StatusPill from '../../Components/StatusPill.vue';
+import IssueQuickReadModal from '../../Components/IssueQuickReadModal.vue';
 import AppLayout from '../../Layouts/AppLayout.vue';
 
 const props = defineProps({
@@ -16,6 +17,8 @@ const props = defineProps({
 });
 
 const loading = ref(false);
+const quickReadModalOpen = ref(false);
+const activeIssue = ref(null);
 const page = usePage();
 const staleDays = computed(() => Number(page.props.app?.issue_stale_days ?? 3));
 const criticalDays = computed(() => Number(page.props.app?.issue_critical_days ?? 7));
@@ -35,6 +38,10 @@ const statusCards = computed(() => [
 ]);
 
 const issueRows = computed(() => props.issues ?? []);
+const openQuickRead = (issue) => {
+    activeIssue.value = issue;
+    quickReadModalOpen.value = true;
+};
 const monthCounts = computed(() => props.calendar?.counts ?? {});
 
 const monthStartDate = computed(() => {
@@ -279,7 +286,7 @@ const carryoverIdleClass = (issue) => {
                             <td>{{ issue.title }}</td>
                             <td><StatusPill :status="issue.status" /></td>
                             <td :class="carryoverIdleClass(issue)">{{ staleAgeLabel(issue) }}</td>
-                            <td class="text-end"><Link :href="`/issues/${issue.id}`" class="btn btn-sm btn-light rounded-pill">Open</Link></td>
+                            <td class="text-end"><div class="table-actions justify-content-end"><button type="button" class="btn btn-sm btn-light rounded-pill" @click="openQuickRead(issue)">Quick read</button><Link :href="`/issues/${issue.id}`" class="btn btn-sm btn-light rounded-pill">Open</Link></div></td>
                         </tr>
                         <tr v-if="!(carryoverIssues?.length)">
                             <td colspan="4"><div class="table-empty">No carryover issues for this filter scope.</div></td>
@@ -333,6 +340,7 @@ const carryoverIdleClass = (issue) => {
                             <td data-label="Status"><StatusPill :status="issue.status" /></td>
                             <td data-label="Action">
                                 <div class="table-actions">
+                                    <button type="button" class="btn btn-sm btn-light rounded-pill" @click="openQuickRead(issue)">Quick read</button>
                                     <Link :href="`/issues/${issue.id}`" class="btn btn-sm btn-light rounded-pill">Open</Link>
                                 </div>
                             </td>
@@ -346,6 +354,7 @@ const carryoverIdleClass = (issue) => {
                 </table>
             </div>
         </section>
+        <IssueQuickReadModal v-model="quickReadModalOpen" :issue="activeIssue" />
     </AppLayout>
 </template>
 

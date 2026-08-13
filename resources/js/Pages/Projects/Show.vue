@@ -246,63 +246,7 @@
             </form>
         </Modal>
 
-        <Modal v-model="quickReadModalOpen" :title="activeIssue?.title || 'Issue quick read'" size="modal-lg">
-            <article v-if="activeIssue" class="vstack gap-4">
-                <div class="d-flex flex-wrap align-items-center gap-2">
-                    <StatusPill :status="activeIssue.status" />
-                    <span v-if="activeIssue.parent_issue" class="badge rounded-pill text-bg-light border">Parent: {{ activeIssue.parent_issue.title }}</span>
-                    <span v-if="activeIssue.user?.name" class="text-muted small">Created by {{ activeIssue.user.name }}</span>
-                    <span class="text-muted small">Created {{ formatIssueDate(activeIssue.created_at) }}</span>
-                    <span v-if="activeIssue.updated_at" class="text-muted small">Updated {{ formatIssueDate(activeIssue.updated_at) }}</span>
-                </div>
-
-                <div>
-                    <p class="section-kicker mb-1">Issue details</p>
-                    <div v-if="activeIssue.description" class="rich-display" v-html="activeIssue.description" />
-                    <p v-else class="text-muted mb-0">No description added yet.</p>
-                </div>
-
-                <div v-if="activeIssue.tags?.length">
-                    <p class="section-kicker mb-2">Tags</p>
-                    <div class="d-flex flex-wrap gap-1">
-                        <span v-for="tag in activeIssue.tags" :key="tag.id" class="badge rounded-pill text-bg-light border">{{ tag.name }}</span>
-                    </div>
-                </div>
-
-                <div class="row g-3 text-center">
-                    <div class="col-4"><div class="border rounded-3 p-2"><strong class="d-block">{{ activeIssue.sub_issues_count ?? 0 }}</strong><small class="text-muted">Sub-issues</small></div></div>
-                    <div class="col-4"><div class="border rounded-3 p-2"><strong class="d-block">{{ activeIssue.images?.length ?? activeIssue.images_count ?? 0 }}</strong><small class="text-muted">Images</small></div></div>
-                    <div class="col-4"><div class="border rounded-3 p-2"><strong class="d-block">{{ activeIssue.files?.length ?? activeIssue.files_count ?? 0 }}</strong><small class="text-muted">Files</small></div></div>
-                </div>
-
-                <div v-if="activeIssue.images?.length">
-                    <p class="section-kicker mb-2">Images</p>
-                    <div class="row g-2">
-                        <div v-for="image in activeIssue.images" :key="image.id" class="col-6 col-md-4">
-                            <a :href="image.url" target="_blank" rel="noopener noreferrer"><img :src="image.url" :alt="image.original_name || activeIssue.title" class="img-fluid rounded-3 border" /></a>
-                        </div>
-                    </div>
-                </div>
-
-                <div v-if="activeIssue.files?.length">
-                    <p class="section-kicker mb-2">Files</p>
-                    <div class="list-group list-group-flush border rounded-3">
-                        <a v-for="file in activeIssue.files" :key="file.id" :href="file.url" target="_blank" rel="noopener noreferrer" class="list-group-item list-group-item-action">{{ file.original_name || 'Attachment' }}</a>
-                    </div>
-                </div>
-
-                <div v-if="activeIssue.links?.length">
-                    <p class="section-kicker mb-2">Links</p>
-                    <div class="list-group list-group-flush border rounded-3">
-                        <a v-for="link in activeIssue.links" :key="link.id" :href="link.url" target="_blank" rel="noopener noreferrer" class="list-group-item list-group-item-action">{{ link.label || link.url }}</a>
-                    </div>
-                </div>
-
-                <div class="d-flex justify-content-end">
-                    <Link :href="`/issues/${activeIssue.id}`" class="btn btn-outline-secondary rounded-pill">Open full issue</Link>
-                </div>
-            </article>
-        </Modal>
+        <IssueQuickReadModal v-model="quickReadModalOpen" :issue="activeIssue" />
 
         <Modal v-model="modalOpen" title="Create Issue">
             <form class="vstack gap-3" @submit.prevent="submit">
@@ -406,6 +350,7 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import Swal from 'sweetalert2';
 import FormError from '../../Components/FormError.vue';
+import IssueQuickReadModal from '../../Components/IssueQuickReadModal.vue';
 import Modal from '../../Components/Modal.vue';
 import Pagination from '../../Components/Pagination.vue';
 import RichTextEditor from '../../Components/RichTextEditor.vue';

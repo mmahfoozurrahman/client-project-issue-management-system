@@ -158,6 +158,7 @@ class IssueController extends Controller
                 'project.client' => function ($query) {
                     $query->withoutGlobalScope('user_owned')->select('id', 'name');
                 },
+                'parentIssue:id,title',
                 'images',
                 'files',
                 'links',
@@ -246,8 +247,13 @@ class IssueController extends Controller
                 'project.client' => function ($query) {
                     $query->withoutGlobalScope('user_owned')->select('id', 'name');
                 },
+                'parentIssue:id,title',
+                'images',
+                'files',
+                'links',
                 'tags'
             ])
+            ->withCount(['subIssues', 'images', 'files'])
             ->where('status', $selectedStatus);
 
         $selectedStatus === 'done'
@@ -258,7 +264,8 @@ class IssueController extends Controller
 
         $carryoverIssues = Issue::withoutGlobalScope('user_owned')
             ->whereIn('project_id', $accessibleIds)
-            ->with(['project:id,name,client_id', 'project.client:id,name', 'tags'])
+            ->with(['project:id,name,client_id', 'project.client:id,name', 'parentIssue:id,title', 'images', 'files', 'links', 'tags'])
+            ->withCount(['subIssues', 'images', 'files'])
             ->whereDate('created_at', '<', $selectedDate)
             ->where('status', '!=', 'done')
             ->where('updated_at', '<=', Carbon::now()->subDays($staleDays))

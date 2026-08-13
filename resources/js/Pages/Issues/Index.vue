@@ -2,6 +2,7 @@
 import { computed, reactive, ref } from 'vue';
 import { Head, router, useForm, usePage } from '@inertiajs/vue3';
 import FormError from '../../Components/FormError.vue';
+import IssueQuickReadModal from '../../Components/IssueQuickReadModal.vue';
 import Modal from '../../Components/Modal.vue';
 import SkeletonCard from '../../Components/SkeletonCard.vue';
 import Pagination from '../../Components/Pagination.vue';
@@ -22,6 +23,8 @@ const props = defineProps({
 
 const loading = ref(false);
 const modalOpen = ref(false);
+const quickReadModalOpen = ref(false);
+const activeIssue = ref(null);
 const showIssueSuggestions = ref(false);
 const page = usePage();
 const issueRows = computed(() => props.issues?.data ?? props.issues ?? []);
@@ -87,6 +90,11 @@ const selectIssueSuggestion = (issue) => {
 
 const togglePin = (issue) => {
     router.post(`/issues/${issue.id}/pin`, {}, { preserveScroll: true });
+};
+
+const openQuickRead = (issue) => {
+    activeIssue.value = issue;
+    quickReadModalOpen.value = true;
 };
 
 const submit = () => {
@@ -276,6 +284,7 @@ const idleMetaClass = (issue) => {
                                     <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" @click="togglePin(issue)">
                                         {{ issue.is_pinned ? 'Unpin' : 'Pin' }}
                                     </button>
+                                    <button type="button" class="btn btn-sm btn-light rounded-pill" @click="openQuickRead(issue)">Quick read</button>
                                     <Link :href="`/issues/${issue.id}`" class="btn btn-sm btn-light rounded-pill">Open</Link>
                                 </div>
                             </td>
@@ -291,6 +300,8 @@ const idleMetaClass = (issue) => {
 
             <Pagination :links="issues.links" :meta="issues" />
         </section>
+
+        <IssueQuickReadModal v-model="quickReadModalOpen" :issue="activeIssue" />
 
         <Modal v-model="modalOpen" title="Create Issue">
             <form class="vstack gap-3" @submit.prevent="submit">

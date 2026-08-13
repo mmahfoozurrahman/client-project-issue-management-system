@@ -2,6 +2,7 @@
 import { computed, reactive, ref } from 'vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import SkeletonCard from '../../Components/SkeletonCard.vue';
+import IssueQuickReadModal from '../../Components/IssueQuickReadModal.vue';
 import AppLayout from '../../Layouts/AppLayout.vue';
 import { formatIssueDate } from '../../utils/date';
 
@@ -16,11 +17,18 @@ const props = defineProps({
 });
 
 const loading = ref(false);
+const quickReadModalOpen = ref(false);
+const activeIssue = ref(null);
 const page = usePage();
 const criticalDays = computed(() => Number(page.props.app?.issue_critical_days ?? 7));
 const searchFilters = reactive({
     project_id: props.filters?.project_id ?? '',
 });
+
+const openQuickRead = (issue) => {
+    activeIssue.value = issue;
+    quickReadModalOpen.value = true;
+};
 
 const applyFilters = () => {
     loading.value = true;
@@ -202,11 +210,10 @@ const laneHintStyle = (columnKey) => {
 
                     <div class="kanban-stack compact-kanban-stack">
                         <SkeletonCard v-if="loading" v-for="n in 3" :key="`${column.key}-${n}`" />
-                        <Link
+                        <article
                             v-else
                             v-for="issue in columns[column.key]"
                             :key="issue.id"
-                            :href="`/issues/${issue.id}`"
                             class="kanban-row-card"
                             :class="{
                                 'stale-card': staleLevel(issue) === 'watch',
@@ -224,13 +231,16 @@ const laneHintStyle = (columnKey) => {
                                     <span v-for="tag in issue.tags" :key="tag.id" class="badge rounded-pill text-bg-light border">{{ tag.name }}</span>
                                 </div>
                             </div>
-                            <small class="kanban-side-meta">{{ issue.sub_issues_count ?? 0 }} children</small>
-                        </Link>
+                            <button type="button" class="kanban-quick-read" @click="openQuickRead(issue)">
+                                {{ issue.sub_issues_count ?? 0 }} children · Quick read
+                            </button>
+                        </article>
                         <div v-if="!loading && !(columns[column.key]?.length)" class="kanban-empty">No issues</div>
                     </div>
                 </section>
             </div>
         </section>
+        <IssueQuickReadModal v-model="quickReadModalOpen" :issue="activeIssue" />
     </AppLayout>
 </template>
 
@@ -342,11 +352,48 @@ const laneHintStyle = (columnKey) => {
 }
 
 .kanban-row-card {
+    width: 100%;
+    min-width: 0;
+    align-items: flex-start;
     border: 1px solid #deebe7;
     background: #fbfdfc;
     border-radius: 0.9rem;
     padding: 0.85rem;
     transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.kanban-row-card > div {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.kanban-row-card strong,
+.kanban-row-card span {
+    overflow-wrap: anywhere;
+}
+
+.kanban-quick-read {
+    flex: 0 1 auto;
+    max-width: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #64748b;
+    font: inherit;
+    font-size: 0.8rem;
+    line-height: 1.35;
+    text-align: right;
+    overflow-wrap: anywhere;
+}
+
+.kanban-quick-read:hover {
+    color: #0f766e;
+    text-decoration: underline;
+}
+
+.kanban-column {
+    min-width: 0;
+    overflow: hidden;
 }
 
 .kanban-row-card:hover {
