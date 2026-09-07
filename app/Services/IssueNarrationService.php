@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Issue;
 use App\Models\IssueNarration;
 use App\Models\SiteMeta;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -48,11 +49,14 @@ class IssueNarrationService
         $isAvailable = $record && $hashMatches && $record->status === 'ready' && ! $missingAudio;
 
         return [
+            'can_use' => true,
             'provider' => $record?->provider ?? 'gemini',
             'locale' => $record?->locale ?? config('issue_narration.locale', 'bn-IN'),
             'voice_name' => $record?->voice_name ?? $this->getGeminiVoiceName(),
             'voice_label' => $this->formatVoiceLabel($record?->voice_name ?? $this->getGeminiVoiceName()),
             'status' => $status,
+            'source_hash' => $sourceHash,
+            'record_source_hash' => $record?->source_hash,
             'is_available' => $isAvailable,
             'needs_refresh' => ! $record || ! $hashMatches || in_array($status, ['failed', 'stale'], true) || $missingAudio,
             'audio_urls' => $audioUrls,
@@ -63,11 +67,20 @@ class IssueNarrationService
         ];
     }
 
+    public function generateByIssueId(int $issueId, bool $force = false): IssueNarration
+    {
+        $issue = Issue::withoutGlobalScope('user_owned')->with('narration')->findOrFail($issueId);
+
+        return $this->generate($issue, $force);
+    }
+
     public function generate(Issue $issue, bool $force = false): IssueNarration
     {
+        @set_time_limit((int) config('issue_narration.max_execution_seconds', 300));
         $record = IssueNarration::firstOrNew(['issue_id' => $issue->id]);
         $segments = $this->buildNarrationSegments($issue);
         $sourceHash = $this->sourceHash($issue);
+        $provider = 'gemini';
         $locale = config('issue_narration.locale', 'bn-IN');
 
         if (
@@ -86,13 +99,13 @@ class IssueNarrationService
 
         if (empty($segments)) {
             $record->fill([
-                'provider' => 'gemini',
+                'provider' => $provider,
                 'locale' => $locale,
                 'source_hash' => $sourceHash,
                 'status' => 'failed',
                 'audio_paths' => null,
                 'error_message' => 'No issue text was available for narration.',
-                'requested_at' => now(),
+                'requested_at' => $record->requested_at ?? now(),
             ])->save();
 
             return $record;
@@ -102,50 +115,59 @@ class IssueNarrationService
 
         if ($apiKey === '') {
             $record->fill([
-                'provider' => 'gemini',
+                'provider' => $provider,
                 'locale' => $locale,
                 'source_hash' => $sourceHash,
                 'status' => 'failed',
                 'audio_paths' => null,
                 'error_message' => 'Gemini API key is missing. Set it in Admin Settings or GEMINI_API_KEY in .env.',
-                'requested_at' => now(),
+                'requested_at' => $record->requested_at ?? now(),
             ])->save();
 
             return $record;
         }
 
-        $this->checkRateLimits();
+        // Check configured rate limits before processing
+        $this->checkRateLimits($issue);
 
         $voiceName = $this->getGeminiVoiceName();
         $model = $this->getGeminiModel();
         $chunkDelay = $this->getGeminiChunkDelay();
 
         $record->fill([
-            'provider' => 'gemini',
+            'provider' => $provider,
             'locale' => $locale,
             'voice_name' => $voiceName,
             'source_hash' => $sourceHash,
             'status' => 'processing',
             'audio_paths' => null,
             'error_message' => null,
-            'requested_at' => now(),
+            'requested_at' => $record->requested_at ?? now(),
         ])->save();
 
         $chunks = $this->chunkSegments($segments, $this->getGeminiChunkChars());
         $disk = config('issue_narration.storage_disk', 'local');
         $paths = [];
+        $startTime = microtime(true);
+        $totalUsage = ['prompt_tokens' => 0, 'completion_tokens' => 0, 'total_tokens' => 0];
 
         try {
             foreach ($chunks as $index => $chunk) {
+                // Inter-chunk throttle delay to prevent bursting Google AI Studio RPM limits
                 if ($index > 0 && $chunkDelay > 0) {
                     sleep($chunkDelay);
                 }
 
-                $pcm = $this->synthesizeGeminiChunk($chunk, $apiKey, $model, $voiceName);
+                [$pcm, $chunkUsage] = $this->synthesizeGeminiChunk($chunk, $apiKey, $model, $voiceName, $issue);
+                $wavData = $this->pcmToWav($pcm);
                 $path = $this->audioPath($issue, $sourceHash, $index);
 
-                Storage::disk($disk)->put($path, $this->pcmToWav($pcm));
+                Storage::disk($disk)->put($path, $wavData);
                 $paths[] = $path;
+
+                $totalUsage['prompt_tokens'] += $chunkUsage['prompt_tokens'];
+                $totalUsage['completion_tokens'] += $chunkUsage['audio_tokens'];
+                $totalUsage['total_tokens'] += $chunkUsage['total_tokens'];
             }
 
             $record->fill([
@@ -154,6 +176,28 @@ class IssueNarrationService
                 'generated_at' => now(),
                 'error_message' => null,
             ])->save();
+
+            // Log successful AI usage telemetry
+            $durationMs = (int) round((microtime(true) - $startTime) * 1000);
+            $this->logUsage([
+                'user_id' => Auth::id(),
+                'issue_id' => $issue->id,
+                'feature' => 'issue_narration',
+                'action' => 'gemini_tts_synthesize',
+                'provider' => 'gemini',
+                'model' => $model,
+                'status' => 'success',
+                'prompt_tokens' => $totalUsage['prompt_tokens'],
+                'completion_tokens' => $totalUsage['completion_tokens'],
+                'total_tokens' => $totalUsage['total_tokens'],
+                'duration_ms' => $durationMs,
+                'metadata' => [
+                    'issue_id' => $issue->id,
+                    'chunks_count' => count($chunks),
+                    'tracks_count' => count($paths),
+                    'voice_name' => $voiceName,
+                ],
+            ]);
         } catch (\Throwable $e) {
             $this->deleteNarrationFiles($paths);
 
@@ -169,9 +213,66 @@ class IssueNarrationService
         return $record;
     }
 
+    /**
+     * Generate an isolated Gemini test sample for benchmark/testing.
+     *
+     * @return array{paths: array<int, string>, urls: array<int, string>, usage: array<string, mixed>, voice_name: string, model: string}
+     */
+    public function generateGeminiTest(Issue $issue): array
+    {
+        $apiKey = $this->getGeminiApiKey();
+
+        if ($apiKey === '') {
+            throw new RuntimeException('Gemini API key is missing. Set GEMINI_API_KEY in .env or Admin Settings.');
+        }
+
+        $this->checkRateLimits($issue);
+
+        $segments = $this->buildNarrationSegments($issue);
+
+        if ($segments === []) {
+            throw new RuntimeException('No issue text was available for Gemini narration.');
+        }
+
+        $voiceName = $this->getGeminiVoiceName();
+        $model = $this->getGeminiModel();
+        $chunkDelay = $this->getGeminiChunkDelay();
+        $chunks = $this->chunkSegments($segments, $this->getGeminiChunkChars());
+        $disk = config('issue_narration.storage_disk', 'local');
+        $directory = trim((string) config('issue_narration.gemini.test_storage_path', 'issue-narrations/gemini-tests'), '/')
+            . '/' . $issue->id . '/' . now()->format('Ymd-His');
+        $paths = [];
+        $usage = ['prompt_tokens' => 0, 'audio_tokens' => 0, 'total_tokens' => 0, 'estimated_duration_seconds' => 0];
+
+        foreach ($chunks as $index => $chunk) {
+            if ($index > 0 && $chunkDelay > 0) {
+                sleep($chunkDelay);
+            }
+
+            [$pcm, $chunkUsage] = $this->synthesizeGeminiChunk($chunk, $apiKey, $model, $voiceName, $issue);
+            $file = sprintf('part-%03d.wav', $index + 1);
+            $path = "{$directory}/{$file}";
+
+            Storage::disk($disk)->put($path, $this->pcmToWav($pcm));
+            $paths[] = $path;
+            $usage['prompt_tokens'] += $chunkUsage['prompt_tokens'];
+            $usage['audio_tokens'] += $chunkUsage['audio_tokens'];
+            $usage['total_tokens'] += $chunkUsage['total_tokens'];
+            $usage['estimated_duration_seconds'] += strlen($pcm) / (24000 * 2);
+        }
+
+        return [
+            'paths' => $paths,
+            'urls' => $this->audioUrls($paths, $issue),
+            'usage' => $usage,
+            'voice_name' => $voiceName,
+            'model' => $model,
+        ];
+    }
+
     public function buildNarrationSegments(Issue $issue): array
     {
-        $html = (string) ($issue->description ?? '');
+        $html = $this->normalizeHtml((string) ($issue->description ?? ''));
         $segments = [];
 
         $title = $this->cleanText($issue->title ?? '');
@@ -204,7 +305,12 @@ class IssueNarrationService
         return $segments;
     }
 
-    public function synthesizeGeminiChunk(string $text, string $apiKey, string $model, string $voiceName): string
+    /**
+     * Synthesize text chunk to raw PCM audio using Gemini TTS API with rate limit tracking.
+     *
+     * @return array{0: string, 1: array{prompt_tokens: int, audio_tokens: int, total_tokens: int}}
+     */
+    public function synthesizeGeminiChunk(string $text, string $apiKey, string $model, string $voiceName, ?Issue $issue = null): array
     {
         $timeout = (int) config('issue_narration.gemini.timeout', 120);
         $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key=" . urlencode($apiKey);
@@ -217,11 +323,7 @@ class IssueNarrationService
                 'contents' => [[
                     'role' => 'user',
                     'parts' => [[
-                        'text' => implode("\n\n", [
-                            'TTS the following Bengali transcript using the requested speaking style. Return audio only.',
-                            'Style: ' . $this->getGeminiPrompt(),
-                            "Transcript:\n{$text}",
-                        ]),
+                        'text' => $this->getGeminiPrompt() . "\n\n{$text}",
                     ]],
                 ]],
                 'generationConfig' => [
@@ -235,6 +337,7 @@ class IssueNarrationService
                 ],
             ]);
 
+        // Check for Rate Limit (HTTP 429 or RESOURCE_EXHAUSTED body)
         $body = $response->body();
         $isRateLimited = $response->status() === 429
             || str_contains($body, 'RESOURCE_EXHAUSTED')
@@ -246,7 +349,30 @@ class IssueNarrationService
             $retryAfter = $response->header('Retry-After');
             $retryText = $retryAfter ? "অনুগ্রহ করে {$retryAfter} সেকেন্ড অপেক্ষা করে" : 'অনুগ্রহ করে ৩০-৬০ সেকেন্ড অপেক্ষা করে';
 
-            Log::warning('Gemini TTS API rate limit hit (429)', [
+            $this->logUsage([
+                'user_id' => Auth::id(),
+                'issue_id' => $issue?->id,
+                'feature' => 'issue_narration',
+                'action' => 'gemini_tts_synthesize',
+                'provider' => 'gemini',
+                'model' => $model,
+                'status' => 'rate_limited',
+                'error_message' => "Google AI Studio Rate Limit Reached (429): {$body}",
+                'metadata' => [
+                    'http_status' => $response->status(),
+                    'retry_after' => $retryAfter,
+                    'issue_id' => $issue?->id,
+                    'model' => $model,
+                    'voice_name' => $voiceName,
+                    'chunk_chars' => mb_strlen($text),
+                    'rate_limit_doc' => 'https://aistudio.google.com/docs/rate-limits',
+                    'timestamp' => now()->toIso8601String(),
+                ],
+            ]);
+
+            Log::warning('Google Gemini TTS API Rate Limit Hit (429)', [
+                'issue_id' => $issue?->id,
+                'model' => $model,
                 'http_status' => $response->status(),
                 'retry_after' => $retryAfter,
                 'response_body' => Str::limit($body, 300),
@@ -256,11 +382,27 @@ class IssueNarrationService
         }
 
         if (! $response->successful()) {
-            Log::error('Gemini narration synthesis failed', ['http_status' => $response->status(), 'body' => Str::limit($body, 500)]);
+            $this->logUsage([
+                'user_id' => Auth::id(),
+                'issue_id' => $issue?->id,
+                'feature' => 'issue_narration',
+                'action' => 'gemini_tts_synthesize',
+                'provider' => 'gemini',
+                'model' => $model,
+                'status' => 'failed',
+                'error_message' => "Gemini synthesis error ({$response->status()}): {$body}",
+                'metadata' => ['http_status' => $response->status(), 'issue_id' => $issue?->id],
+            ]);
+
+            Log::error('Gemini narration synthesis failed', [
+                'http_status' => $response->status(),
+                'body' => Str::limit($body, 500),
+            ]);
 
             throw new RuntimeException('Gemini narration synthesis failed: ' . $body);
         }
 
+        // Increment rate limit counters on success
         $this->incrementRateLimits();
 
         $data = (string) $response->json('candidates.0.content.parts.0.inlineData.data', '');
@@ -275,10 +417,19 @@ class IssueNarrationService
             throw new RuntimeException('Gemini narration synthesis returned invalid audio data.');
         }
 
-        return $pcm;
+        $metadata = (array) $response->json('usageMetadata', []);
+
+        return [$pcm, [
+            'prompt_tokens' => (int) ($metadata['promptTokenCount'] ?? 0),
+            'audio_tokens' => (int) ($metadata['candidatesTokenCount'] ?? 0),
+            'total_tokens' => (int) ($metadata['totalTokenCount'] ?? 0),
+        ]];
     }
 
-    public function checkRateLimits(): void
+    /**
+     * Check if current minute or daily rate limit thresholds are exceeded.
+     */
+    public function checkRateLimits(?Issue $issue = null): void
     {
         $maxRpm = $this->getGeminiMaxRpm();
         $maxRpd = $this->getGeminiMaxRpd();
@@ -290,10 +441,32 @@ class IssueNarrationService
         $currentRpd = (int) Cache::get($dayKey, 0);
 
         if ($currentRpm >= $maxRpm) {
+            $this->logUsage([
+                'user_id' => Auth::id(),
+                'issue_id' => $issue?->id,
+                'feature' => 'issue_narration',
+                'action' => 'rate_limit_precheck',
+                'provider' => 'gemini',
+                'status' => 'rate_limited',
+                'error_message' => "Local RPM limit exceeded: {$currentRpm}/{$maxRpm} requests this minute.",
+                'metadata' => ['current_rpm' => $currentRpm, 'max_rpm' => $maxRpm],
+            ]);
+
             throw new RuntimeException("Google Gemini API রেট লিমিট সতর্কতা: প্রতি মিনিটে সর্বোচ্চ {$maxRpm}টি রিকোয়েস্টের কোটা পূর্ণ হয়েছে। অনুগ্রহ করে ১ মিনিট পর আবার চেষ্টা করুন।");
         }
 
         if ($currentRpd >= $maxRpd) {
+            $this->logUsage([
+                'user_id' => Auth::id(),
+                'issue_id' => $issue?->id,
+                'feature' => 'issue_narration',
+                'action' => 'rate_limit_precheck',
+                'provider' => 'gemini',
+                'status' => 'rate_limited',
+                'error_message' => "Local daily RPD limit exceeded: {$currentRpd}/{$maxRpd} requests today.",
+                'metadata' => ['current_rpd' => $currentRpd, 'max_rpd' => $maxRpd],
+            ]);
+
             throw new RuntimeException("Google Gemini API দৈনিক কোটা পূর্ণ হয়েছে (সর্বোচ্চ {$maxRpd}টি/দিন)। অনুগ্রহ করে পরবর্তীতে চেষ্টা করুন।");
         }
     }
@@ -307,6 +480,9 @@ class IssueNarrationService
         Cache::put($dayKey, (int) Cache::get($dayKey, 0) + 1, 86400 * 2);
     }
 
+    /**
+     * Package raw 24kHz 16-bit Mono PCM bytes into a standard playable WAV file.
+     */
     public function pcmToWav(string $pcm, int $sampleRate = 24000): string
     {
         $channels = 1;
@@ -326,16 +502,16 @@ class IssueNarrationService
     public function formatVoiceLabel(string $voiceName): string
     {
         $voices = [
-            'Kore'   => 'Kore (মহিলা ভয়েস)',
-            'Puck'   => 'Puck (পুরুষ ভয়েস)',
-            'Fenrir' => 'Fenrir (গম্ভীর পুরুষ ভয়েস)',
-            'Aoede'  => 'Aoede (মহিলা ভয়েস)',
-            'Leda'   => 'Leda (মহিলা ভয়েস)',
-            'Zephyr' => 'Zephyr (মহিলা ভয়েস)',
-            'Charon' => 'Charon (পুরুষ ভয়েস)',
+            'Kore'   => 'Kore (মহিলা ভয়েস)',
+            'Puck'   => 'Puck (পুরুষ ভয়েস)',
+            'Fenrir' => 'Fenrir (গম্ভীর পুরুষ ভয়েস)',
+            'Aoede'  => 'Aoede (মহিলা ভয়েস)',
+            'Leda'   => 'Leda (মহিলা ভয়েস)',
+            'Zephyr' => 'Zephyr (মহিলা ভয়েস)',
+            'Charon' => 'Charon (পুরুষ ভয়েস)',
         ];
 
-        return $voices[$voiceName] ?? "{$voiceName} (Gemini ভয়েস)";
+        return $voices[$voiceName] ?? "{$voiceName} (Gemini ভয়েস)";
     }
 
     public function sourceHash(Issue $issue): string
@@ -353,7 +529,7 @@ class IssueNarrationService
         return sha1($payload);
     }
 
-    public function chunkSegments(array $segments, int $maxChars = 4800): array
+    public function chunkSegments(array $segments, int $maxChars = 850): array
     {
         $chunks = [];
         $current = '';
@@ -425,6 +601,19 @@ class IssueNarrationService
         return $parts;
     }
 
+    private function logUsage(array $attributes): void
+    {
+        try {
+            if (class_exists(\App\Models\AiUsageLog::class)) {
+                \App\Models\AiUsageLog::create($attributes);
+            } else {
+                Log::info('Issue Narration AI Usage', $attributes);
+            }
+        } catch (\Throwable $e) {
+            Log::error('Failed to write AiUsageLog: ' . $e->getMessage());
+        }
+    }
+
     private function getGeminiApiKey(): string
     {
         $value = SiteMeta::value('gemini_api_key');
@@ -449,15 +638,23 @@ class IssueNarrationService
     private function getGeminiPrompt(): string
     {
         $value = SiteMeta::value('gemini_tts_prompt');
+        if ($value !== null && $value !== '') {
+            return (string) $value;
+        }
 
-        return $value !== null && $value !== '' ? $value : (string) config('issue_narration.gemini.prompt');
+        $configPrompt = config('issue_narration.gemini.prompt');
+        if (! empty($configPrompt)) {
+            return (string) $configPrompt;
+        }
+
+        return 'Read the following text clearly, smoothly, and naturally in Bengali. Pronounce English technical terms, software concepts, and Bengali sentences fluently without skipping words or halting on technical names.';
     }
 
     private function getGeminiChunkChars(): int
     {
         $value = SiteMeta::value('gemini_tts_chunk_chars');
 
-        return $value !== null && $value !== '' ? (int) $value : (int) config('issue_narration.chunk_chars', 4800);
+        return $value !== null && $value !== '' ? (int) $value : (int) config('issue_narration.chunk_chars', 850);
     }
 
     private function getGeminiMaxRpm(): int
@@ -511,6 +708,13 @@ class IssueNarrationService
         Storage::disk(config('issue_narration.storage_disk', 'local'))->delete($paths);
     }
 
+    private function normalizeHtml(string $html): string
+    {
+        $html = preg_replace('/\[\[READMORE\]\]/i', '', $html) ?? $html;
+
+        return $html;
+    }
+
     private function traverseNarrationNode(\DOMNode $node, array &$segments): void
     {
         if ($node->nodeType === XML_TEXT_NODE) {
@@ -531,15 +735,18 @@ class IssueNarrationService
             return;
         }
 
+        // Code block container (pre)
         if ($tag === 'pre') {
-            $converted = $this->convertCodeBlockToNarration($node->textContent ?? '');
+            $codeText = $node->textContent ?? '';
+            $converted = $this->convertCodeBlockToNarration($codeText);
             if ($converted !== '') {
                 $segments[] = $converted;
             }
             return;
         }
 
-        if (in_array($tag, ['h2', 'h3'], true)) {
+        // Headings (h1 through h6)
+        if (in_array($tag, ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'], true)) {
             $text = $this->cleanText($node->textContent ?? '');
             if ($text !== '') {
                 $segments[] = $text;
@@ -547,6 +754,7 @@ class IssueNarrationService
             return;
         }
 
+        // Paragraphs, list items, blockquotes (can have inline code, strong, em, etc.)
         if (in_array($tag, ['p', 'li', 'blockquote'], true)) {
             $hasPre = false;
             foreach ($node->childNodes as $child) {
@@ -570,6 +778,9 @@ class IssueNarrationService
         }
     }
 
+    /**
+     * Convert code snippets, terminal commands, or ASCII diagrams into fluent spoken text.
+     */
     public function convertCodeBlockToNarration(string $rawCode): string
     {
         $rawCode = html_entity_decode($rawCode, ENT_QUOTES | ENT_HTML5, 'UTF-8');
@@ -583,15 +794,76 @@ class IssueNarrationService
             return '';
         }
 
-        if (count($lines) > 8) {
-            $sampleLines = array_slice($lines, 0, 4);
-            $cleanSamples = array_values(array_filter(array_map([$this, 'cleanCodeLineForSpeech'], $sampleLines)));
-            $sampleText = implode(', ', $cleanSamples);
-
-            return $this->naturalizeForSpeech("কোড উদাহরণে মূল অংশগুলো হলো: {$sampleText}, ইত্যাদি।");
+        // 1. Check if this is an architecture diagram or flow chart with arrows
+        $arrowSymbols = ['↓', '⬇', '▼', '->', '-->', '=>', '➔', '➜', '|', '├──', '└──'];
+        $hasArrows = false;
+        foreach ($lines as $line) {
+            foreach ($arrowSymbols as $sym) {
+                if (str_contains($line, $sym)) {
+                    $hasArrows = true;
+                    break 2;
+                }
+            }
         }
 
-        $spokenLines = array_values(array_filter(array_map([$this, 'cleanCodeLineForSpeech'], $lines)));
+        if ($hasArrows) {
+            $steps = [];
+            foreach ($lines as $line) {
+                $subParts = preg_split('/\s*(?:->|-->|=>|↓|⬇|▼|➔|➜|├──|└──|\|)\s*/u', $line) ?: [$line];
+                foreach ($subParts as $sub) {
+                    $cleanSub = trim(preg_replace('/^[0-9]+[\.\-\)]\s*/u', '', $sub));
+                    if ($cleanSub !== '') {
+                        $cleanSub = preg_replace('/\s*\+\s*/u', ' এবং ', $cleanSub);
+                        $steps[] = $cleanSub;
+                    }
+                }
+            }
+
+            if (count($steps) >= 2) {
+                $formatted = 'ধারাবাহিক ফ্লো অনুযায়ী: প্রথমে ' . $steps[0];
+                for ($i = 1; $i < count($steps) - 1; $i++) {
+                    $formatted .= ', এরপর ' . $steps[$i];
+                }
+                $formatted .= ', এবং শেষে ' . $steps[count($steps) - 1] . '।';
+
+                return $this->naturalizeForSpeech($formatted);
+            } elseif (count($steps) === 1) {
+                return $this->naturalizeForSpeech($steps[0] . '।');
+            }
+        }
+
+        // 2. Terminal commands
+        if (count($lines) <= 3) {
+            $firstLine = $lines[0];
+            if (preg_match('/^(php|composer|npm|npx|git|artisan|docker|yarn|pnpm|curl|mkdir|cd|cat|\$)\b/i', $firstLine)) {
+                $cmd = ltrim(implode('; ', $lines), '$ ');
+                return $this->naturalizeForSpeech("টার্মিনাল কমান্ড: {$cmd}।");
+            }
+        }
+
+        // 3. Code snippets: if long (> 8 lines), summarize cleanly
+        if (count($lines) > 8) {
+            $sampleLines = array_slice($lines, 0, 4);
+            $cleanSamples = [];
+            foreach ($sampleLines as $line) {
+                $cl = $this->cleanCodeLineForSpeech($line);
+                if ($cl !== '') {
+                    $cleanSamples[] = $cl;
+                }
+            }
+            $sampleText = implode(', ', $cleanSamples);
+
+            return $this->naturalizeForSpeech("কোড উদাহরণে মূল অংশগুলো হলো: {$sampleText}, ইত্যাদি। বিস্তারিত কোডটি ইস্যুতে দেখে নিতে পারেন।");
+        }
+
+        // 4. Short code snippet (1 to 8 lines)
+        $spokenLines = [];
+        foreach ($lines as $line) {
+            $cl = $this->cleanCodeLineForSpeech($line);
+            if ($cl !== '') {
+                $spokenLines[] = $cl;
+            }
+        }
 
         if (empty($spokenLines)) {
             return '';
@@ -618,25 +890,53 @@ class IssueNarrationService
         return trim($line);
     }
 
+    /**
+     * Clean raw text and convert Unicode symbols/arrows into natural spoken Bengali phrases.
+     */
     public function naturalizeForSpeech(string $text): string
     {
         $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $text = strip_tags($text);
 
         $replacements = [
-            '↓' => ' এরপর ', '⬇' => ' এরপর ', '▼' => ' এরপর ', '➔' => ' এরপর ', '➜' => ' এরপর ',
-            '↑' => ' পূর্ববর্তী ', '⬆' => ' পূর্ববর্তী ', '▲' => ' পূর্ববর্তী ',
-            '←' => ' থেকে ', '⬅' => ' থেকে ', '↔' => ' ও ',
-            '💡' => 'টিপস: ', '⚠️' => 'সতর্কতা: ', '📌' => 'নোট: ',
-            '✓' => 'সঠিক ', '✔' => 'সঠিক ', '☑' => 'সঠিক ',
-            '❌' => 'ভুল ', '✖' => 'ভুল ', '✗' => 'ভুল ',
-            '├──' => ' ', '└──' => ' ', '│' => ' ', '──' => ' ', '---' => ' ', '===' => ' ', '`' => '',
+            '↓' => ' এরপর ',
+            '⬇' => ' এরপর ',
+            '▼' => ' এরপর ',
+            '➔' => ' এরপর ',
+            '➜' => ' এরপর ',
+            '↑' => ' পূর্ববর্তী ',
+            '⬆' => ' পূর্ববর্তী ',
+            '▲' => ' পূর্ববর্তী ',
+            '←' => ' থেকে ',
+            '⬅' => ' থেকে ',
+            '↔' => ' ও ',
+            '💡' => 'টিপস: ',
+            '⚠️' => 'সতর্কতা: ',
+            '📌' => 'নোট: ',
+            '✓' => 'সঠিক ',
+            '✔' => 'সঠিক ',
+            '☑' => 'সঠিক ',
+            '❌' => 'ভুল ',
+            '✖' => 'ভুল ',
+            '✗' => 'ভুল ',
+            '├──' => ' ',
+            '└──' => ' ',
+            '│' => ' ',
+            '──' => ' ',
+            '---' => ' ',
+            '===' => ' ',
+            '`' => '',
         ];
 
         $text = strtr($text, $replacements);
+
+        // Replace + between words like "HTML + CSS" with "এবং"
         $text = preg_replace('/([a-zA-Z\x{0980}-\x{09FF}])\s*\+\s*([a-zA-Z\x{0980}-\x{09FF}])/u', '$1 এবং $2', $text) ?? $text;
+
+        // Replace standalone arrows like "->" or "-->"
         $text = preg_replace('/\s*--?>\s*/u', ' এরপর ', $text) ?? $text;
         $text = preg_replace('/\s*<--?\s*/u', ' থেকে ', $text) ?? $text;
+
         $text = preg_replace('/\s+/u', ' ', $text) ?? $text;
 
         return trim($text);

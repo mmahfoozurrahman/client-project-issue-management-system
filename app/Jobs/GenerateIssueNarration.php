@@ -21,6 +21,7 @@ class GenerateIssueNarration implements ShouldQueue
     public function __construct(
         private readonly int $issueId,
         private readonly bool $force = false,
+        private readonly ?int $requestedByUserId = null,
     ) {
     }
 
