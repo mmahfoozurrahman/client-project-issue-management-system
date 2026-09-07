@@ -9,7 +9,7 @@ use App\Services\IssueNarrationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 class IssueNarrationController extends Controller
 {
@@ -30,7 +30,7 @@ class IssueNarrationController extends Controller
         return response()->json($service->currentState($issue));
     }
 
-    public function audio(Issue $issue, int $track): StreamedResponse
+    public function audio(Issue $issue, int $track): Response
     {
         $this->authorize('view', $issue);
 
@@ -41,9 +41,25 @@ class IssueNarrationController extends Controller
         abort_if($record?->status !== 'ready' || ! is_string($path), 404);
         abort_if(! Storage::disk($disk)->exists($path), 404);
 
+        $fullPath = null;
+        try {
+            $fullPath = Storage::disk($disk)->path($path);
+        } catch (\Throwable) {
+            $fullPath = null;
+        }
+
+        if ($fullPath && file_exists($fullPath)) {
+            return response()->file($fullPath, [
+                'Content-Type' => 'audio/wav',
+                'Accept-Ranges' => 'bytes',
+                'Cache-Control' => 'private, max-age=86400',
+            ]);
+        }
+
         return Storage::disk($disk)->response($path, basename($path), [
             'Content-Type' => 'audio/wav',
-            'Cache-Control' => 'private, no-store',
+            'Accept-Ranges' => 'bytes',
+            'Cache-Control' => 'private, max-age=86400',
         ], 'inline');
     }
 }

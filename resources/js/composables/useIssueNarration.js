@@ -161,13 +161,17 @@ export function useIssueNarration({ pollInterval = 3000 } = {}) {
         duration.value = 0;
     }
 
-    async function playTrack(index) {
+    async function playTrack(index = currentTrackIndex.value, { resume = false } = {}) {
         if (!audio || !audioUrls.value.length) {
             return false;
         }
 
+        const isSameTrack = resume && currentTrackIndex.value === index && audio.src;
         currentTrackIndex.value = index;
-        loadTrack(index);
+
+        if (!isSameTrack) {
+            loadTrack(index);
+        }
 
         try {
             await audio.play();
@@ -187,14 +191,33 @@ export function useIssueNarration({ pollInterval = 3000 } = {}) {
             return;
         }
 
-        const maxDuration = audio.duration || duration.value || time;
-        const clamped = Math.min(Math.max(time, 0), maxDuration);
-        audio.currentTime = clamped;
+        if (!audio.src && audioUrls.value[currentTrackIndex.value]) {
+            audio.src = audioUrls.value[currentTrackIndex.value];
+            audio.load();
+        }
+
+        const validDuration = Number.isFinite(audio.duration) && audio.duration > 0
+            ? audio.duration
+            : (Number.isFinite(duration.value) && duration.value > 0 ? duration.value : null);
+
+        const clamped = validDuration !== null
+            ? Math.min(Math.max(time, 0), validDuration)
+            : Math.max(time, 0);
+
+        try {
+            audio.currentTime = clamped;
+        } catch (e) {
+            console.warn('Seek error:', e);
+        }
         currentTime.value = clamped;
     }
 
     function skipTime(seconds) {
-        seekTo((currentTime.value || 0) + seconds);
+        if (!audio) return;
+        const current = Number.isFinite(currentTime.value) && currentTime.value > 0
+            ? currentTime.value
+            : (Number.isFinite(audio.currentTime) ? audio.currentTime : 0);
+        seekTo(current + seconds);
     }
 
     function pauseNarration() {
@@ -215,7 +238,7 @@ export function useIssueNarration({ pollInterval = 3000 } = {}) {
 
         isLoadingAudio.value = true;
 
-        if (isPaused.value && audio) {
+        if (isPaused.value && audio && audio.src) {
             try {
                 await audio.play();
                 isPlaying.value = true;
@@ -270,6 +293,7 @@ export function useIssueNarration({ pollInterval = 3000 } = {}) {
         audio.addEventListener('timeupdate', onAudioTimeUpdate);
         audio.addEventListener('loadedmetadata', onAudioLoadedMetadata);
         audio.addEventListener('durationchange', onAudioLoadedMetadata);
+        audio.addEventListener('seeked', onAudioTimeUpdate);
         audio.addEventListener('playing', () => {
             isLoadingAudio.value = false;
             isPlaying.value = true;

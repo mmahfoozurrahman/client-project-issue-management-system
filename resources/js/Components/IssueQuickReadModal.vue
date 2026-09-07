@@ -6,8 +6,9 @@
                 <button
                     v-if="narration.is_available"
                     type="button"
-                    class="btn btn-sm btn-outline-secondary rounded-pill d-inline-flex align-items-center gap-1"
+                    class="btn btn-sm btn-outline-secondary rounded-pill d-inline-flex align-items-center gap-1 narration-toggle-btn"
                     :disabled="isLoadingAudio"
+                    title="Play / Pause narration (Spacebar or Ctrl+P)"
                     @click="toggleNarration(issue.id)"
                 >
                     <span v-if="isLoadingAudio" class="spinner-border spinner-border-sm" />
@@ -26,7 +27,7 @@
             <div
                 v-if="narration.is_available && (isPlaying || isPaused || currentTime > 0)"
                 class="narration-seek d-flex align-items-center gap-2"
-                title="Use Left/Right arrow keys (← / →) to skip 5 seconds back or forward"
+                title="Use Left/Right arrow keys (← / →) to skip 5 seconds back or forward, Spacebar to play/pause"
             >
                 <small class="text-muted narration-time">{{ formatNarrationTime(currentTime) }}</small>
                 <input
@@ -36,7 +37,7 @@
                     :max="duration || 0"
                     step="0.1"
                     :value="currentTime"
-                    title="Audio slider (Use ← / → arrow keys to seek ±5s)"
+                    title="Audio slider (Use ← / → arrow keys to seek ±5s, Spacebar to play/pause)"
                     @input="onNarrationSeek"
                 />
                 <small class="text-muted narration-time">{{ formatNarrationTime(duration) }}</small>
@@ -136,8 +137,11 @@ const {
     toggleNarration,
     resetPlayback,
     seekTo,
+    skipTime,
     stopPolling,
 } = useIssueNarration();
+
+const NARRATION_SEEK_STEP_SECONDS = 5;
 
 const bengaliDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
 function toBengaliNumber(val) {
@@ -157,21 +161,50 @@ function onNarrationSeek(event) {
 
 function isEditableTarget(target) {
     if (!target) return false;
-    if (target.classList?.contains('narration-range')) return false;
     const tag = target.tagName?.toLowerCase();
-    return ['input', 'textarea', 'select'].includes(tag) || target.isContentEditable;
+    if (tag === 'textarea' || tag === 'select' || target.isContentEditable) return true;
+    if (tag === 'input') {
+        const type = target.type?.toLowerCase();
+        return !['range', 'button', 'submit', 'reset', 'checkbox', 'radio'].includes(type);
+    }
+    return false;
 }
 
 function handleKeyDown(e) {
     if (!isOpen.value) return;
-    if (!['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
-    if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || e.isComposing) return;
     if (isEditableTarget(e.target)) return;
 
-    if (narration.value.is_available && (isPlaying.value || isPaused.value || currentTime.value > 0)) {
+    // Spacebar or Ctrl+P to toggle play/pause narration (matching reference implementation)
+    const isCtrlP = e.key?.toLowerCase() === 'p' && (e.ctrlKey || e.metaKey) && !e.altKey;
+    const isSpacebar = (e.code === 'Space' || e.key === ' ' || e.key === 'Spacebar') && !e.ctrlKey && !e.metaKey && !e.altKey;
+
+    if (isSpacebar || isCtrlP) {
+        if (e.repeat || e.shiftKey || e.isComposing) return;
+        if (!narration.value.is_available || isGenerating.value) return;
+
+        // If spacebar is pressed on interactive links or buttons (like Close, Status, etc.), let native click handle it
+        if (isSpacebar && e.target instanceof Element) {
+            const btn = e.target.closest('button, a, select, [role="button"]');
+            if (btn && !btn.classList.contains('narration-toggle-btn')) {
+                return;
+            }
+        }
+
         e.preventDefault();
-        const delta = e.key === 'ArrowLeft' ? -5 : 5;
-        seekTo((currentTime.value || 0) + delta);
+        toggleNarration(props.issue?.id);
+        return;
+    }
+
+    // Left / Right arrow keys: Seek -5s / +5s backward or forward (scrub audio)
+    if (['ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || e.isComposing) return;
+        if (!narration.value.is_available) return;
+
+        if (isPlaying.value || isPaused.value || currentTime.value > 0) {
+            e.preventDefault();
+            const delta = e.key === 'ArrowLeft' ? -NARRATION_SEEK_STEP_SECONDS : NARRATION_SEEK_STEP_SECONDS;
+            skipTime(delta);
+        }
     }
 }
 
