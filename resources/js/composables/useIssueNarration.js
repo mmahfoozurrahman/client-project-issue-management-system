@@ -40,11 +40,14 @@ export function useIssueNarration({ pollInterval = 3000 } = {}) {
     const currentTrackIndex = ref(0);
     const lastError = ref('');
     const pollTimer = ref(null);
+    const currentTime = ref(0);
+    const duration = ref(0);
 
     const status = computed(() => narration.value.status);
     const audioUrls = computed(() => narration.value.audio_urls);
     const isReady = computed(() => status.value === 'ready' && audioUrls.value.length > 0 && narration.value.is_available);
     const isGenerating = computed(() => ['queued', 'processing'].includes(status.value) || isGeneratingRequest.value);
+    const progressPercent = computed(() => (duration.value > 0 ? (currentTime.value / duration.value) * 100 : 0));
 
     function stopPolling() {
         if (pollTimer.value) {
@@ -64,6 +67,8 @@ export function useIssueNarration({ pollInterval = 3000 } = {}) {
         isPaused.value = false;
         isLoadingAudio.value = false;
         currentTrackIndex.value = 0;
+        currentTime.value = 0;
+        duration.value = 0;
         lastError.value = '';
     }
 
@@ -152,6 +157,8 @@ export function useIssueNarration({ pollInterval = 3000 } = {}) {
 
         audio.src = url;
         audio.load();
+        currentTime.value = 0;
+        duration.value = 0;
     }
 
     async function playTrack(index) {
@@ -173,6 +180,21 @@ export function useIssueNarration({ pollInterval = 3000 } = {}) {
             lastError.value = error?.name === 'NotAllowedError' ? 'Tap once more to start playback.' : 'Playback could not start.';
             return false;
         }
+    }
+
+    function seekTo(time) {
+        if (!audio || !Number.isFinite(time)) {
+            return;
+        }
+
+        const maxDuration = audio.duration || duration.value || time;
+        const clamped = Math.min(Math.max(time, 0), maxDuration);
+        audio.currentTime = clamped;
+        currentTime.value = clamped;
+    }
+
+    function skipTime(seconds) {
+        seekTo((currentTime.value || 0) + seconds);
     }
 
     function pauseNarration() {
@@ -231,13 +253,33 @@ export function useIssueNarration({ pollInterval = 3000 } = {}) {
         isPlaying.value = false;
         isPaused.value = false;
         currentTrackIndex.value = 0;
+        currentTime.value = 0;
+    }
+
+    function onAudioTimeUpdate() {
+        if (!audio) return;
+        currentTime.value = audio.currentTime || 0;
+    }
+
+    function onAudioLoadedMetadata() {
+        if (!audio) return;
+        duration.value = Number.isFinite(audio.duration) ? audio.duration : 0;
     }
 
     if (audio) {
+        audio.addEventListener('timeupdate', onAudioTimeUpdate);
+        audio.addEventListener('loadedmetadata', onAudioLoadedMetadata);
+        audio.addEventListener('durationchange', onAudioLoadedMetadata);
+        audio.addEventListener('playing', () => {
+            isLoadingAudio.value = false;
+            isPlaying.value = true;
+            isPaused.value = false;
+        });
         audio.addEventListener('ended', onAudioEnded);
         audio.addEventListener('pause', () => {
             if (!audio.ended) {
                 isPlaying.value = false;
+                isPaused.value = true;
             }
         });
     }
@@ -257,12 +299,18 @@ export function useIssueNarration({ pollInterval = 3000 } = {}) {
         isLoadingAudio,
         isLoadingStatus,
         isGeneratingRequest,
+        currentTrackIndex,
+        currentTime,
+        duration,
+        progressPercent,
         lastError,
         fetchStatus,
         generateNarration,
         toggleNarration,
         pauseNarration,
         resetPlayback,
+        seekTo,
+        skipTime,
         stopPolling,
     };
 }

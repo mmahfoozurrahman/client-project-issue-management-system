@@ -13,13 +13,34 @@
                     <span v-if="isLoadingAudio" class="spinner-border spinner-border-sm" />
                     <svg v-else-if="isPlaying" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" /><rect x="14" y="5" width="4" height="14" /></svg>
                     <svg v-else viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
-                    {{ isPlaying ? 'Pause narration' : 'Play narration' }}
+                    {{ isPlaying ? 'Pause narration' : (isPaused ? 'Resume narration' : 'Play narration') }}
                 </button>
                 <Link :href="`/issues/${issue.id}`" class="btn btn-sm btn-outline-secondary rounded-pill">Open full issue</Link>
                 <span v-if="issue.parent_issue" class="badge rounded-pill text-bg-light border">Parent: {{ issue.parent_issue.title }}</span>
                 <span v-if="issue.user?.name" class="text-muted small">Created by {{ issue.user.name }}</span>
                 <span class="text-muted small">Created {{ formatIssueDate(issue.created_at) }}</span>
                 <span v-if="issue.updated_at" class="text-muted small">Updated {{ formatIssueDate(issue.updated_at) }}</span>
+            </div>
+
+            <!-- Narration seek slider with forward / backward scrubber -->
+            <div
+                v-if="narration.is_available && (isPlaying || isPaused || currentTime > 0)"
+                class="narration-seek d-flex align-items-center gap-2"
+            >
+                <small class="text-muted narration-time">{{ formatNarrationTime(currentTime) }}</small>
+                <input
+                    type="range"
+                    class="form-range narration-range"
+                    min="0"
+                    :max="duration || 0"
+                    step="0.1"
+                    :value="currentTime"
+                    @input="onNarrationSeek"
+                />
+                <small class="text-muted narration-time">{{ formatNarrationTime(duration) }}</small>
+                <span v-if="narration.track_count > 1" class="badge rounded-pill text-bg-light border text-nowrap small">
+                    {{ toBengaliNumber(currentTrackIndex + 1) }}/{{ toBengaliNumber(narration.track_count) }}
+                </span>
             </div>
 
             <div v-if="isAdmin" class="narration-admin-strip">
@@ -102,14 +123,35 @@ const isAdmin = computed(() => Boolean(page.props.auth?.user?.is_admin));
 const {
     narration,
     isPlaying,
+    isPaused,
     isGenerating,
     isLoadingAudio,
+    currentTrackIndex,
+    currentTime,
+    duration,
     fetchStatus,
     generateNarration,
     toggleNarration,
     resetPlayback,
+    seekTo,
     stopPolling,
 } = useIssueNarration();
+
+const bengaliDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+function toBengaliNumber(val) {
+    return String(val ?? '').replace(/\d/g, (d) => bengaliDigits[Number(d)]);
+}
+
+function formatNarrationTime(seconds) {
+    const total = Math.max(0, Math.floor(seconds || 0));
+    const mins = Math.floor(total / 60);
+    const secs = total % 60;
+    return toBengaliNumber(`${mins}:${String(secs).padStart(2, '0')}`);
+}
+
+function onNarrationSeek(event) {
+    seekTo(Number(event.target.value));
+}
 
 const narrationStatusLabel = computed(() => ({
     idle: 'not generated yet',
@@ -151,6 +193,67 @@ const updateStatus = () => {
 </script>
 
 <style scoped>
+/* ── Narration seek slider ── */
+.narration-seek {
+    width: 100%;
+    padding: 0.35rem 0.65rem;
+    background: rgba(15, 118, 110, 0.04);
+    border: 1px solid rgba(15, 118, 110, 0.16);
+    border-radius: 9999px;
+    user-select: none;
+}
+
+.narration-range {
+    flex: 1 1 auto;
+    cursor: pointer;
+    margin: 0;
+    accent-color: #2d6a4f;
+}
+
+.narration-time {
+    min-width: 34px;
+    text-align: center;
+    flex-shrink: 0;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #475569;
+    font-variant-numeric: tabular-nums;
+}
+
+.narration-range.form-range::-webkit-slider-thumb {
+    background-color: #2d6a4f;
+    box-shadow: 0 0 0 2px rgba(45, 106, 79, 0.2);
+    width: 14px;
+    height: 14px;
+}
+
+.narration-range.form-range::-webkit-slider-runnable-track {
+    background-color: #d8f3dc;
+    height: 6px;
+    border-radius: 3px;
+}
+
+.narration-range.form-range::-moz-range-thumb {
+    background-color: #2d6a4f;
+    box-shadow: 0 0 0 2px rgba(45, 106, 79, 0.2);
+    width: 14px;
+    height: 14px;
+}
+
+.narration-range.form-range::-moz-range-track {
+    background-color: #d8f3dc;
+    height: 6px;
+    border-radius: 3px;
+}
+
+.narration-range.form-range:focus::-webkit-slider-thumb {
+    box-shadow: 0 0 0 4px rgba(45, 106, 79, 0.3);
+}
+
+.narration-range.form-range:focus::-moz-range-thumb {
+    box-shadow: 0 0 0 4px rgba(45, 106, 79, 0.3);
+}
+
 .narration-admin-strip {
     display: flex;
     flex-wrap: wrap;
