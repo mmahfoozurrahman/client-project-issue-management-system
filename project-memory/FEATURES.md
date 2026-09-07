@@ -23,7 +23,11 @@ This is a newest-first record of features and meaningful product changes, consol
 - Direct synchronous generation with execution timeout safety (`ISSUE_NARRATION_MAX_EXECUTION_SECONDS`).
 - Telemetry & usage tracking: captures prompt tokens, completion audio tokens, total tokens from Gemini `usageMetadata`, and synthesis duration.
 - Added isolated test generator (`generateGeminiTest`) and `LessonNarrationService` compatibility wrapper.
-- Client audio playback in Quick Read modal (`IssueQuickReadModal.vue`) via `useIssueNarration.js` with track playback, refresh, and rate-limit error handling.
+- Client audio playback in Quick Read modal (`IssueQuickReadModal.vue`) via `useIssueNarration.js`:
+  - Interactive seekbar scrubber slider matching the reference UI to scrub backward or forward across the audio.
+  - Formatted Bengali numerals for current timestamp (`০:০৬`) and total track duration (`৬:৫৪`).
+  - Styled with green circular thumb handle, mint progress track, and multi-track indicator pill.
+  - Auto-pausing, resumption, and rate-limit error handling.
 
 ### Responsive pinned-issues carousel
 
