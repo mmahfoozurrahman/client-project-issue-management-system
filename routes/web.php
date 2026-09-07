@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IssueController;
+use App\Http\Controllers\IssueNarrationController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
@@ -48,6 +49,9 @@ Route::middleware('auth')->group(function (): void {
     Route::delete('/issues/files/{issueFile}', [IssueController::class, 'destroyFile'])->name('issues.files.destroy');
     Route::delete('/issues/links/{issueLink}', [IssueController::class, 'destroyLink'])->name('issues.links.destroy');
     Route::patch('/issues/{issue}/status', [IssueController::class, 'updateStatus'])->name('issues.status.update');
+    Route::get('/issues/{issue}/narration', [IssueNarrationController::class, 'show'])->name('issues.narration.show');
+    Route::post('/issues/{issue}/narration', [IssueNarrationController::class, 'generate'])->name('issues.narration.generate');
+    Route::get('/issues/{issue}/narration/{track}', [IssueNarrationController::class, 'audio'])->name('issues.narration.audio');
 
     Route::prefix('admin')->name('admin.')->middleware('admin')->group(function (): void {
 

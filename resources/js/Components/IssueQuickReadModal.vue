@@ -3,11 +3,40 @@
         <article v-if="issue" class="vstack gap-4">
             <div class="d-flex flex-wrap align-items-center gap-2">
                 <StatusPill :status="issue.status" />
+                <button
+                    v-if="narration.is_available"
+                    type="button"
+                    class="btn btn-sm btn-outline-secondary rounded-pill d-inline-flex align-items-center gap-1"
+                    :disabled="isLoadingAudio"
+                    @click="toggleNarration(issue.id)"
+                >
+                    <span v-if="isLoadingAudio" class="spinner-border spinner-border-sm" />
+                    <svg v-else-if="isPlaying" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" /><rect x="14" y="5" width="4" height="14" /></svg>
+                    <svg v-else viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+                    {{ isPlaying ? 'Pause narration' : 'Play narration' }}
+                </button>
                 <Link :href="`/issues/${issue.id}`" class="btn btn-sm btn-outline-secondary rounded-pill">Open full issue</Link>
                 <span v-if="issue.parent_issue" class="badge rounded-pill text-bg-light border">Parent: {{ issue.parent_issue.title }}</span>
                 <span v-if="issue.user?.name" class="text-muted small">Created by {{ issue.user.name }}</span>
                 <span class="text-muted small">Created {{ formatIssueDate(issue.created_at) }}</span>
                 <span v-if="issue.updated_at" class="text-muted small">Updated {{ formatIssueDate(issue.updated_at) }}</span>
+            </div>
+
+            <div v-if="isAdmin" class="narration-admin-strip">
+                <span class="text-muted small">
+                    Bengali narration:
+                    <strong>{{ narrationStatusLabel }}</strong>
+                    <template v-if="narration.error_message"> — {{ narration.error_message }}</template>
+                </span>
+                <button
+                    type="button"
+                    class="btn btn-sm btn-outline-secondary rounded-pill"
+                    :disabled="isGenerating"
+                    @click="generateNarration(issue.id, { force: narration.status === 'ready' })"
+                >
+                    <span v-if="isGenerating" class="spinner-border spinner-border-sm me-1" />
+                    {{ narration.status === 'ready' ? 'Refresh narration' : 'Generate narration' }}
+                </button>
             </div>
 
             <form v-if="canChangeStatus" class="quick-read-status-control" @submit.prevent="updateStatus">
@@ -54,6 +83,7 @@ import { Link, router, usePage } from '@inertiajs/vue3';
 import Modal from './Modal.vue';
 import StatusPill from './StatusPill.vue';
 import { formatIssueDate } from '../utils/date';
+import { useIssueNarration } from '../composables/useIssueNarration';
 
 const props = defineProps({ modelValue: Boolean, issue: { type: Object, default: null } });
 const emit = defineEmits(['update:modelValue']);
@@ -67,10 +97,41 @@ const canChangeStatus = computed(() => {
 
     return Boolean(user?.is_admin) || allowedProjectIds.map(Number).includes(Number(props.issue?.project_id));
 });
+const isAdmin = computed(() => Boolean(page.props.auth?.user?.is_admin));
+
+const {
+    narration,
+    isPlaying,
+    isGenerating,
+    isLoadingAudio,
+    fetchStatus,
+    generateNarration,
+    toggleNarration,
+    resetPlayback,
+    stopPolling,
+} = useIssueNarration();
+
+const narrationStatusLabel = computed(() => ({
+    idle: 'not generated yet',
+    queued: 'queued…',
+    processing: 'generating…',
+    ready: 'ready',
+    stale: 'content changed, refresh needed',
+    failed: 'failed',
+}[narration.value.status] ?? narration.value.status));
 
 watch(() => props.issue, (issue) => {
     status.value = issue?.status ?? 'todo';
 }, { immediate: true });
+
+watch(isOpen, (open) => {
+    if (open && props.issue) {
+        fetchStatus(props.issue.id);
+    } else {
+        stopPolling();
+        resetPlayback();
+    }
+});
 
 const updateStatus = () => {
     if (!props.issue || status.value === props.issue.status) return;
@@ -90,6 +151,18 @@ const updateStatus = () => {
 </script>
 
 <style scoped>
+.narration-admin-strip {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px dashed rgba(15, 118, 110, 0.25);
+    border-radius: 0.65rem;
+    background: rgba(15, 118, 110, 0.03);
+}
+
 .rich-display {
     max-width: 100%;
     overflow-wrap: anywhere;

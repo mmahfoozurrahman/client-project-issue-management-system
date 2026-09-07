@@ -83,4 +83,9 @@ class Issue extends Model
     {
         return $this->hasOne(IssueAiSource::class);
     }
+
+    public function narration(): HasOne
+    {
+        return $this->hasOne(IssueNarration::class);
+    }
 }
