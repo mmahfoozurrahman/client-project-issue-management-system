@@ -26,6 +26,7 @@
             <div
                 v-if="narration.is_available && (isPlaying || isPaused || currentTime > 0)"
                 class="narration-seek d-flex align-items-center gap-2"
+                title="Use Left/Right arrow keys (← / →) to skip 5 seconds back or forward"
             >
                 <small class="text-muted narration-time">{{ formatNarrationTime(currentTime) }}</small>
                 <input
@@ -35,6 +36,7 @@
                     :max="duration || 0"
                     step="0.1"
                     :value="currentTime"
+                    title="Audio slider (Use ← / → arrow keys to seek ±5s)"
                     @input="onNarrationSeek"
                 />
                 <small class="text-muted narration-time">{{ formatNarrationTime(duration) }}</small>
@@ -99,7 +101,7 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
 import Modal from './Modal.vue';
 import StatusPill from './StatusPill.vue';
@@ -152,6 +154,34 @@ function formatNarrationTime(seconds) {
 function onNarrationSeek(event) {
     seekTo(Number(event.target.value));
 }
+
+function isEditableTarget(target) {
+    if (!target) return false;
+    if (target.classList?.contains('narration-range')) return false;
+    const tag = target.tagName?.toLowerCase();
+    return ['input', 'textarea', 'select'].includes(tag) || target.isContentEditable;
+}
+
+function handleKeyDown(e) {
+    if (!isOpen.value) return;
+    if (!['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+    if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || e.isComposing) return;
+    if (isEditableTarget(e.target)) return;
+
+    if (narration.value.is_available && (isPlaying.value || isPaused.value || currentTime.value > 0)) {
+        e.preventDefault();
+        const delta = e.key === 'ArrowLeft' ? -5 : 5;
+        seekTo((currentTime.value || 0) + delta);
+    }
+}
+
+onMounted(() => {
+    window.addEventListener('keydown', handleKeyDown);
+});
+
+onBeforeUnmount(() => {
+    window.removeEventListener('keydown', handleKeyDown);
+});
 
 const narrationStatusLabel = computed(() => ({
     idle: 'not generated yet',
