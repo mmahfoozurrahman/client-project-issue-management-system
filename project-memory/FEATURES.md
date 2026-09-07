@@ -4,11 +4,26 @@ This is a newest-first record of features and meaningful product changes, consol
 
 ## Current snapshot
 
-- **Latest commit:** `087ff83` - global date formatting utility extraction and human readable tag dates.
+- **Latest commit:** `23fb942` - align TTS narration service with reference capabilities.
 - **Workflow:** Clients -> Projects -> Issues -> Sub-Issues.
 - **Stack:** Laravel 13, PHP 8.3+, MySQL, Vue 3, Inertia.js, Vite, Bootstrap 5, SweetAlert2, TipTap, and Chart.js.
 
 ## Feature history (newest first)
+
+### Gemini Bengali TTS narration system & reference alignment
+
+**Last updated:** 8th September, 2026
+
+- Implemented issue audio narration powered by Google Gemini TTS (`gemini-2.5-flash-preview-tts`) with natural Bengali speech synthesis (`bn-IN`) and prebuilt voices (`Kore`, `Puck`, `Fenrir`, etc.).
+- Integrated speech naturalization in `IssueNarrationService`:
+  - Intelligent sequential narration for flowchart and architecture arrow diagrams (`↓, ⬇, ▼, ->, -->, =>, ➔, ➜, |, ├──, └──`).
+  - Terminal CLI command recognition and speech formatting (`php`, `composer`, `npm`, `npx`, `git`, `artisan`, `docker`, etc.).
+  - Code block speechification with operator pronunciation and long/short snippet summarization.
+  - Complete heading tag traversal (`h1` through `h6`).
+- Direct synchronous generation with execution timeout safety (`ISSUE_NARRATION_MAX_EXECUTION_SECONDS`).
+- Telemetry & usage tracking: captures prompt tokens, completion audio tokens, total tokens from Gemini `usageMetadata`, and synthesis duration.
+- Added isolated test generator (`generateGeminiTest`) and `LessonNarrationService` compatibility wrapper.
+- Client audio playback in Quick Read modal (`IssueQuickReadModal.vue`) via `useIssueNarration.js` with track playback, refresh, and rate-limit error handling.
 
 ### Responsive pinned-issues carousel
 

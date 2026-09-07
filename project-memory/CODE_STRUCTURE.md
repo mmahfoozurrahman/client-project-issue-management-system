@@ -39,6 +39,7 @@ app/
 │   │   ├── ClientController.php
 │   │   ├── DashboardController.php
 │   │   ├── IssueController.php
+│   │   ├── IssueNarrationController.php # Synchronous TTS narration status, generation & streaming
 │   │   ├── ProfileController.php
 │   │   ├── ProjectController.php
 │   │   ├── ProjectMemberController.php
@@ -46,10 +47,14 @@ app/
 │   ├── Middleware/
 │   │   └── HandleInertiaRequests.php
 │   └── Requests/                  # Form validation and authorization
+├── Jobs/
+│   └── GenerateIssueNarration.php # Issue narration generation job
 ├── Models/                        # Eloquent relationships and access scopes
 ├── Policies/                      # Client, Project, and Issue authorization
 ├── Services/
+│   ├── IssueNarrationService.php  # Gemini Bengali TTS narration synthesis & telemetry
 │   ├── IssueService.php           # Reusable issue orchestration
+│   ├── LessonNarrationService.php # Compatibility alias for narration service
 │   └── RichTextSanitizer.php      # Safe rich-text HTML handling
 └── Providers/                     # Laravel service providers
 ```
@@ -59,7 +64,7 @@ app/
 Controllers are grouped by responsibility. They accept a routed request, rely on Requests/Policies/Models/Services, then return an Inertia page or redirect with flash feedback.
 
 - **Workspace:** `ClientController`, `ProjectController`, and `ProjectMemberController` manage client ownership, projects, and project membership.
-- **Issue management:** `IssueController` manages issue lists, details, filters, Kanban, daily activity, attachments, links, status changes, and pins.
+- **Issue management:** `IssueController` manages issue lists, details, filters, Kanban, daily activity, attachments, links, status changes, and pins. `IssueNarrationController` provides Bengali audio narration generation and playback.
 - **Discovery:** `DashboardController` supplies the workspace overview and activity data.
 - **Access and profile:** `AuthenticatedSessionController` handles login/logout; `ProfileController` manages the authenticated user profile.
 - **Administration:** controllers under `Controllers/Admin` manage users, site settings, roles, permissions, and role-permission assignments.
@@ -74,9 +79,9 @@ Controllers are grouped by responsibility. They accept a routed request, rely on
 
 ### Models and services
 
-Eloquent models represent the business schema documented in `ERD.md`: users, clients, projects, issues, tags, pins, files, images, links, roles, permissions, memberships, and site metadata.
+Eloquent models represent the business schema documented in `ERD.md`: users, clients, projects, issues, narrations, tags, pins, files, images, links, roles, permissions, memberships, and site metadata.
 
-`IssueService` holds reusable issue workflow logic so controller actions remain focused on HTTP concerns. `RichTextSanitizer` cleans formatted descriptions before they are stored or rendered.
+`IssueService` holds reusable issue workflow logic so controller actions remain focused on HTTP concerns. `IssueNarrationService` powers natural Bengali audio synthesis using Gemini TTS with diagrams/terminal/code formatting. `RichTextSanitizer` cleans formatted descriptions before they are stored or rendered.
 
 ## Frontend structure (`resources/js/`)
 

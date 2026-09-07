@@ -11,6 +11,7 @@ This document explains the Laravel HTTP controllers and Eloquent models that dri
 | `ProjectController` | Lists projects; creates, shows, updates, and deletes projects; supplies project-specific issue/member data. | `/projects` -> `Projects/Index`; `/projects/{project}` -> `Projects/Show`. |
 | `ProjectMemberController` | Adds, updates, removes, and searches project members. | `/projects/{project}/members/*`. |
 | `IssueController` | Core issue lifecycle: lists/filtering (including `tag_id` and `project_id`), Kanban, daily activity, create/update/delete, details, pinning, attachments, links, and policy-protected status changes. | `/issues` -> `Issues/Index`; `/issues/{issue}` -> `Issues/Show`; `/kanban` -> `Issues/Kanban`; `/issues/daily-activity` -> `Issues/DailyActivity`. |
+| `IssueNarrationController` | Provides JSON status, triggers synchronous Bengali narration generation, and streams audio tracks. | `GET /issues/{issue}/narration`; `POST /issues/{issue}/narration`; `GET /issues/{issue}/narration/{track}`. |
 | `TagController` | Lists, filters, creates, updates, and deletes project-scoped tags. | `/tags` -> `Tags/Index`. |
 | `ProfileController` | Shows and updates the logged-in user profile and avatar. | `/profile` -> `Profile/Show`. |
 | `Auth\AuthenticatedSessionController` | Shows login form, authenticates sessions, and logs users out. | `/login` -> `Auth/Login`; `POST /logout`. |
@@ -30,7 +31,8 @@ This document explains the Laravel HTTP controllers and Eloquent models that dri
 | `ProjectMember` | Membership record assigning a user one project role. | Belongs to project, user, and role. |
 | `Role` | Reusable project role, such as owner or developer. | Has many permissions through `role_permissions`; used by project members. |
 | `Permission` | Named capability used by RBAC. | Belongs to many roles. |
-| `Issue` | Main task/story entity. | Belongs to project and creator; may have a parent issue; has attachments/links; belongs to many tags; supports pins and completion tracking. |
+| `Issue` | Main task/story entity. | Belongs to project and creator; may have a parent issue; has attachments/links; belongs to many tags; supports pins and completion tracking; has one narration. |
+| `IssueNarration` | Audio narration state and audio paths for an issue. | Belongs to issue; stores provider, voice name, source hash, status, audio paths, and timestamps. |
 | `IssueTag` | Project-scoped tag. | Belongs to project; belongs to many issues through `issue_issue_tag`. |
 | `IssueImage` | Image attachment stored for an issue. | Belongs to issue. |
 | `IssueFile` | File attachment stored for an issue. | Belongs to issue. |
