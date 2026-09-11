@@ -104,13 +104,16 @@
                 </details>
 
                 <div class="d-flex gap-2 flex-grow-1">
-                    <input
+                    <IssueSearchAutocomplete
                         v-model="filterForm.q"
-                        type="search"
-                        class="form-control"
-                        placeholder="Search title or description..."
+                        :project-id="project.id"
+                        :status="filterForm.status"
+                        :tag-ids="filterForm.tag_ids"
+                        placeholder="Search title, description, or link..."
                         aria-label="Search issue title or description"
-                    >
+                        @search="applyFilters"
+                        @select="selectIssueSuggestion"
+                    />
                     <button type="submit" class="btn btn-outline-secondary rounded-pill px-4">Search</button>
                 </div>
             </form>
@@ -371,6 +374,7 @@ import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import Swal from 'sweetalert2';
 import FormError from '../../Components/FormError.vue';
 import IssueQuickReadModal from '../../Components/IssueQuickReadModal.vue';
+import IssueSearchAutocomplete from '../../Components/IssueSearchAutocomplete.vue';
 import Modal from '../../Components/Modal.vue';
 import Pagination from '../../Components/Pagination.vue';
 import RichTextEditor from '../../Components/RichTextEditor.vue';
@@ -412,6 +416,10 @@ const filterForm = reactive({
     tag_ids: Array.isArray(props.filters?.tag_ids) ? props.filters.tag_ids.map(String) : [],
     q: props.filters?.q ?? '',
 });
+const selectIssueSuggestion = (issue) => {
+    filterForm.q = issue.title;
+    applyFilters();
+};
 const form = useForm({
     title: '',
     description: '',

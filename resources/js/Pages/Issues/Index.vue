@@ -3,6 +3,7 @@ import { computed, reactive, ref } from 'vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import FormError from '../../Components/FormError.vue';
 import IssueQuickReadModal from '../../Components/IssueQuickReadModal.vue';
+import IssueSearchAutocomplete from '../../Components/IssueSearchAutocomplete.vue';
 import Modal from '../../Components/Modal.vue';
 import SkeletonCard from '../../Components/SkeletonCard.vue';
 import Pagination from '../../Components/Pagination.vue';
@@ -25,7 +26,6 @@ const loading = ref(false);
 const modalOpen = ref(false);
 const quickReadModalOpen = ref(false);
 const activeIssue = ref(null);
-const showIssueSuggestions = ref(false);
 const page = usePage();
 const issueRows = computed(() => props.issues?.data ?? props.issues ?? []);
 const staleDays = computed(() => Number(page.props.app?.issue_stale_days ?? 3));
@@ -37,24 +37,6 @@ const searchFilters = reactive({
     tag_id: props.filters?.tag_id ?? '',
     q: props.filters?.q ?? '',
     at_risk: props.filters?.at_risk ? '1' : '',
-});
-
-const matchingIssueSuggestions = computed(() => {
-    const term = searchFilters.q.trim().toLowerCase();
-    if (!term) return [];
-
-    return props.issueSearchSuggestions
-        .filter((issue) => {
-            if (searchFilters.project_id && String(issue.project_id) !== String(searchFilters.project_id)) {
-                return false;
-            }
-
-            return issue.title.toLowerCase().includes(term)
-                || (issue.links ?? []).some((link) =>
-                    [link.url, link.label].some((value) => value?.toLowerCase().includes(term))
-                );
-        })
-        .slice(0, 8);
 });
 
 const form = useForm({
@@ -72,7 +54,6 @@ const form = useForm({
 const tagInput = ref('');
 
 const applyFilters = () => {
-    showIssueSuggestions.value = false;
     loading.value = true;
     router.get('/issues', searchFilters, {
         preserveState: true,
@@ -206,36 +187,15 @@ const idleMetaClass = (issue) => {
                 </select>
 
                 <div class="d-flex gap-2 flex-grow-1">
-                    <div class="position-relative flex-grow-1">
-                        <input
-                            v-model="searchFilters.q"
-                            type="search"
-                            class="form-control"
-                            placeholder="Search title, description, or link..."
-                            autocomplete="off"
-                            @input="showIssueSuggestions = true"
-                            @search="applyFilters"
-                            @keyup.enter="applyFilters"
-                        >
-                        <div v-if="showIssueSuggestions && matchingIssueSuggestions.length" class="position-absolute top-100 start-0 mt-1 w-100 bg-white border rounded shadow-sm" style="z-index: 1000; max-height: 240px; overflow-y: auto;">
-                            <button
-                                v-for="issue in matchingIssueSuggestions"
-                                :key="issue.id"
-                                type="button"
-                                class="w-100 text-start px-3 py-2 border-0 bg-white text-decoration-none"
-                                style="cursor: pointer; font-size: 0.9rem;"
-                                @click="selectIssueSuggestion(issue)"
-                                @mouseover="$event.currentTarget.style.backgroundColor = '#f5f5f5'"
-                                @mouseout="$event.currentTarget.style.backgroundColor = 'white'"
-                            >
-                                <strong class="d-block text-truncate">{{ issue.title }}</strong>
-                                <small v-if="issue.links?.length" class="text-muted d-block text-truncate">
-                                    {{ issue.links.map((link) => link.label || link.url).join(' · ') }}
-                                </small>
-                                <small class="text-muted">{{ issue.project?.name }}</small>
-                            </button>
-                        </div>
-                    </div>
+                    <IssueSearchAutocomplete
+                        v-model="searchFilters.q"
+                        :project-id="searchFilters.project_id"
+                        :status="searchFilters.status"
+                        :tag-id="searchFilters.tag_id"
+                        placeholder="Search title, description, or link..."
+                        @search="applyFilters"
+                        @select="selectIssueSuggestion"
+                    />
                     <button type="button" class="btn btn-outline-secondary rounded-pill px-4" @click="applyFilters">Search</button>
                 </div>
             </div>

@@ -41,6 +41,7 @@ Route::middleware('auth')->group(function (): void {
     });
 
     Route::get('/issues/daily-activity', [IssueController::class, 'dailyActivity'])->name('issues.daily-activity');
+    Route::get('/issues/search-suggestions', [IssueController::class, 'searchSuggestions'])->name('issues.search-suggestions');
     Route::resource('issues', IssueController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
     Route::post('/issues/{issue}/pin', [IssueController::class, 'togglePin'])->name('issues.pin.toggle');
     Route::get('/kanban', [IssueController::class, 'kanban'])->name('kanban');

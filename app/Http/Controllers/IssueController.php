@@ -14,6 +14,7 @@ use App\Models\ProjectMember;
 use App\Models\SiteMeta;
 use App\Services\IssueService;
 use App\Services\RichTextSanitizer;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -137,6 +138,109 @@ class IssueController extends Controller
                 ['label' => 'Issues'],
             ],
         ]);
+    }
+
+    public function searchSuggestions(Request $request): JsonResponse
+    {
+        $term = trim((string) $request->input('q', ''));
+        if (mb_strlen($term) < 2) {
+            return response()->json([]);
+        }
+
+        $user = $request->user();
+        $accessibleIds = $user->accessibleProjectIds();
+
+        $query = Issue::withoutGlobalScope('user_owned')
+            ->whereIn('project_id', $accessibleIds)
+            ->whereNull('parent_id');
+
+        if ($request->filled('project_id')) {
+            $projectId = (int) $request->input('project_id');
+            if (!in_array($projectId, $accessibleIds, true)) {
+                return response()->json([]);
+            }
+            $query->where('project_id', $projectId);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', (string) $request->input('status'));
+        }
+
+        if ($request->filled('tag_id')) {
+            $tagId = (int) $request->input('tag_id');
+            $query->whereHas('tags', fn ($q) => $q->whereKey($tagId));
+        }
+
+        if ($request->filled('tag_ids') && is_array($request->input('tag_ids'))) {
+            $tagIds = array_values(array_filter(array_map('intval', (array) $request->input('tag_ids'))));
+            if (!empty($tagIds)) {
+                $query->whereHas(
+                    'tags',
+                    fn ($tagQuery) => $tagQuery->whereIn('issue_tags.id', $tagIds),
+                    '=',
+                    count($tagIds)
+                );
+            }
+        }
+
+        $query->where(function ($q) use ($term) {
+            $q->where('title', 'like', "%{$term}%")
+                ->orWhere('description', 'like', "%{$term}%")
+                ->orWhereHas('links', fn ($linkQuery) => $linkQuery
+                    ->where('url', 'like', "%{$term}%")
+                    ->orWhere('label', 'like', "%{$term}%"));
+        });
+
+        $issues = $query
+            ->with([
+                'project:id,name',
+                'links:id,issue_id,url,label',
+            ])
+            ->latest()
+            ->limit(8)
+            ->get(['id', 'project_id', 'title', 'description']);
+
+        $suggestions = $issues->map(function (Issue $issue) use ($term) {
+            $matchedInTitle = stripos($issue->title, $term) !== false;
+
+            $plainDesc = trim(preg_replace('/\s+/', ' ', strip_tags($issue->description ?? '')));
+            $descPos = stripos($plainDesc, $term);
+            $matchedInDesc = $descPos !== false;
+
+            $snippet = null;
+            if ($matchedInDesc) {
+                $start = max(0, $descPos - 35);
+                $length = mb_strlen($term) + 70;
+                $extracted = mb_substr($plainDesc, $start, $length);
+                $snippet = ($start > 0 ? '...' : '') . trim($extracted) . ($start + $length < mb_strlen($plainDesc) ? '...' : '');
+            }
+
+            $matchedLinks = [];
+            foreach ($issue->links as $link) {
+                if (stripos($link->url ?? '', $term) !== false || stripos($link->label ?? '', $term) !== false) {
+                    $matchedLinks[] = $link->label ?: $link->url;
+                }
+            }
+
+            $matchType = 'title';
+            if (!$matchedInTitle && $matchedInDesc) {
+                $matchType = 'description';
+            } elseif (!$matchedInTitle && !empty($matchedLinks)) {
+                $matchType = 'link';
+            }
+
+            return [
+                'id' => $issue->id,
+                'title' => $issue->title,
+                'project_id' => $issue->project_id,
+                'project_name' => $issue->project?->name,
+                'match_type' => $matchType,
+                'snippet' => $snippet,
+                'matched_links' => $matchedLinks,
+            ];
+        });
+
+        return response()->json($suggestions);
     }
 
     public function kanban(Request $request): Response
