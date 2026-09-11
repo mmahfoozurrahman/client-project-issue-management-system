@@ -148,7 +148,7 @@ class IssueController extends Controller
         }
 
         $user = $request->user();
-        $accessibleIds = $user->accessibleProjectIds();
+        $accessibleIds = array_map('intval', $user->accessibleProjectIds());
 
         $query = Issue::withoutGlobalScope('user_owned')
             ->whereIn('project_id', $accessibleIds)

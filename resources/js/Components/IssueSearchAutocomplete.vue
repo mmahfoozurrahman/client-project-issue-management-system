@@ -53,6 +53,7 @@ const suggestions = ref([]);
 const isLoading = ref(false);
 const isOpen = ref(false);
 const activeIndex = ref(-1);
+const errorMessage = ref('');
 
 let debounceTimer = null;
 let abortController = null;
@@ -70,12 +71,13 @@ const cancelPending = () => {
     }
 };
 
-const fetchSuggestions = async () => {
-    const term = currentTerm.value;
+const fetchSuggestions = async (explicitTerm = null) => {
+    const term = String(explicitTerm !== null ? explicitTerm : (inputRef.value?.value || currentTerm.value)).trim();
     if (term.length < props.minLength) {
         suggestions.value = [];
         isOpen.value = false;
         isLoading.value = false;
+        errorMessage.value = '';
         return;
     }
 
@@ -85,6 +87,7 @@ const fetchSuggestions = async () => {
     abortController = new AbortController();
 
     isLoading.value = true;
+    errorMessage.value = '';
     try {
         const params = {
             q: term,
@@ -112,7 +115,15 @@ const fetchSuggestions = async () => {
         isOpen.value = true;
     } catch (error) {
         if (!axios.isCancel(error) && error.name !== 'CanceledError' && error.name !== 'AbortError') {
+            console.error('[IssueSearchAutocomplete] Failed to fetch suggestions:', error);
             suggestions.value = [];
+            if (error.response?.status === 404) {
+                errorMessage.value = 'Route not found (404). Please clear route cache on server.';
+            } else if (error.response?.status) {
+                errorMessage.value = `Server error (${error.response.status}). Could not load suggestions.`;
+            } else {
+                errorMessage.value = 'Network error while loading suggestions.';
+            }
         }
     } finally {
         isLoading.value = false;
@@ -124,6 +135,7 @@ const onInput = (event) => {
     emit('update:modelValue', val);
 
     cancelPending();
+    errorMessage.value = '';
 
     const trimmed = String(val || '').trim();
     if (trimmed.length < props.minLength) {
@@ -136,7 +148,7 @@ const onInput = (event) => {
     isOpen.value = true;
     isLoading.value = true;
     debounceTimer = setTimeout(() => {
-        fetchSuggestions();
+        fetchSuggestions(trimmed);
     }, props.debounceMs);
 };
 
@@ -286,6 +298,10 @@ onBeforeUnmount(() => {
                     </div>
                 </button>
             </template>
+
+            <div v-if="errorMessage" class="px-3 py-3 text-danger small text-center">
+                {{ errorMessage }}
+            </div>
 
             <div v-else-if="!isLoading && currentTerm.length >= minLength" class="px-3 py-3 text-muted small text-center">
                 No matching issues found for "<strong>{{ currentTerm }}</strong>"
