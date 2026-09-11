@@ -260,11 +260,15 @@ onBeforeUnmount(() => {
         >
 
         <div
-            v-if="isOpen && (suggestions.length || isLoading || currentTerm.length >= minLength)"
+            v-if="isOpen && (suggestions.length || isLoading || errorMessage || currentTerm.length >= minLength)"
             class="position-absolute top-100 start-0 mt-1 w-100 bg-white border rounded shadow-sm issue-suggestions-dropdown"
             style="z-index: 1050; max-height: 280px; overflow-y: auto;"
         >
-            <div v-if="isLoading && !suggestions.length" class="d-flex align-items-center justify-content-center py-3 text-muted small gap-2">
+            <div v-if="errorMessage" class="px-3 py-3 text-danger small text-center">
+                {{ errorMessage }}
+            </div>
+
+            <div v-else-if="isLoading && !suggestions.length" class="d-flex align-items-center justify-content-center py-3 text-muted small gap-2">
                 <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
                 <span>Searching suggestions...</span>
             </div>
@@ -299,11 +303,7 @@ onBeforeUnmount(() => {
                 </button>
             </template>
 
-            <div v-if="errorMessage" class="px-3 py-3 text-danger small text-center">
-                {{ errorMessage }}
-            </div>
-
-            <div v-else-if="!isLoading && currentTerm.length >= minLength" class="px-3 py-3 text-muted small text-center">
+            <div v-else-if="!isLoading && !suggestions.length && currentTerm.length >= minLength" class="px-3 py-3 text-muted small text-center">
                 No matching issues found for "<strong>{{ currentTerm }}</strong>"
             </div>
         </div>

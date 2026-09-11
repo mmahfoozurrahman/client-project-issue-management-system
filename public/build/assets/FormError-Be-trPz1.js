@@ -1,0 +1,1 @@
+import{I as e,K as t,b as n,k as r,o as i,v as a,y as o}from"./app-CNCpFM3F.js";var s={key:0,class:`field-error`,role:`alert`},c={__name:`FormError`,props:{message:{type:String,default:``}},setup(c){return(l,u)=>(r(),a(i,{name:`field-error-fade`},{default:e(()=>[c.message?(r(),n(`div`,s,t(c.message),1)):o(``,!0)]),_:1}))}};export{c as t};
