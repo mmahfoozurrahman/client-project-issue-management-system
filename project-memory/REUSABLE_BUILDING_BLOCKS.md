@@ -17,6 +17,7 @@ This reference maps the reusable frontend and backend pieces to where they are c
 | `RichTextEditor.vue` | TipTap rich-text input with editor toolbar and validation state. | Projects Index; Project Show issue creation; Issues Index; Issue Show editing and child-issue creation. |
 | `StatusPill.vue` | Consistent Todo / In Progress / Done badge. | Dashboard; Project Show; Issues Index/Show; Daily Activity; `IssueCard`; `IssueTree`. |
 | `IssueTree.vue` | Recursive nested issue/sub-issue tree with tag links to the filtered issue list. | Issue Show. |
+| `IssueSearchAutocomplete.vue` | Reusable debounced search input with live autocomplete dropdown, snippet extraction for description matches, keyboard navigation, and filter scoping. | Issues Index; Project Show. |
 | `SkeletonCard.vue` | Loading placeholder card. | Issues Index and Kanban. |
 | `IssueCard.vue` | Reusable compact issue card with status badge. | Available for issue-card views; currently no direct page import was found. |
 

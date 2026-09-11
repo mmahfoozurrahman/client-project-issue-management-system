@@ -10,6 +10,17 @@ This is a newest-first record of features and meaningful product changes, consol
 
 ## Feature history (newest first)
 
+### Debounced live search suggestions with description matching & 2-character rule
+
+**Last updated:** 12th September, 2026
+
+- Introduced a dedicated, high-performance search suggestion endpoint: `GET /issues/search-suggestions`.
+- Queries `title`, `description`, and `links` with top-8 result limit (`LIMIT 8`) and project/status/tag scoping.
+- Implemented clean plain-text snippet extraction for description matches, displaying context around the matched term in the dropdown.
+- Enforced a minimum 2-character requirement (`minLength: 2`) and 300ms debounce to prevent premature or single-character database queries.
+- Built reusable `<IssueSearchAutocomplete.vue>` component with `AbortController` cancellation for rapid typing, keyboard navigation (`Arrow Up/Down`, `Enter`, `Esc`), clear match-type badges (`In description`, `Link`, project pill), and reliable empty/error state handling.
+- Integrated across both the Issues Library ([Issues/Index.vue](file:///d:/Development/Projects/LaravelVue/5.%20LaravelInertiaVue/3.%20issue-listing-2/resources/js/Pages/Issues/Index.vue)) and the Project Details page ([Projects/Show.vue](file:///d:/Development/Projects/LaravelVue/5.%20LaravelInertiaVue/3.%20issue-listing-2/resources/js/Pages/Projects/Show.vue)).
+
 ### Gemini Bengali TTS narration system & reference alignment
 
 **Last updated:** 8th September, 2026
