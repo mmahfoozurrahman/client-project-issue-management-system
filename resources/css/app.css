@@ -1032,6 +1032,10 @@ a {
     width: min(100%, 820px);
 }
 
+.custom-modal-frame.modal-xl {
+    width: min(100%, 1020px);
+}
+
 .custom-modal-frame.modal-sm {
     width: min(100%, 520px);
 }
@@ -1531,6 +1535,7 @@ a {
     }
 
     .custom-modal-frame,
+    .custom-modal-frame.modal-xl,
     .custom-modal-frame.modal-lg,
     .custom-modal-frame.modal-sm {
         width: min(100%, 680px);

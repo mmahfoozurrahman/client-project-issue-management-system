@@ -26,7 +26,7 @@ Browser
 | `routes/web.php` | Web routes and middleware boundaries. |
 | `storage/` | Runtime files, logs, and public-disk issue uploads. |
 | `public/` | Public web root and compiled assets. |
-| `project-memory/` | Maintained project reference documentation and diagrams. |
+| `project-memory/` | Maintained project reference documentation, architecture diagrams, and development workflow guides (`WORKFLOW.md`). |
 
 ## Backend structure (`app/`)
 
@@ -176,4 +176,4 @@ sequenceDiagram
 
 ## Maintenance rule
 
-When a feature changes the schema, page structure, or overall flow, update the corresponding files in `project-memory/`—especially `FEATURES.md`, `ERD.md`, and this document.
+Always follow `project-memory/WORKFLOW.md`: implement the change, ask the user to verify, and once verified, update `FEATURES.md`, `ERD.md`, and this document to record the progress.

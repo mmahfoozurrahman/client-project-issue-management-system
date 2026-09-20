@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onBeforeUnmount, ref, watch } from 'vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import Swal from 'sweetalert2';
 import FormError from '../../Components/FormError.vue';
@@ -487,19 +487,39 @@ watch(
     { immediate: true }
 );
 
-const openImageModal = (index) => {
+const modalFeedRef = ref(null);
+
+const scrollToModalImage = (index) => {
+    activeImageIndex.value = index;
+    const target = document.getElementById(`modal-image-entry-${index}`);
+    if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+};
+
+const openImageModal = (index = 0) => {
     activeImageIndex.value = index;
     imageModalOpen.value = true;
+    nextTick(() => {
+        setTimeout(() => {
+            const target = document.getElementById(`modal-image-entry-${index}`);
+            if (target) {
+                target.scrollIntoView({ behavior: 'auto', block: 'start' });
+            }
+        }, 60);
+    });
 };
 
-const showNextImage = () => {
-    if (!issueImages.value.length) return;
-    activeImageIndex.value = (activeImageIndex.value + 1) % issueImages.value.length;
-};
-
-const showPrevImage = () => {
-    if (!issueImages.value.length) return;
-    activeImageIndex.value = (activeImageIndex.value - 1 + issueImages.value.length) % issueImages.value.length;
+const handleModalFeedScroll = (event) => {
+    const feed = event.target;
+    if (!feed) return;
+    const cards = feed.querySelectorAll('.image-feed-card');
+    const feedTop = feed.scrollTop;
+    cards.forEach((card, idx) => {
+        if (card.offsetTop - feed.offsetTop <= feedTop + 140) {
+            activeImageIndex.value = idx;
+        }
+    });
 };
 
 const deleteImage = (image) => {
@@ -517,7 +537,9 @@ const deleteImage = (image) => {
             preserveScroll: true,
             onSuccess: () => {
                 issueImages.value = issueImages.value.filter((entry) => entry.id !== image.id);
-                if (activeImageIndex.value >= issueImages.value.length) {
+                if (issueImages.value.length === 0) {
+                    imageModalOpen.value = false;
+                } else if (activeImageIndex.value >= issueImages.value.length) {
                     activeImageIndex.value = Math.max(issueImages.value.length - 1, 0);
                 }
             },
@@ -1178,20 +1200,113 @@ const deleteLink = (link) => {
         </Modal>
     </AppLayout>
 
-    <Modal v-model="imageModalOpen" title="Issue Images" size="modal-lg">
-        <div class="d-flex align-items-center justify-content-between gap-3">
-            <button type="button" class="btn btn-outline-secondary" @click="showPrevImage">Prev</button>
-            <div class="flex-grow-1 text-center">
-                <img
-                    v-if="issueImages.length"
-                    :src="issueImages[activeImageIndex]?.url"
-                    :alt="issueImages[activeImageIndex]?.original_name || issue.title"
-                    class="img-fluid rounded"
-                >
-                <div v-else class="text-muted">No images to display.</div>
-                <div class="text-muted small mt-2">{{ activeImageIndex + 1 }} / {{ issueImages.length }}</div>
+    <Modal v-model="imageModalOpen" title="Issue Images" size="modal-xl">
+        <div v-if="!issueImages.length" class="text-center py-5 text-muted">
+            <p class="mb-0">No images attached to this issue.</p>
+        </div>
+
+        <div v-else class="issue-modal-gallery">
+            <!-- Navigation jump pills bar when there are multiple images -->
+            <div v-if="issueImages.length > 1" class="modal-gallery-jumpbar d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 pb-2 border-bottom">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge rounded-pill bg-dark-subtle text-dark-emphasis px-2.5 py-1.5 font-monospace">
+                        {{ issueImages.length }} Images
+                    </span>
+                    <span class="text-muted small">Scroll vertically or click to jump:</span>
+                </div>
+                <div class="d-flex align-items-center flex-wrap gap-1">
+                    <button
+                        v-for="(image, index) in issueImages"
+                        :key="`jump-${image.id || index}`"
+                        type="button"
+                        class="btn btn-sm rounded-pill px-2.5 py-1 fw-medium"
+                        :class="activeImageIndex === index ? 'btn-accent' : 'btn-outline-secondary'"
+                        @click="scrollToModalImage(index)"
+                    >
+                        #{{ index + 1 }}
+                    </button>
+                </div>
             </div>
-            <button type="button" class="btn btn-outline-secondary" @click="showNextImage">Next</button>
+
+            <!-- Vertically scrollable feed list (like FB feed single images) -->
+            <div ref="modalFeedRef" class="modal-image-feed" @scroll.passive="handleModalFeedScroll">
+                <article
+                    v-for="(image, index) in issueImages"
+                    :key="`feed-img-${image.id || index}`"
+                    :id="`modal-image-entry-${index}`"
+                    class="image-feed-card"
+                >
+                    <!-- Feed Card Header: Meta + Actions -->
+                    <div class="image-feed-header d-flex align-items-center justify-content-between gap-3">
+                        <div class="d-flex align-items-center gap-2 min-w-0">
+                            <span class="badge rounded-pill bg-light border text-dark font-monospace flex-shrink-0">
+                                {{ index + 1 }} / {{ issueImages.length }}
+                            </span>
+                            <span class="text-truncate fw-medium text-dark small" :title="image.original_name || `Image #${index + 1}`">
+                                {{ image.original_name || `Image #${index + 1}` }}
+                            </span>
+                            <span v-if="image.size" class="badge rounded-pill text-bg-light border text-muted extra-small flex-shrink-0 font-monospace">
+                                {{ formatFileSize(image.size) }}
+                            </span>
+                        </div>
+
+                        <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                            <a
+                                :href="image.url"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="btn btn-sm btn-light border rounded-pill d-inline-flex align-items-center gap-1 px-2.5 py-1 text-secondary"
+                                title="Open full-size in new tab"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16">
+                                    <path fill-rule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5z"/>
+                                    <path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0v-5z"/>
+                                </svg>
+                                <span>Full Size</span>
+                            </a>
+                            <a
+                                :href="image.url"
+                                :download="image.original_name || `issue-image-${index + 1}`"
+                                class="btn btn-sm btn-light border rounded-pill d-inline-flex align-items-center gap-1 px-2.5 py-1 text-secondary"
+                                title="Download image"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16">
+                                    <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                                    <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+                                </svg>
+                                <span>Download</span>
+                            </a>
+                            <button
+                                v-if="canDeleteAttachment"
+                                type="button"
+                                class="btn btn-sm btn-outline-danger rounded-pill px-2.5 py-1"
+                                title="Delete image"
+                                @click="deleteImage(image)"
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Image Canvas Container (Facebook Feed Post Style) -->
+                    <div class="image-feed-canvas">
+                        <a
+                            :href="image.url"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="image-feed-link d-block"
+                            title="Click to open original size in new tab"
+                        >
+                            <img
+                                :src="image.url"
+                                :alt="image.original_name || issue.title"
+                                class="image-feed-img"
+                                loading="lazy"
+                            >
+                        </a>
+                    </div>
+                </article>
+            </div>
         </div>
     </Modal>
 </template>
@@ -1406,5 +1521,100 @@ const deleteLink = (link) => {
 
 .staged-image-remove-btn:hover {
     background: #ef4444;
+}
+
+/* Modal Image Feed (Facebook Feed Style) */
+.modal-gallery-jumpbar {
+    position: sticky;
+    top: -12px;
+    z-index: 10;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    padding: 0.6rem 0.5rem;
+    margin-bottom: 1rem;
+    border-radius: 12px;
+}
+
+.modal-image-feed {
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+    max-height: min(78vh, 760px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0.25rem 0.5rem 0.75rem 0.25rem;
+    scroll-behavior: smooth;
+}
+
+.modal-image-feed::-webkit-scrollbar {
+    width: 7px;
+}
+
+.modal-image-feed::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.05);
+    border-radius: 999px;
+}
+
+.modal-image-feed::-webkit-scrollbar-thumb {
+    background: rgba(15, 118, 110, 0.28);
+    border-radius: 999px;
+}
+
+.modal-image-feed::-webkit-scrollbar-thumb:hover {
+    background: rgba(15, 118, 110, 0.5);
+}
+
+.image-feed-card {
+    background: #ffffff;
+    border: 1px solid rgba(15, 23, 42, 0.1);
+    border-radius: 16px;
+    box-shadow: 0 4px 18px rgba(15, 23, 42, 0.05);
+    overflow: hidden;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.image-feed-card:hover {
+    border-color: rgba(15, 118, 110, 0.28);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.image-feed-header {
+    padding: 0.75rem 1.1rem;
+    background: linear-gradient(180deg, #fafafa 0%, #f4f5f7 100%);
+    border-bottom: 1px solid rgba(15, 23, 42, 0.07);
+}
+
+.image-feed-canvas {
+    background: #0f172a08;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
+    padding: 0.5rem;
+}
+
+.image-feed-link {
+    width: 100%;
+    text-align: center;
+    cursor: zoom-in;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.image-feed-img {
+    max-width: 100%;
+    width: 100%;
+    height: auto;
+    max-height: 78vh;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto;
+    border-radius: 10px;
+    transition: transform 0.15s ease;
+}
+
+.image-feed-card:hover .image-feed-img {
+    transform: scale(1.002);
 }
 </style>
