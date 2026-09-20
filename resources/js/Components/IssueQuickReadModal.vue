@@ -17,7 +17,7 @@
                     {{ isPlaying ? 'Pause narration' : (isPaused ? 'Resume narration' : 'Play narration') }}
                 </button>
                 <Link :href="`/issues/${issue.id}`" class="btn btn-sm btn-outline-secondary rounded-pill">Open full issue</Link>
-                <span v-if="issue.parent_issue" class="badge rounded-pill text-bg-light border">Parent: {{ issue.parent_issue.title }}</span>
+                <span v-if="issue.parent_issue || issue.parentIssue" class="badge rounded-pill text-bg-light border">Parent: {{ (issue.parent_issue ?? issue.parentIssue)?.title }}</span>
                 <span v-if="issue.user?.name" class="text-muted small">Created by {{ issue.user.name }}</span>
                 <span class="text-muted small">Created {{ formatIssueDate(issue.created_at) }}</span>
                 <span v-if="issue.updated_at" class="text-muted small">Updated {{ formatIssueDate(issue.updated_at) }}</span>
@@ -87,7 +87,7 @@
             </div>
 
             <div class="row g-3 text-center">
-                <div class="col-4"><div class="border rounded-3 p-2"><strong class="d-block">{{ issue.sub_issues_count ?? 0 }}</strong><small class="text-muted">Sub-issues</small></div></div>
+                <div class="col-4"><div class="border rounded-3 p-2"><strong class="d-block">{{ issue.sub_issues_count ?? issue.sub_issues?.length ?? issue.subIssues?.length ?? 0 }}</strong><small class="text-muted">Sub-issues</small></div></div>
                 <div class="col-4"><div class="border rounded-3 p-2"><strong class="d-block">{{ issue.images?.length ?? issue.images_count ?? 0 }}</strong><small class="text-muted">Images</small></div></div>
                 <div class="col-4"><div class="border rounded-3 p-2"><strong class="d-block">{{ issue.files?.length ?? issue.files_count ?? 0 }}</strong><small class="text-muted">Files</small></div></div>
             </div>

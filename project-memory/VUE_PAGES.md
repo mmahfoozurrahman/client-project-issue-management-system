@@ -11,7 +11,7 @@ All frontend pages live in `resources/js/Pages/`. Laravel controllers return the
 | `Projects/Index.vue` | `/projects` | `ProjectController@index` | Project listing, filtering, and create/edit workflows. |
 | `Projects/Show.vue` | `/projects/{project}` | `ProjectController@show` | Project overview, issue list/date column, shared Quick Read, member management, issue creation, and clickable issue tags. |
 | `Issues/Index.vue` | `/issues` | `IssueController@index` | Filterable, searchable, paginated issue listing, Quick Read, create-issue modal, and tag-filter destinations. |
-| `Issues/Show.vue` | `/issues/{issue}` | `IssueController@show` | Full issue detail, editing, rich text, clickable tags, uploads, links, image gallery, related issues, and sub-issue tree. |
+| `Issues/Show.vue` | `/issues/{issue}` | `IssueController@show` | Full issue detail, editing, rich text, clickable tags, uploads, links, image gallery, related issues, recursive sub-issue tree, and Quick Read previews. |
 | `Issues/Kanban.vue` | `/kanban` | `IssueController@kanban` | Status-board workflow for Todo, In Progress, and Done issues with per-card Quick Read and clickable tags. |
 | `Issues/DailyActivity.vue` | `/issues/daily-activity` | `IssueController@dailyActivity` | Date-focused created/completed issue activity, heatmap view, Quick Read, and clickable tags. |
 | `Tags/Index.vue` | `/tags` | `TagController@index` | Project-scoped tag management with filtering, pagination, issue count links to filtered issues, and create/edit modals. |

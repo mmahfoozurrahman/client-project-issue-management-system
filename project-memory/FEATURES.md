@@ -236,10 +236,10 @@ This is a newest-first record of features and meaningful product changes, consol
 
 ### Workspace-wide issue Quick Read
 
-**Last updated:** 13th August, 2026
+**Last updated:** 21st September, 2026
 
-- Added one shared Quick Read modal for Project Show, Dashboard, Issues Index, Daily Activity, and Kanban.
-- The modal shows issue details, tags, attachment/link previews, counts, and links to the full issue at both the top and bottom.
+- Added one shared Quick Read modal for Project Show, Dashboard, Issues Index, Daily Activity, Kanban, and Issue Show (both Related Issues and Nested Child Issues tree).
+- The modal shows issue details, tags, attachment/link previews, counts, audio narration player, and links to the full issue at both the top and bottom.
 - Added a compact status-change control to the modal. It is available to Super Admins, project owners, Developers, and Clients; Employees cannot change issue status.
 - The `issue.change_status` permission remains the server-side capability check. Migrations keep it assigned to Clients and remove it from Employees.
 

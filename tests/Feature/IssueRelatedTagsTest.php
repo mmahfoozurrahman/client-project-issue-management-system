@@ -185,4 +185,69 @@ class IssueRelatedTagsTest extends TestCase
                 ->has('matchingIssues', 0)
             );
     }
+
+    public function test_related_issues_and_nested_issues_include_quick_read_metadata(): void
+    {
+        $user = User::factory()->create(['is_admin' => true, 'name' => 'John Dev']);
+        $client = Client::withoutGlobalScope('user_owned')->create(['name' => 'Acme Corp', 'user_id' => $user->id]);
+        $project = Project::withoutGlobalScope('user_owned')->create([
+            'name' => 'Client Project',
+            'client_id' => $client->id,
+            'user_id' => $user->id,
+        ]);
+
+        $tag = IssueTag::withoutGlobalScope('user_owned')->create([
+            'name' => 'UI Feature',
+            'slug' => 'ui-feature',
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+        ]);
+
+        $parentIssue = Issue::withoutGlobalScope('user_owned')->create([
+            'title' => 'Main Issue',
+            'description' => '<p>Main description</p>',
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'status' => 'inprogress',
+        ]);
+        $parentIssue->tags()->attach([$tag->id]);
+
+        $childIssue = Issue::withoutGlobalScope('user_owned')->create([
+            'title' => 'Child Task',
+            'description' => '<p>Child issue detail</p>',
+            'project_id' => $project->id,
+            'parent_id' => $parentIssue->id,
+            'user_id' => $user->id,
+            'status' => 'todo',
+        ]);
+
+        $relatedIssue = Issue::withoutGlobalScope('user_owned')->create([
+            'title' => 'Related Issue With Same Tag',
+            'description' => '<p>Detailed description for quick read</p>',
+            'project_id' => $project->id,
+            'user_id' => $user->id,
+            'status' => 'done',
+        ]);
+        $relatedIssue->tags()->attach([$tag->id]);
+
+        $this->actingAs($user)
+            ->get(route('issues.show', $parentIssue))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Issues/Show')
+                ->has('matchingIssues', 1)
+                ->where('matchingIssues.0.id', $relatedIssue->id)
+                ->where('matchingIssues.0.description', '<p>Detailed description for quick read</p>')
+                ->has('matchingIssues.0.user')
+                ->has('matchingIssues.0.images')
+                ->has('matchingIssues.0.files')
+                ->has('matchingIssues.0.links')
+                ->has('matchingIssues.0.tags')
+                ->has('issue.sub_issues', 1)
+                ->where('issue.sub_issues.0.id', $childIssue->id)
+                ->where('issue.sub_issues.0.description', '<p>Child issue detail</p>')
+                ->has('issue.sub_issues.0.user')
+                ->has('issue.sub_issues.0.parent_issue')
+            );
+    }
 }

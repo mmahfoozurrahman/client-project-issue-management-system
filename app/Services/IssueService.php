@@ -24,7 +24,7 @@ class IssueService
             'tags',
             'parentIssue:id,title,project_id,parent_id',
             'subIssues' => fn ($query) => $query
-                ->with(['images', 'files', 'links', 'tags', 'project:id,name'])
+                ->with(['images', 'files', 'links', 'tags', 'project:id,name', 'user:id,name', 'parentIssue:id,title,project_id,parent_id'])
                 ->withCount(['subIssues', 'images', 'files'])
                 ->latest(),
         ];
@@ -108,7 +108,7 @@ class IssueService
     {
         $issue->load([
             'subIssues' => fn ($query) => $query
-                ->with(['images', 'files', 'links', 'tags', 'project:id,name', 'parentIssue:id,title,project_id,parent_id'])
+                ->with(['images', 'files', 'links', 'tags', 'project:id,name', 'user:id,name', 'parentIssue:id,title,project_id,parent_id'])
                 ->withCount(['subIssues', 'images', 'files'])
                 ->latest(),
         ]);

@@ -469,24 +469,32 @@ class IssueController extends Controller
             }
 
             $matchingIssues = $matchingQuery
-                ->with('tags:id,name')
-                ->get(['id', 'project_id', 'title', 'status', 'updated_at'])
+                ->with([
+                    'user:id,name',
+                    'project:id,name,client_id',
+                    'project.client' => function ($query) {
+                        $query->withoutGlobalScope('user_owned')->select('id', 'name');
+                    },
+                    'parentIssue:id,title',
+                    'images',
+                    'files',
+                    'links',
+                    'tags',
+                ])
+                ->withCount(['subIssues', 'images', 'files'])
+                ->get()
                 ->map(function (Issue $matchingIssue) use ($issueTagIds) {
                     $matchingTags = $matchingIssue->tags
                         ->whereIn('id', $issueTagIds)
                         ->values();
 
-                    return [
-                        'id' => $matchingIssue->id,
-                        'project_id' => $matchingIssue->project_id,
-                        'title' => $matchingIssue->title,
-                        'status' => $matchingIssue->status,
-                        'matching_tag_count' => $matchingTags->count(),
-                        'matching_tags' => $matchingTags->map(fn (IssueTag $tag) => [
-                            'id' => $tag->id,
-                            'name' => $tag->name,
-                        ]),
-                    ];
+                    $matchingIssue->setAttribute('matching_tag_count', $matchingTags->count());
+                    $matchingIssue->setAttribute('matching_tags', $matchingTags->map(fn (IssueTag $tag) => [
+                        'id' => $tag->id,
+                        'name' => $tag->name,
+                    ])->values());
+
+                    return $matchingIssue;
                 })
                 ->values();
 

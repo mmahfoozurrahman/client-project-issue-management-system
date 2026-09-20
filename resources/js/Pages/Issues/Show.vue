@@ -7,6 +7,7 @@ import Modal from '../../Components/Modal.vue';
 import RichTextEditor from '../../Components/RichTextEditor.vue';
 import StatusPill from '../../Components/StatusPill.vue';
 import IssueTree from '../../Components/IssueTree.vue';
+import IssueQuickReadModal from '../../Components/IssueQuickReadModal.vue';
 import AppLayout from '../../Layouts/AppLayout.vue';
 import { formatDate } from '../../utils/date';
 import { convertBlobToJpegFile, getScreenshotFilename, formatFileSize } from '../../utils/image';
@@ -54,6 +55,14 @@ const updateForm = useForm({
     tag_names: (props.issue.tags ?? []).map((tag) => tag.name),
 });
 const deleteForm = useForm({});
+const quickReadModalOpen = ref(false);
+const activeQuickReadIssue = ref(null);
+
+const openQuickRead = (issue) => {
+    activeQuickReadIssue.value = issue;
+    quickReadModalOpen.value = true;
+};
+
 const childModalOpen = ref(false);
 const childForm = useForm({
     title: '',
@@ -923,27 +932,31 @@ const deleteLink = (link) => {
                     </div>
 
                     <div v-else class="list-group list-group-flush">
-                        <Link
+                        <div
                             v-for="relatedIssue in matchingIssues"
                             :key="relatedIssue.id"
-                            :href="`/issues/${relatedIssue.id}`"
-                            class="list-group-item list-group-item-action text-decoration-none d-flex justify-content-between align-items-start gap-3"
+                            class="list-group-item d-flex justify-content-between align-items-start gap-3"
                         >
-                            <div class="min-w-0">
-                                <strong class="d-block text-truncate">{{ relatedIssue.title }}</strong>
-                                <div class="d-flex flex-wrap gap-1 mt-2">
-                                    <Link v-for="tag in relatedIssue.matching_tags" :key="tag.id" :href="`/issues?tag_id=${tag.id}&project_id=${relatedIssue.project_id}`" class="badge rounded-pill text-bg-light border text-decoration-none">
+                            <div class="min-w-0 flex-grow-1">
+                                <Link :href="`/issues/${relatedIssue.id}`" class="fw-semibold text-decoration-none text-dark d-block text-truncate">
+                                    {{ relatedIssue.title }}
+                                </Link>
+                                <div v-if="(relatedIssue.matching_tags || relatedIssue.tags)?.length" class="d-flex flex-wrap gap-1 mt-2">
+                                    <Link v-for="tag in (relatedIssue.matching_tags || relatedIssue.tags)" :key="tag.id" :href="`/issues?tag_id=${tag.id}&project_id=${relatedIssue.project_id}`" class="badge rounded-pill text-bg-light border text-decoration-none">
                                         {{ tag.name }}
                                     </Link>
                                 </div>
                             </div>
                             <div class="text-end flex-shrink-0">
-                                <StatusPill :status="relatedIssue.status" size="sm" />
+                                <div class="d-flex align-items-center justify-content-end gap-2">
+                                    <StatusPill :status="relatedIssue.status" size="sm" />
+                                    <button type="button" class="btn btn-sm btn-light rounded-pill" @click="openQuickRead(relatedIssue)">Quick read</button>
+                                </div>
                                 <small class="text-muted d-block mt-2">
                                     {{ relatedIssue.matching_tag_count }} {{ relatedIssue.matching_tag_count === 1 ? 'matching tag' : 'matching tags' }}
                                 </small>
                             </div>
-                        </Link>
+                        </div>
                     </div>
                 </section>
 
@@ -1033,7 +1046,7 @@ const deleteLink = (link) => {
                         <button v-if="canCreate" class="btn btn-accent rounded-pill" @click="openChildModal(issue)">Create First Child</button>
                     </div>
 
-                    <IssueTree v-else :issues="nestedIssues" @create-child="openChildModal" />
+                    <IssueTree v-else :issues="nestedIssues" @create-child="openChildModal" @quick-read="openQuickRead" />
                 </section>
             </div>
         </div>
@@ -1321,6 +1334,8 @@ const deleteLink = (link) => {
             </div>
         </div>
     </Modal>
+
+    <IssueQuickReadModal v-model="quickReadModalOpen" :issue="activeQuickReadIssue" />
 </template>
 
 <style scoped>

@@ -19,7 +19,7 @@ const props = defineProps({
     },
 });
 
-const emit = defineEmits(['create-child']);
+const emit = defineEmits(['create-child', 'quick-read']);
 
 const normalizedIssues = computed(() => props.issues ?? []);
 
@@ -46,6 +46,7 @@ const issueNumber = (index) => [...props.path, index + 1].join('-');
                     <div class="nested-issue-meta">
                         <StatusPill :status="issue.status" size="sm" />
                         <span>{{ getChildren(issue).length }} children</span>
+                        <button type="button" class="btn btn-sm btn-light rounded-pill" @click="emit('quick-read', issue)">Quick read</button>
                         <button type="button" class="nested-add-btn" @click="emit('create-child', issue)">
                             <Plus :size="14" />
                             Child
@@ -60,6 +61,7 @@ const issueNumber = (index) => [...props.path, index + 1].join('-');
                 :path="[...path, index + 1]"
                 :depth="depth + 1"
                 @create-child="emit('create-child', $event)"
+                @quick-read="emit('quick-read', $event)"
             />
         </div>
     </div>
