@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import Swal from 'sweetalert2';
 import FormError from '../../Components/FormError.vue';
@@ -9,6 +9,7 @@ import StatusPill from '../../Components/StatusPill.vue';
 import IssueTree from '../../Components/IssueTree.vue';
 import AppLayout from '../../Layouts/AppLayout.vue';
 import { formatDate } from '../../utils/date';
+import { convertBlobToJpegFile, getScreenshotFilename, formatFileSize } from '../../utils/image';
 
 const props = defineProps({
     issue: Object,
@@ -85,21 +86,193 @@ const childTagSuggestions = computed(() => {
         (tag) => tag.name.toLowerCase().includes(query) && !childForm.tag_names.some((t) => t.toLowerCase() === tag.name.toLowerCase())
     );
 });
-const formatFileSize = (value) => {
-    if (!value && value !== 0) {
-        return 'Unknown size';
-    }
+const stagedUpdateImages = ref([]);
+const stagedChildImages = ref([]);
+const updateFileInputRef = ref(null);
+const childFileInputRef = ref(null);
+const isUploadingDirectly = ref(false);
 
-    if (value < 1024) {
-        return `${value} B`;
+const clearStagedUpdateImages = () => {
+    stagedUpdateImages.value.forEach((item) => {
+        if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+    });
+    stagedUpdateImages.value = [];
+    updateForm.images = [];
+    if (updateFileInputRef.value) {
+        updateFileInputRef.value.value = '';
     }
-
-    if (value < 1024 * 1024) {
-        return `${(value / 1024).toFixed(1)} KB`;
-    }
-
-    return `${(value / (1024 * 1024)).toFixed(1)} MB`;
 };
+
+const clearStagedChildImages = () => {
+    stagedChildImages.value.forEach((item) => {
+        if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+    });
+    stagedChildImages.value = [];
+    childForm.images = [];
+    if (childFileInputRef.value) {
+        childFileInputRef.value.value = '';
+    }
+};
+
+const removeStagedUpdateImage = (index) => {
+    const item = stagedUpdateImages.value[index];
+    if (item?.previewUrl) {
+        URL.revokeObjectURL(item.previewUrl);
+    }
+    stagedUpdateImages.value.splice(index, 1);
+    updateForm.images = stagedUpdateImages.value.map((i) => i.file);
+};
+
+const removeStagedChildImage = (index) => {
+    const item = stagedChildImages.value[index];
+    if (item?.previewUrl) {
+        URL.revokeObjectURL(item.previewUrl);
+    }
+    stagedChildImages.value.splice(index, 1);
+    childForm.images = stagedChildImages.value.map((i) => i.file);
+};
+
+const uploadStagedImagesNow = () => {
+    if (!stagedUpdateImages.value.length || isUploadingDirectly.value) return;
+
+    isUploadingDirectly.value = true;
+    const formData = new FormData();
+    stagedUpdateImages.value.forEach((item) => {
+        formData.append('images[]', item.file);
+    });
+
+    router.post(`/issues/${props.issue.id}/images`, formData, {
+        forceFormData: true,
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => {
+            clearStagedUpdateImages();
+            isUploadingDirectly.value = false;
+        },
+        onError: (errors) => {
+            isUploadingDirectly.value = false;
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                timer: 3500,
+                showConfirmButton: false,
+                icon: 'error',
+                title: Object.values(errors)[0] || 'Failed to upload image.',
+            });
+        },
+    });
+};
+
+const uploadDirectFiles = (files) => {
+    if (!files.length || isUploadingDirectly.value) return;
+
+    isUploadingDirectly.value = true;
+    const formData = new FormData();
+    files.forEach((file) => {
+        formData.append('images[]', file);
+    });
+
+    router.post(`/issues/${props.issue.id}/images`, formData, {
+        forceFormData: true,
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => {
+            isUploadingDirectly.value = false;
+        },
+        onError: (errors) => {
+            isUploadingDirectly.value = false;
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                timer: 3500,
+                showConfirmButton: false,
+                icon: 'error',
+                title: Object.values(errors)[0] || 'Failed to upload image.',
+            });
+        },
+    });
+};
+
+const handlePaste = async (event) => {
+    if (!props.canEdit && !props.canUploadAttachment && !props.canCreate) {
+        return;
+    }
+
+    const clipboardData = event.clipboardData || window.clipboardData;
+    if (!clipboardData) return;
+
+    const items = Array.from(clipboardData.items || []);
+    const imageItems = items.filter(
+        (item) => item.kind === 'file' && item.type && item.type.startsWith('image/')
+    );
+
+    if (imageItems.length === 0) {
+        return;
+    }
+
+    event.preventDefault();
+
+    const newStagedList = [];
+    let counter = 1;
+
+    for (const item of imageItems) {
+        const rawBlob = item.getAsFile();
+        if (!rawBlob) continue;
+
+        const filename = getScreenshotFilename(counter, imageItems.length);
+        counter++;
+
+        const jpegFile = await convertBlobToJpegFile(rawBlob, filename);
+        newStagedList.push({
+            id: 'paste_' + Math.random().toString(36).substring(2, 9),
+            file: jpegFile,
+            previewUrl: URL.createObjectURL(jpegFile),
+            isPasted: true,
+        });
+    }
+
+    if (!newStagedList.length) return;
+
+    if (childModalOpen.value) {
+        stagedChildImages.value.push(...newStagedList);
+        childForm.images = stagedChildImages.value.map((i) => i.file);
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            timer: 2600,
+            showConfirmButton: false,
+            icon: 'success',
+            title: newStagedList.length > 1
+                ? `📸 ${newStagedList.length} screenshots added to sub-issue (JPEG)`
+                : '📸 Screenshot added to sub-issue (JPEG)',
+        });
+    } else if (props.canEdit) {
+        stagedUpdateImages.value.push(...newStagedList);
+        updateForm.images = stagedUpdateImages.value.map((i) => i.file);
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            timer: 2800,
+            showConfirmButton: false,
+            icon: 'success',
+            title: newStagedList.length > 1
+                ? `📸 ${newStagedList.length} screenshots ready to upload (JPEG)`
+                : '📸 Screenshot captured as JPEG! Ready to upload',
+        });
+    } else if (props.canUploadAttachment) {
+        uploadDirectFiles(newStagedList.map((i) => i.file));
+    }
+};
+
+onMounted(() => {
+    window.addEventListener('paste', handlePaste);
+});
+
+onBeforeUnmount(() => {
+    window.removeEventListener('paste', handlePaste);
+    clearStagedUpdateImages();
+    clearStagedChildImages();
+});
 
 const submit = () => {
     updateForm.transform((data) => ({
@@ -107,6 +280,9 @@ const submit = () => {
         _method: 'put',
     })).post(`/issues/${props.issue.id}`, {
         forceFormData: true,
+        onSuccess: () => {
+            clearStagedUpdateImages();
+        },
     });
 };
 
@@ -129,16 +305,69 @@ const togglePin = () => {
     router.post(`/issues/${props.issue.id}/pin`, {}, { preserveScroll: true });
 };
 
-const onImageChange = (event) => {
-    updateForm.images = Array.from(event.target.files || []);
+const onImageChange = async (event) => {
+    const files = Array.from(event.target.files || []);
+    for (const file of files) {
+        let finalFile = file;
+        if (file.type !== 'image/jpeg' && file.type.startsWith('image/')) {
+            finalFile = await convertBlobToJpegFile(file, file.name);
+        }
+        stagedUpdateImages.value.push({
+            id: 'file_' + Math.random().toString(36).substring(2, 9),
+            file: finalFile,
+            previewUrl: URL.createObjectURL(finalFile),
+            isPasted: false,
+        });
+    }
+    updateForm.images = stagedUpdateImages.value.map((i) => i.file);
+    if (updateFileInputRef.value) {
+        updateFileInputRef.value.value = '';
+    }
+};
+
+const onImageDrop = async (event) => {
+    const files = Array.from(event.dataTransfer?.files || []).filter(
+        (f) => f.type && f.type.startsWith('image/')
+    );
+    if (!files.length) return;
+
+    for (const file of files) {
+        let finalFile = file;
+        if (file.type !== 'image/jpeg') {
+            finalFile = await convertBlobToJpegFile(file, file.name);
+        }
+        stagedUpdateImages.value.push({
+            id: 'drop_' + Math.random().toString(36).substring(2, 9),
+            file: finalFile,
+            previewUrl: URL.createObjectURL(finalFile),
+            isPasted: false,
+        });
+    }
+    updateForm.images = stagedUpdateImages.value.map((i) => i.file);
 };
 
 const onFileChange = (event) => {
     updateForm.files = Array.from(event.target.files || []);
 };
 
-const onChildImageChange = (event) => {
-    childForm.images = Array.from(event.target.files || []);
+const onChildImageChange = async (event) => {
+    const files = Array.from(event.target.files || []);
+    for (const file of files) {
+        let finalFile = file;
+        if (file.type !== 'image/jpeg' && file.type.startsWith('image/')) {
+            finalFile = await convertBlobToJpegFile(file, file.name);
+        }
+        stagedChildImages.value.push({
+            id: 'child_file_' + Math.random().toString(36).substring(2, 9),
+            file: finalFile,
+            previewUrl: URL.createObjectURL(finalFile),
+            isPasted: false,
+        });
+    }
+    childForm.images = stagedChildImages.value.map((i) => i.file);
+    if (childFileInputRef.value) {
+        childFileInputRef.value.value = '';
+    }
 };
 
 const onChildFileChange = (event) => {
@@ -204,6 +433,7 @@ const openChildModal = (parentIssue = props.issue) => {
 
 const resetChildForm = () => {
     childModalOpen.value = false;
+    clearStagedChildImages();
     childForm.reset();
     childForm.clearErrors();
     childForm.project_id = props.issue.project_id;
@@ -472,10 +702,82 @@ const deleteLink = (link) => {
                             <FormError :message="updateForm.errors.description" />
                         </div>
 
-                        <div>
-                            <label class="form-label">Add Images</label>
-                            <input type="file" multiple accept=".jpg,.jpeg,.png" class="form-control" :class="{ 'is-invalid-soft': updateForm.errors.images || updateForm.errors['images.0'] }" @change="onImageChange">
+                        <div @dragover.prevent @drop.prevent="onImageDrop">
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <label class="form-label mb-0">Add Images</label>
+                                <span class="badge text-bg-light border text-muted small">
+                                    💡 Tip: Press <kbd>Ctrl+V</kbd> to paste screenshot (JPEG)
+                                </span>
+                            </div>
+                            <input
+                                ref="updateFileInputRef"
+                                type="file"
+                                multiple
+                                accept=".jpg,.jpeg,.png"
+                                class="form-control"
+                                :class="{ 'is-invalid-soft': updateForm.errors.images || updateForm.errors['images.0'] }"
+                                @change="onImageChange"
+                            >
                             <FormError :message="updateForm.errors.images || updateForm.errors['images.0']" />
+
+                            <div v-if="stagedUpdateImages.length" class="staged-images-container mt-2 p-2 border rounded bg-light">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="small font-monospace text-muted fw-semibold">
+                                        {{ stagedUpdateImages.length }} image{{ stagedUpdateImages.length > 1 ? 's' : '' }} staged
+                                    </span>
+                                    <div class="d-flex gap-2">
+                                        <button
+                                            type="button"
+                                            class="btn btn-sm btn-accent rounded-pill px-3 d-inline-flex align-items-center gap-1"
+                                            :disabled="isUploadingDirectly"
+                                            @click="uploadStagedImagesNow"
+                                        >
+                                            <span v-if="isUploadingDirectly" class="spinner-border spinner-border-sm me-1" />
+                                            <span>Upload Now</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="btn btn-sm btn-outline-secondary rounded-pill"
+                                            :disabled="isUploadingDirectly"
+                                            @click="clearStagedUpdateImages"
+                                        >
+                                            Clear
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="staged-images-grid">
+                                    <div
+                                        v-for="(item, idx) in stagedUpdateImages"
+                                        :key="item.id"
+                                        class="staged-image-card"
+                                    >
+                                        <img :src="item.previewUrl" :alt="item.file.name" class="staged-image-thumb">
+                                        <div class="staged-image-info">
+                                            <span class="staged-image-name text-truncate" :title="item.file.name">{{ item.file.name }}</span>
+                                            <div class="d-flex align-items-center justify-content-between mt-1">
+                                                <span class="badge rounded-pill bg-white border text-dark font-monospace extra-small">
+                                                    {{ formatFileSize(item.file.size) }}
+                                                </span>
+                                                <span v-if="item.isPasted" class="badge rounded-pill text-bg-success extra-small">
+                                                    Pasted (JPEG)
+                                                </span>
+                                                <span v-else class="badge rounded-pill text-bg-secondary extra-small">
+                                                    JPEG
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            class="staged-image-remove-btn"
+                                            title="Remove image"
+                                            @click="removeStagedUpdateImage(idx)"
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div>
@@ -743,9 +1045,66 @@ const deleteLink = (link) => {
                 </div>
 
                 <div>
-                    <label class="form-label">Images</label>
-                    <input type="file" multiple accept=".jpg,.jpeg,.png" class="form-control" :class="{ 'is-invalid-soft': childForm.errors.images || childForm.errors['images.0'] }" @change="onChildImageChange">
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <label class="form-label mb-0">Images</label>
+                        <span class="badge text-bg-light border text-muted small">
+                            💡 Press <kbd>Ctrl+V</kbd> to paste screenshot (JPEG)
+                        </span>
+                    </div>
+                    <input
+                        ref="childFileInputRef"
+                        type="file"
+                        multiple
+                        accept=".jpg,.jpeg,.png"
+                        class="form-control"
+                        :class="{ 'is-invalid-soft': childForm.errors.images || childForm.errors['images.0'] }"
+                        @change="onChildImageChange"
+                    >
                     <FormError :message="childForm.errors.images || childForm.errors['images.0']" />
+
+                    <div v-if="stagedChildImages.length" class="staged-images-container mt-2 p-2 border rounded bg-light">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="small font-monospace text-muted fw-semibold">
+                                {{ stagedChildImages.length }} image{{ stagedChildImages.length > 1 ? 's' : '' }} attached
+                            </span>
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-secondary rounded-pill"
+                                @click="clearStagedChildImages"
+                            >
+                                Clear
+                            </button>
+                        </div>
+
+                        <div class="staged-images-grid">
+                            <div
+                                v-for="(item, idx) in stagedChildImages"
+                                :key="item.id"
+                                class="staged-image-card"
+                            >
+                                <img :src="item.previewUrl" :alt="item.file.name" class="staged-image-thumb">
+                                <div class="staged-image-info">
+                                    <span class="staged-image-name text-truncate" :title="item.file.name">{{ item.file.name }}</span>
+                                    <div class="d-flex align-items-center justify-content-between mt-1">
+                                        <span class="badge rounded-pill bg-white border text-dark font-monospace extra-small">
+                                            {{ formatFileSize(item.file.size) }}
+                                        </span>
+                                        <span v-if="item.isPasted" class="badge rounded-pill text-bg-success extra-small">
+                                            Pasted (JPEG)
+                                        </span>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    class="staged-image-remove-btn"
+                                    title="Remove image"
+                                    @click="removeStagedChildImage(idx)"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div>
@@ -977,5 +1336,75 @@ const deleteLink = (link) => {
         flex-direction: column;
         align-items: stretch;
     }
+}
+
+.staged-images-container {
+    background-color: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+}
+
+.staged-images-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 0.75rem;
+}
+
+.staged-image-card {
+    position: relative;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.staged-image-thumb {
+    width: 100%;
+    height: 90px;
+    object-fit: cover;
+    background: #f1f5f9;
+}
+
+.staged-image-info {
+    padding: 0.4rem 0.5rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.staged-image-name {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #334155;
+}
+
+.extra-small {
+    font-size: 0.68rem;
+    padding: 0.15rem 0.4rem;
+}
+
+.staged-image-remove-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 22px;
+    height: 22px;
+    line-height: 20px;
+    text-align: center;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0, 0, 0, 0.65);
+    color: #ffffff;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease;
+}
+
+.staged-image-remove-btn:hover {
+    background: #ef4444;
 }
 </style>

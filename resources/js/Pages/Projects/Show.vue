@@ -294,10 +294,67 @@
                     <FormError :message="form.errors.description" />
                 </div>
 
-                <div>
-                    <label class="form-label">Images</label>
-                    <input type="file" multiple accept=".jpg,.jpeg,.png" class="form-control" :class="{ 'is-invalid-soft': form.errors.images || form.errors['images.0'] }" @change="onImageChange">
+                <div @dragover.prevent @drop.prevent="onImageDrop">
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <label class="form-label mb-0">Images</label>
+                        <span class="badge text-bg-light border text-muted small">
+                            💡 Press <kbd>Ctrl+V</kbd> to paste screenshot (JPEG)
+                        </span>
+                    </div>
+                    <input
+                        ref="fileInputRef"
+                        type="file"
+                        multiple
+                        accept=".jpg,.jpeg,.png"
+                        class="form-control"
+                        :class="{ 'is-invalid-soft': form.errors.images || form.errors['images.0'] }"
+                        @change="onImageChange"
+                    >
                     <FormError :message="form.errors.images || form.errors['images.0']" />
+
+                    <div v-if="stagedImages.length" class="staged-images-container mt-2 p-2 border rounded bg-light">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="small font-monospace text-muted fw-semibold">
+                                {{ stagedImages.length }} image{{ stagedImages.length > 1 ? 's' : '' }} attached
+                            </span>
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-secondary rounded-pill"
+                                @click="clearStagedImages"
+                            >
+                                Clear
+                            </button>
+                        </div>
+
+                        <div class="staged-images-grid">
+                            <div
+                                v-for="(item, idx) in stagedImages"
+                                :key="item.id"
+                                class="staged-image-card"
+                            >
+                                <img :src="item.previewUrl" :alt="item.file.name" class="staged-image-thumb">
+                                <div class="staged-image-info">
+                                    <span class="staged-image-name text-truncate" :title="item.file.name">{{ item.file.name }}</span>
+                                    <div class="d-flex align-items-center justify-content-between mt-1">
+                                        <span class="badge rounded-pill bg-white border text-dark font-monospace extra-small">
+                                            {{ formatFileSize(item.file.size) }}
+                                        </span>
+                                        <span v-if="item.isPasted" class="badge rounded-pill text-bg-success extra-small">
+                                            Pasted (JPEG)
+                                        </span>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    class="staged-image-remove-btn"
+                                    title="Remove image"
+                                    @click="removeStagedImage(idx)"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div>
@@ -369,7 +426,7 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import Swal from 'sweetalert2';
 import FormError from '../../Components/FormError.vue';
@@ -381,6 +438,7 @@ import RichTextEditor from '../../Components/RichTextEditor.vue';
 import StatusPill from '../../Components/StatusPill.vue';
 import AppLayout from '../../Layouts/AppLayout.vue';
 import { formatIssueDate } from '../../utils/date';
+import { convertBlobToJpegFile, getScreenshotFilename, formatFileSize } from '../../utils/image';
 
 const props = defineProps({
     project: Object,
@@ -474,6 +532,7 @@ const submit = () => {
         forceFormData: true,
         onSuccess: () => {
             modalOpen.value = false;
+            clearStagedImages();
             form.reset('title', 'description', 'status', 'parent_id', 'images', 'files', 'tag_names');
             form.project_id = props.project.id;
         },
@@ -503,9 +562,133 @@ const scrollPinnedIssues = (direction) => {
 
 const handlePinnedIssuesResize = () => nextTick(updatePinnedScrollState);
 
-const onImageChange = (event) => {
-    form.images = Array.from(event.target.files || []);
+const stagedImages = ref([]);
+const fileInputRef = ref(null);
+
+const clearStagedImages = () => {
+    stagedImages.value.forEach((item) => {
+        if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+    });
+    stagedImages.value = [];
+    form.images = [];
+    if (fileInputRef.value) {
+        fileInputRef.value.value = '';
+    }
 };
+
+const removeStagedImage = (index) => {
+    const item = stagedImages.value[index];
+    if (item?.previewUrl) {
+        URL.revokeObjectURL(item.previewUrl);
+    }
+    stagedImages.value.splice(index, 1);
+    form.images = stagedImages.value.map((i) => i.file);
+};
+
+const onImageChange = async (event) => {
+    const files = Array.from(event.target.files || []);
+    for (const file of files) {
+        let finalFile = file;
+        if (file.type !== 'image/jpeg' && file.type.startsWith('image/')) {
+            finalFile = await convertBlobToJpegFile(file, file.name);
+        }
+        stagedImages.value.push({
+            id: 'file_' + Math.random().toString(36).substring(2, 9),
+            file: finalFile,
+            previewUrl: URL.createObjectURL(finalFile),
+            isPasted: false,
+        });
+    }
+    form.images = stagedImages.value.map((i) => i.file);
+    if (fileInputRef.value) {
+        fileInputRef.value.value = '';
+    }
+};
+
+const onImageDrop = async (event) => {
+    const files = Array.from(event.dataTransfer?.files || []).filter(
+        (f) => f.type && f.type.startsWith('image/')
+    );
+    if (!files.length) return;
+
+    for (const file of files) {
+        let finalFile = file;
+        if (file.type !== 'image/jpeg') {
+            finalFile = await convertBlobToJpegFile(file, file.name);
+        }
+        stagedImages.value.push({
+            id: 'drop_' + Math.random().toString(36).substring(2, 9),
+            file: finalFile,
+            previewUrl: URL.createObjectURL(finalFile),
+            isPasted: false,
+        });
+    }
+    form.images = stagedImages.value.map((i) => i.file);
+};
+
+const handlePaste = async (event) => {
+    if (!modalOpen.value) {
+        return;
+    }
+
+    const clipboardData = event.clipboardData || window.clipboardData;
+    if (!clipboardData) return;
+
+    const items = Array.from(clipboardData.items || []);
+    const imageItems = items.filter(
+        (item) => item.kind === 'file' && item.type && item.type.startsWith('image/')
+    );
+
+    if (imageItems.length === 0) {
+        return;
+    }
+
+    event.preventDefault();
+
+    const newStagedList = [];
+    let counter = 1;
+
+    for (const item of imageItems) {
+        const rawBlob = item.getAsFile();
+        if (!rawBlob) continue;
+
+        const filename = getScreenshotFilename(counter, imageItems.length);
+        counter++;
+
+        const jpegFile = await convertBlobToJpegFile(rawBlob, filename);
+        newStagedList.push({
+            id: 'paste_' + Math.random().toString(36).substring(2, 9),
+            file: jpegFile,
+            previewUrl: URL.createObjectURL(jpegFile),
+            isPasted: true,
+        });
+    }
+
+    if (!newStagedList.length) return;
+
+    stagedImages.value.push(...newStagedList);
+    form.images = stagedImages.value.map((i) => i.file);
+
+    Swal.fire({
+        toast: true,
+        position: 'top-end',
+        timer: 2600,
+        showConfirmButton: false,
+        icon: 'success',
+        title: newStagedList.length > 1
+            ? `📸 ${newStagedList.length} screenshots added to issue (JPEG)`
+            : '📸 Screenshot added to issue (JPEG)',
+    });
+};
+
+watch(modalOpen, (isOpen) => {
+    if (!isOpen) {
+        clearStagedImages();
+        form.reset('title', 'description', 'status', 'parent_id', 'images', 'files', 'tag_names');
+        form.project_id = props.project.id;
+        form.clearErrors();
+    }
+});
 
 const onFileChange = (event) => {
     form.files = Array.from(event.target.files || []);
@@ -582,11 +765,14 @@ const tagFilterLabel = computed(() => {
 onMounted(() => {
     document.addEventListener('click', closeTagFilterOnOutsideClick);
     window.addEventListener('resize', handlePinnedIssuesResize);
+    window.addEventListener('paste', handlePaste);
     nextTick(updatePinnedScrollState);
 });
 
 onBeforeUnmount(() => {
     document.removeEventListener('click', closeTagFilterOnOutsideClick);
     window.removeEventListener('resize', handlePinnedIssuesResize);
+    window.removeEventListener('paste', handlePaste);
+    clearStagedImages();
 });
 </script>

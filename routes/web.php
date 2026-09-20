@@ -46,6 +46,7 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/issues/{issue}/pin', [IssueController::class, 'togglePin'])->name('issues.pin.toggle');
     Route::get('/kanban', [IssueController::class, 'kanban'])->name('kanban');
     Route::resource('tags', TagController::class)->only(['index', 'store', 'update', 'destroy']);
+    Route::post('/issues/{issue}/images', [IssueController::class, 'uploadImages'])->name('issues.images.upload');
     Route::delete('/issues/images/{issueImage}', [IssueController::class, 'destroyImage'])->name('issues.images.destroy');
     Route::delete('/issues/files/{issueFile}', [IssueController::class, 'destroyFile'])->name('issues.files.destroy');
     Route::delete('/issues/links/{issueLink}', [IssueController::class, 'destroyLink'])->name('issues.links.destroy');

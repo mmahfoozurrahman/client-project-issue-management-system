@@ -584,6 +584,21 @@ class IssueController extends Controller
         return back()->with('success', $isPinned ? 'Issue unpinned.' : 'Issue pinned.');
     }
 
+    public function uploadImages(Request $request, Issue $issue): RedirectResponse
+    {
+        $canUpload = $request->user()->can('uploadAttachment', $issue) || $request->user()->can('update', $issue);
+        abort_unless($canUpload, 403);
+
+        $request->validate([
+            'images' => ['required', 'array', 'min:1'],
+            'images.*' => ['file', 'mimes:jpg,jpeg,png', 'max:10240'],
+        ]);
+
+        $this->issueService->storeAttachments($request, $issue);
+
+        return back()->with('success', 'Image(s) uploaded successfully.');
+    }
+
     public function destroyImage(IssueImage $issueImage): RedirectResponse
     {
         $issue = Issue::withoutGlobalScope('user_owned')->findOrFail($issueImage->issue_id);

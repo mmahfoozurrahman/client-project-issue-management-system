@@ -10,6 +10,23 @@ This is a newest-first record of features and meaningful product changes, consol
 
 ## Feature history (newest first)
 
+### Clipboard screenshot paste (Ctrl+V) as JPEG & staged image upload
+
+**Last updated:** 20th September, 2026
+
+- Added clipboard paste listener (`Ctrl+V`) across:
+  - **Issue Detail Page** ([Show.vue](file:///d:/Development/Projects/LaravelVue/5.%20LaravelInertiaVue/3.%20issue-listing-2/resources/js/Pages/Issues/Show.vue)) for editing and sub-issue creation.
+  - **Issues Library Page** ([Index.vue](file:///d:/Development/Projects/LaravelVue/5.%20LaravelInertiaVue/3.%20issue-listing-2/resources/js/Pages/Issues/Index.vue)) in the "Create Issue" modal.
+  - **Project Details Page** ([Projects/Show.vue](file:///d:/Development/Projects/LaravelVue/5.%20LaravelInertiaVue/3.%20issue-listing-2/resources/js/Pages/Projects/Show.vue)) in the "Create Issue" modal.
+- Extracted shared image helpers to [resources/js/utils/image.js](file:///d:/Development/Projects/LaravelVue/5.%20LaravelInertiaVue/3.%20issue-listing-2/resources/js/utils/image.js) with automatic canvas re-encoding to convert clipboard screenshots into compressed, standard JPEG format (`.jpg`, `image/jpeg` MIME type, 0.92 quality) with solid white background to prevent black boxes on transparent PNGs.
+- Created interactive staged images preview grid:
+  - Generates instant thumbnail previews via `URL.createObjectURL`.
+  - Shows file name, formatted file size, and `Pasted (JPEG)` indicator pills.
+  - Per-image remove (`×`) buttons to discard unwanted screenshots before uploading.
+  - Drag-and-drop and file picker integration.
+- Added instant 1-click **"Upload Now"** button and dedicated backend route `POST /issues/{issue}/images` (`IssueController@uploadImages`) on the Issue Show page.
+- Submitting issue forms seamlessly uploads all staged images alongside the issue.
+
 ### Debounced live search suggestions with description matching & 2-character rule
 
 **Last updated:** 12th September, 2026
