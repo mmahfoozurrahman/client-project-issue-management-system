@@ -491,8 +491,14 @@ const modalFeedRef = ref(null);
 
 const scrollToModalImage = (index) => {
     activeImageIndex.value = index;
+    const feed = modalFeedRef.value;
     const target = document.getElementById(`modal-image-entry-${index}`);
-    if (target) {
+    if (feed && target) {
+        feed.scrollTo({
+            top: target.offsetTop - feed.offsetTop - 10,
+            behavior: 'smooth',
+        });
+    } else if (target) {
         target.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 };
@@ -502,11 +508,17 @@ const openImageModal = (index = 0) => {
     imageModalOpen.value = true;
     nextTick(() => {
         setTimeout(() => {
+            const feed = modalFeedRef.value;
             const target = document.getElementById(`modal-image-entry-${index}`);
-            if (target) {
+            if (feed && target) {
+                feed.scrollTo({
+                    top: target.offsetTop - feed.offsetTop - 10,
+                    behavior: 'auto',
+                });
+            } else if (target) {
                 target.scrollIntoView({ behavior: 'auto', block: 'start' });
             }
-        }, 60);
+        }, 100);
     });
 };
 
@@ -1528,26 +1540,26 @@ const deleteLink = (link) => {
     position: sticky;
     top: -12px;
     z-index: 10;
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(255, 255, 255, 0.96);
     backdrop-filter: blur(8px);
     padding: 0.6rem 0.5rem;
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem;
     border-radius: 12px;
 }
 
 .modal-image-feed {
     display: flex;
     flex-direction: column;
-    gap: 1.75rem;
-    max-height: min(78vh, 760px);
+    gap: 2.25rem;
+    max-height: calc(85vh - 130px);
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 0.25rem 0.5rem 0.75rem 0.25rem;
+    padding: 0.25rem 0.5rem 2rem 0.25rem;
     scroll-behavior: smooth;
 }
 
 .modal-image-feed::-webkit-scrollbar {
-    width: 7px;
+    width: 8px;
 }
 
 .modal-image-feed::-webkit-scrollbar-track {
@@ -1556,7 +1568,7 @@ const deleteLink = (link) => {
 }
 
 .modal-image-feed::-webkit-scrollbar-thumb {
-    background: rgba(15, 118, 110, 0.28);
+    background: rgba(15, 118, 110, 0.3);
     border-radius: 999px;
 }
 
@@ -1565,10 +1577,13 @@ const deleteLink = (link) => {
 }
 
 .image-feed-card {
+    flex: 0 0 auto !important;
+    width: 100%;
+    min-height: fit-content;
     background: #ffffff;
-    border: 1px solid rgba(15, 23, 42, 0.1);
+    border: 1px solid rgba(15, 23, 42, 0.12);
     border-radius: 16px;
-    box-shadow: 0 4px 18px rgba(15, 23, 42, 0.05);
+    box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
     overflow: hidden;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -1579,42 +1594,31 @@ const deleteLink = (link) => {
 }
 
 .image-feed-header {
-    padding: 0.75rem 1.1rem;
-    background: linear-gradient(180deg, #fafafa 0%, #f4f5f7 100%);
-    border-bottom: 1px solid rgba(15, 23, 42, 0.07);
+    padding: 0.8rem 1.15rem;
+    background: linear-gradient(180deg, #fcfcfc 0%, #f3f4f6 100%);
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
 }
 
 .image-feed-canvas {
+    display: block;
+    width: 100%;
     background: #0f172a08;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 200px;
-    padding: 0.5rem;
+    padding: 0;
 }
 
 .image-feed-link {
+    display: block;
     width: 100%;
-    text-align: center;
     cursor: zoom-in;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    text-align: center;
 }
 
 .image-feed-img {
-    max-width: 100%;
-    width: 100%;
-    height: auto;
-    max-height: 78vh;
-    object-fit: contain;
     display: block;
+    width: 100%;
+    max-width: 100%;
+    height: auto !important;
     margin: 0 auto;
-    border-radius: 10px;
-    transition: transform 0.15s ease;
-}
-
-.image-feed-card:hover .image-feed-img {
-    transform: scale(1.002);
+    border-radius: 0 0 16px 16px;
 }
 </style>
