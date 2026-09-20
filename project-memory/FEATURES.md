@@ -4,11 +4,25 @@ This is a newest-first record of features and meaningful product changes, consol
 
 ## Current snapshot
 
-- **Latest commit:** `23fb942` - align TTS narration service with reference capabilities.
+- **Latest commit:** `ac02edb` - fix: prevent flex-shrink collapse on issue image modal cards and restore full image height.
 - **Workflow:** Clients -> Projects -> Issues -> Sub-Issues.
 - **Stack:** Laravel 13, PHP 8.3+, MySQL, Vue 3, Inertia.js, Vite, Bootstrap 5, SweetAlert2, TipTap, and Chart.js.
 
 ## Feature history (newest first)
+
+### Feed-style vertical scroll issue image modal & project workflow process
+
+**Last updated:** 21st September, 2026
+
+- Redesigned issue image popup modal on the Issue Show page ([Show.vue](file:///d:/Development/Projects/LaravelVue/5.%20LaravelInertiaVue/3.%20issue-listing-2/resources/js/Pages/Issues/Show.vue)):
+  - Upgraded modal width from `modal-lg` to `.modal-xl` (`1020px` max-width in [app.css](file:///d:/Development/Projects/LaravelVue/5.%20LaravelInertiaVue/3.%20issue-listing-2/resources/css/app.css) with responsive breakpoint rules).
+  - Replaced cramped horizontal pagination controls (side Prev/Next buttons) with full-width, Facebook feed single-image style cards.
+  - Implemented smooth vertical scrolling for issues with multiple images (`max-height: calc(85vh - 130px)`), allowing natural mouse-wheel and trackpad exploration.
+  - Added sticky quick-jump pill navigation (`#1`, `#2`, `#3`...) with active pill highlighting tracked during vertical scrolling.
+  - Thumbnail clicks in the gallery grid smoothly open the modal directly scrolled to the selected image.
+  - Each image card includes a clean metadata header: image counter (`1 / 6`), filename tooltip, file size badge, and 1-click action buttons: ↗ **Full Size** (new tab), ⬇ **Download**, and **Delete** (permission-aware).
+  - Resolved flex-shrink collapse via `flex: 0 0 auto !important` and block image layout to guarantee natural proportional heights for all screenshots without cropping or distortion.
+- Established project-wide guidance and verification workflow in [project-memory/WORKFLOW.md](file:///d:/Development/Projects/LaravelVue/5.%20LaravelInertiaVue/3.%20issue-listing-2/project-memory/WORKFLOW.md) and linked it in [CODE_STRUCTURE.md](file:///d:/Development/Projects/LaravelVue/5.%20LaravelInertiaVue/3.%20issue-listing-2/project-memory/CODE_STRUCTURE.md).
 
 ### Related issues combined tag matching (AND-match)
 
