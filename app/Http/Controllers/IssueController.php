@@ -460,12 +460,17 @@ class IssueController extends Controller
         $matchingIssues = collect();
 
         if ($issueTagIds->isNotEmpty()) {
-            $matchingIssues = Issue::withoutGlobalScope('user_owned')
+            $matchingQuery = Issue::withoutGlobalScope('user_owned')
                 ->where('project_id', $issue->project_id)
-                ->whereKeyNot($issue->id)
-                ->whereHas('tags', fn ($query) => $query->whereIn('issue_tags.id', $issueTagIds))
+                ->whereKeyNot($issue->id);
+
+            foreach ($issueTagIds as $tagId) {
+                $matchingQuery->whereHas('tags', fn ($query) => $query->where('issue_tags.id', $tagId));
+            }
+
+            $matchingIssues = $matchingQuery
                 ->with('tags:id,name')
-                ->get(['id', 'title', 'status', 'updated_at'])
+                ->get(['id', 'project_id', 'title', 'status', 'updated_at'])
                 ->map(function (Issue $matchingIssue) use ($issueTagIds) {
                     $matchingTags = $matchingIssue->tags
                         ->whereIn('id', $issueTagIds)
@@ -473,6 +478,7 @@ class IssueController extends Controller
 
                     return [
                         'id' => $matchingIssue->id,
+                        'project_id' => $matchingIssue->project_id,
                         'title' => $matchingIssue->title,
                         'status' => $matchingIssue->status,
                         'matching_tag_count' => $matchingTags->count(),

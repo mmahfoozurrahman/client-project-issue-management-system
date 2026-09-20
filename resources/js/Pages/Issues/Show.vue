@@ -885,7 +885,7 @@ const deleteLink = (link) => {
 
                     <div v-if="!matchingIssues.length" class="empty-state-card">
                         <strong>No related issues yet</strong>
-                        <p>Issues in this project that share one or more of these tags will appear here.</p>
+                        <p>Issues in this project that share all of these tags will appear here.</p>
                     </div>
 
                     <div v-else class="list-group list-group-flush">

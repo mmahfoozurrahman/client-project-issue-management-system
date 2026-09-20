@@ -10,6 +10,17 @@ This is a newest-first record of features and meaningful product changes, consol
 
 ## Feature history (newest first)
 
+### Related issues combined tag matching (AND-match)
+
+**Last updated:** 20th September, 2026
+
+- Updated related issues query on the Issue Detail page (`IssueController@show`):
+  - Changed tag matching from disjunction (`whereIn`, matching any tag) to conjunction (`whereHas` for each tag, matching all combined tags).
+  - An issue with multiple tags (e.g. `[46. Developer Mindsets, RabbilHasan]`) will now only display related issues that possess all of those tags combined, rather than issues with only one of them.
+  - Selected and returned `project_id` in the matching issues payload to ensure tag links route correctly.
+- Updated empty state copy on `Issues/Show.vue` from *"share one or more of these tags"* to *"share all of these tags"*.
+- Added automated feature tests in `tests/Feature/IssueRelatedTagsTest.php`.
+
 ### Clipboard screenshot paste (Ctrl+V) as JPEG & staged image upload
 
 **Last updated:** 20th September, 2026
