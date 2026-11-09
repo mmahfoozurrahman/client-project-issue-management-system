@@ -112,7 +112,7 @@ function setLink() {
                 <button type="button" :class="{ active: editor.isActive('italic') }" title="Italic" aria-label="Italic" @click="editor.chain().focus().toggleItalic().run()"><em>I</em></button>
                 <button type="button" :class="{ active: editor.isActive('underline') }" title="Underline" aria-label="Underline" @click="editor.chain().focus().toggleUnderline().run()"><u>U</u></button>
                 <button type="button" :class="{ active: editor.isActive('strike') }" title="Strikethrough" aria-label="Strikethrough" @click="editor.chain().focus().toggleStrike().run()"><s>S</s></button>
-                <button type="button" :class="{ active: editor.isActive('highlight') }" title="Yellow highlight" aria-label="Yellow highlight" @click="editor.chain().focus().toggleHighlight().run()"><mark>Highlight</mark></button>
+                <button type="button" :class="{ active: editor.isActive('highlight') }" title="Yellow highlight (Ctrl+Shift+H)" aria-label="Yellow highlight (Ctrl+Shift+H)" @click="editor.chain().focus().toggleHighlight().run()"><mark>Highlight</mark></button>
             </div>
 
             <div class="editor-tool-group">
