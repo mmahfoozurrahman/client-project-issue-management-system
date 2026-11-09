@@ -4,7 +4,7 @@ This is a newest-first record of features and meaningful product changes, consol
 
 ## Current snapshot
 
-- **Latest commit:** `f46ebc3` - feat(projects): sort project issue list by most recently edited (updated_at).
+- **Latest commit:** `db93e69` - fix(projects): rename issue date badge from Completed to Updated.
 - **Workflow:** Clients -> Projects -> Issues -> Sub-Issues.
 - **Stack:** Laravel 13, PHP 8.3+, MySQL, Vue 3, Inertia.js, Vite, Bootstrap 5, SweetAlert2, TipTap, and Chart.js.
 
@@ -19,6 +19,7 @@ This is a newest-first record of features and meaningful product changes, consol
   - Editing an issue moves it back to the top of the list, so the most recently edited issue is always listed first. Status changes also touch `updated_at`, so those rise to the top as well.
   - The `id DESC` tiebreaker keeps the ordering deterministic when multiple issues share the same timestamp.
 - Added feature tests in `tests/Feature/ProjectIssueOrderingTest.php` covering both the "newly created issue is first" and "edited issue rises to the top" behaviours.
+- Renamed the per-issue date badge on `Projects/Show.vue` from "Completed" to "Updated" (it renders `updated_at`), so the label matches the last-edited sort order and stays consistent with the "Updated" label already used in `IssueQuickReadModal.vue`.
 
 ### Issue Show page responsive breakpoint fixes (992–1199px)
 
