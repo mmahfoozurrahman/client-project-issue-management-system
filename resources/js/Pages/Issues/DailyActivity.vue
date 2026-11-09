@@ -4,6 +4,7 @@ import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import StatusPill from '../../Components/StatusPill.vue';
 import IssueQuickReadModal from '../../Components/IssueQuickReadModal.vue';
 import AppLayout from '../../Layouts/AppLayout.vue';
+import { issueUrl } from '../../utils/issue';
 
 const props = defineProps({
     issues: Array,
@@ -286,7 +287,7 @@ const carryoverIdleClass = (issue) => {
                             <td>{{ issue.title }}</td>
                             <td><StatusPill :status="issue.status" /></td>
                             <td :class="carryoverIdleClass(issue)">{{ staleAgeLabel(issue) }}</td>
-                            <td class="text-end"><div class="table-actions justify-content-end"><button type="button" class="btn btn-sm btn-light rounded-pill" @click="openQuickRead(issue)">Quick read</button><Link :href="`/issues/${issue.id}`" class="btn btn-sm btn-light rounded-pill">Open</Link></div></td>
+                            <td class="text-end"><div class="table-actions justify-content-end"><button type="button" class="btn btn-sm btn-light rounded-pill" @click="openQuickRead(issue)">Quick read</button><Link :href="issueUrl(issue)" class="btn btn-sm btn-light rounded-pill">Open</Link></div></td>
                         </tr>
                         <tr v-if="!(carryoverIssues?.length)">
                             <td colspan="4"><div class="table-empty">No carryover issues for this filter scope.</div></td>
@@ -341,7 +342,7 @@ const carryoverIdleClass = (issue) => {
                             <td data-label="Action">
                                 <div class="table-actions">
                                     <button type="button" class="btn btn-sm btn-light rounded-pill" @click="openQuickRead(issue)">Quick read</button>
-                                    <Link :href="`/issues/${issue.id}`" class="btn btn-sm btn-light rounded-pill">Open</Link>
+                                    <Link :href="issueUrl(issue)" class="btn btn-sm btn-light rounded-pill">Open</Link>
                                 </div>
                             </td>
                         </tr>

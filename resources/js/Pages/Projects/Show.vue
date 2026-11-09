@@ -49,7 +49,7 @@
                         <div class="d-flex align-items-start gap-2">
                             <span class="table-avatar issue flex-shrink-0">{{ issue.title.slice(0, 1) }}</span>
                             <div class="min-w-0">
-                                <Link :href="`/issues/${issue.id}`" class="fw-semibold text-decoration-none text-dark d-block">{{ issue.title }}</Link>
+                                <Link :href="issueUrl(issue)" class="fw-semibold text-decoration-none text-dark d-block">{{ issue.title }}</Link>
                                 <div v-if="issue.tags?.length" class="d-flex flex-wrap gap-1 mt-2">
                                     <Link v-for="tag in issue.tags" :key="tag.id" :href="`/issues?tag_id=${tag.id}&project_id=${issue.project_id}`" class="badge rounded-pill text-bg-light border text-decoration-none">{{ tag.name }}</Link>
                                 </div>
@@ -155,7 +155,7 @@
                                         {{ issue.is_pinned ? 'Unpin' : 'Pin' }}
                                     </button>
                                     <button type="button" class="btn btn-sm btn-light rounded-pill" @click="openQuickRead(issue)">Quick read</button>
-                                    <Link :href="`/issues/${issue.id}`" class="btn btn-sm btn-light rounded-pill">Open</Link>
+                                    <Link :href="issueUrl(issue)" class="btn btn-sm btn-light rounded-pill">Open</Link>
                                 </div>
                             </td>
                         </tr>
@@ -439,6 +439,7 @@ import StatusPill from '../../Components/StatusPill.vue';
 import AppLayout from '../../Layouts/AppLayout.vue';
 import { formatIssueDate } from '../../utils/date';
 import { convertBlobToJpegFile, getScreenshotFilename, formatFileSize } from '../../utils/image';
+import { issueUrl } from '../../utils/issue';
 
 const props = defineProps({
     project: Object,

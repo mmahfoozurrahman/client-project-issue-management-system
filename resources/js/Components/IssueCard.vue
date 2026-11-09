@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { FolderKanban, Image as ImageIcon, ListChecks, Plus } from 'lucide-vue-next';
 import StatusPill from './StatusPill.vue';
+import { issueUrl } from '../utils/issue';
 
 const props = defineProps({
     issue: {
@@ -36,7 +37,7 @@ const subIssueCount = computed(() => props.issue.sub_issues_count ?? props.issue
             <span>Add child</span>
         </button>
 
-        <Link :href="`/issues/${issue.id}`" class="text-decoration-none text-reset d-block h-100">
+        <Link :href="issueUrl(issue)" class="text-decoration-none text-reset d-block h-100">
             <div class="issue-thumb">
                 <img v-if="thumbnail" :src="thumbnail" :alt="issue.title">
                 <div v-else class="issue-thumb-empty">

@@ -10,6 +10,7 @@ import SkeletonCard from '../../Components/SkeletonCard.vue';
 import Pagination from '../../Components/Pagination.vue';
 import RichTextEditor from '../../Components/RichTextEditor.vue';
 import StatusPill from '../../Components/StatusPill.vue';
+import { issueUrl } from '../../utils/issue';
 import AppLayout from '../../Layouts/AppLayout.vue';
 import { formatIssueDate } from '../../utils/date';
 import { convertBlobToJpegFile, getScreenshotFilename, formatFileSize } from '../../utils/image';
@@ -380,7 +381,7 @@ const idleMetaClass = (issue) => {
                                         {{ issue.is_pinned ? 'Unpin' : 'Pin' }}
                                     </button>
                                     <button type="button" class="btn btn-sm btn-light rounded-pill" @click="openQuickRead(issue)">Quick read</button>
-                                    <Link :href="`/issues/${issue.id}`" class="btn btn-sm btn-light rounded-pill">Open</Link>
+                                    <Link :href="issueUrl(issue)" class="btn btn-sm btn-light rounded-pill">Open</Link>
                                 </div>
                             </td>
                         </tr>

@@ -441,10 +441,14 @@ class IssueController extends Controller
         $this->issueService->syncTags($validated['tag_names'] ?? null, $issue, $project->id);
 
         if ($returnToIssue) {
-            return redirect()->route('issues.show', $returnToIssue)->with('success', "Sub-issue {$issue->title} created successfully.");
+            $returnToIssue->load('tags');
+
+            return redirect()->to($returnToIssue->url)->with('success', "Sub-issue {$issue->title} created successfully.");
         }
 
-        return redirect()->route('issues.show', $issue)->with('success', "Issue {$issue->title} created successfully.");
+        $issue->load('tags');
+
+        return redirect()->to($issue->url)->with('success', "Issue {$issue->title} created successfully.");
     }
 
     public function show(Issue $issue): Response
@@ -561,7 +565,9 @@ class IssueController extends Controller
         $this->issueService->syncLinks($validated['links'] ?? null, $issue);
         $this->issueService->syncTags($validated['tag_names'] ?? null, $issue, $project->id);
 
-        return redirect()->route('issues.show', $issue)->with('success', "Issue {$issue->title} updated successfully.");
+        $issue->load('tags');
+
+        return redirect()->to($issue->url)->with('success', "Issue {$issue->title} updated successfully.");
     }
 
     public function destroy(Issue $issue): RedirectResponse

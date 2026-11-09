@@ -11,6 +11,7 @@ import IssueQuickReadModal from '../../Components/IssueQuickReadModal.vue';
 import AppLayout from '../../Layouts/AppLayout.vue';
 import { formatDate } from '../../utils/date';
 import { convertBlobToJpegFile, getScreenshotFilename, formatFileSize } from '../../utils/image';
+import { issueUrl } from '../../utils/issue';
 
 const props = defineProps({
     issue: Object,
@@ -668,7 +669,7 @@ const deleteLink = (link) => {
             <div class="context-stat">
                 <span>Parent Issue</span>
                 <strong v-if="parentIssue">
-                    <Link :href="`/issues/${parentIssue.id}`">{{ parentIssue.title }}</Link>
+                    <Link :href="issueUrl(parentIssue)">{{ parentIssue.title }}</Link>
                 </strong>
                 <strong v-else>Top-level issue</strong>
             </div>
@@ -938,7 +939,7 @@ const deleteLink = (link) => {
                             class="list-group-item d-flex justify-content-between align-items-start gap-3"
                         >
                             <div class="min-w-0 flex-grow-1">
-                                <Link :href="`/issues/${relatedIssue.id}`" class="fw-semibold text-decoration-none text-dark d-block text-truncate">
+                                <Link :href="issueUrl(relatedIssue)" class="fw-semibold text-decoration-none text-dark d-block text-truncate">
                                     {{ relatedIssue.title }}
                                 </Link>
                                 <div v-if="(relatedIssue.matching_tags || relatedIssue.tags)?.length" class="d-flex flex-wrap gap-1 mt-2">

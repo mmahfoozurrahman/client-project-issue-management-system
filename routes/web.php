@@ -42,7 +42,7 @@ Route::middleware('auth')->group(function (): void {
 
     Route::get('/issues/daily-activity', [IssueController::class, 'dailyActivity'])->name('issues.daily-activity');
     Route::get('/issues/search-suggestions', [IssueController::class, 'searchSuggestions'])->name('issues.search-suggestions');
-    Route::resource('issues', IssueController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+    Route::resource('issues', IssueController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::post('/issues/{issue}/pin', [IssueController::class, 'togglePin'])->name('issues.pin.toggle');
     Route::get('/kanban', [IssueController::class, 'kanban'])->name('kanban');
     Route::resource('tags', TagController::class)->only(['index', 'store', 'update', 'destroy']);
@@ -54,6 +54,10 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/issues/{issue}/narration', [IssueNarrationController::class, 'show'])->name('issues.narration.show');
     Route::post('/issues/{issue}/narration', [IssueNarrationController::class, 'generate'])->name('issues.narration.generate');
     Route::get('/issues/{issue}/narration/{track}', [IssueNarrationController::class, 'audio'])->name('issues.narration.audio');
+
+    // Issue detail route with an optional SEO-friendly title slug, e.g. /issues/533/suura-al-kafiruun.
+    // Registered last so it never shadows the more specific /issues/* routes above.
+    Route::get('/issues/{issue}/{slug?}', [IssueController::class, 'show'])->name('issues.show');
 
     Route::prefix('admin')->name('admin.')->middleware('admin')->group(function (): void {
 

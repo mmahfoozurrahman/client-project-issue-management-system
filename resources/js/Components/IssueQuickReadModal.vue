@@ -16,7 +16,7 @@
                     <svg v-else viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
                     {{ isPlaying ? 'Pause narration' : (isPaused ? 'Resume narration' : 'Play narration') }}
                 </button>
-                <Link :href="`/issues/${issue.id}`" class="btn btn-sm btn-outline-secondary rounded-pill">Open full issue</Link>
+                <Link :href="issueUrl(issue)" class="btn btn-sm btn-outline-secondary rounded-pill">Open full issue</Link>
                 <span v-if="issue.parent_issue || issue.parentIssue" class="badge rounded-pill text-bg-light border">Parent: {{ (issue.parent_issue ?? issue.parentIssue)?.title }}</span>
                 <span v-if="issue.user?.name" class="text-muted small">Created by {{ issue.user.name }}</span>
                 <span class="text-muted small">Created {{ formatIssueDate(issue.created_at) }}</span>
@@ -96,7 +96,7 @@
             <div v-if="issue.files?.length"><p class="section-kicker mb-2">Files</p><div class="list-group list-group-flush border rounded-3"><a v-for="file in issue.files" :key="file.id" :href="file.url" target="_blank" rel="noopener noreferrer" class="list-group-item list-group-item-action">{{ file.original_name || 'Attachment' }}</a></div></div>
             <div v-if="issue.links?.length"><p class="section-kicker mb-2">Links</p><div class="list-group list-group-flush border rounded-3"><a v-for="link in issue.links" :key="link.id" :href="link.url" target="_blank" rel="noopener noreferrer" class="list-group-item list-group-item-action">{{ link.label || link.url }}</a></div></div>
 
-            <div class="d-flex justify-content-end"><Link :href="`/issues/${issue.id}`" class="btn btn-outline-secondary rounded-pill">Open full issue</Link></div>
+            <div class="d-flex justify-content-end"><Link :href="issueUrl(issue)" class="btn btn-outline-secondary rounded-pill">Open full issue</Link></div>
         </article>
     </Modal>
 </template>
@@ -108,6 +108,7 @@ import Modal from './Modal.vue';
 import StatusPill from './StatusPill.vue';
 import { formatIssueDate } from '../utils/date';
 import { useIssueNarration } from '../composables/useIssueNarration';
+import { issueUrl } from '../utils/issue';
 
 const props = defineProps({ modelValue: Boolean, issue: { type: Object, default: null } });
 const emit = defineEmits(['update:modelValue']);

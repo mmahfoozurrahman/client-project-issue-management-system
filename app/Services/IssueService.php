@@ -23,6 +23,7 @@ class IssueService
             'links',
             'tags',
             'parentIssue:id,title,project_id,parent_id',
+            'parentIssue.tags',
             'subIssues' => fn ($query) => $query
                 ->with(['images', 'files', 'links', 'tags', 'project:id,name', 'user:id,name', 'parentIssue:id,title,project_id,parent_id'])
                 ->withCount(['subIssues', 'images', 'files'])

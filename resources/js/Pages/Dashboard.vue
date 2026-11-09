@@ -1,6 +1,7 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
+import { issueUrl } from '../utils/issue';
 import {
     ArcElement,
     BarController,
@@ -493,7 +494,7 @@ onBeforeUnmount(() => {
                             <td>{{ issue.title }}</td>
                             <td><StatusPill :status="issue.status" /></td>
                             <td :class="idleSeverityClass(issue)">{{ staleAgeLabel(issue) }}</td>
-                            <td class="text-end"><div class="table-actions justify-content-end"><button type="button" class="btn btn-sm btn-light rounded-pill" @click="openQuickRead(issue)">Quick read</button><Link :href="`/issues/${issue.id}`" class="btn btn-sm btn-light rounded-pill">Open</Link></div></td>
+                            <td class="text-end"><div class="table-actions justify-content-end"><button type="button" class="btn btn-sm btn-light rounded-pill" @click="openQuickRead(issue)">Quick read</button><Link :href="issueUrl(issue)" class="btn btn-sm btn-light rounded-pill">Open</Link></div></td>
                         </tr>
                         <tr v-if="!(pendingNudges?.focus_issues?.length)">
                             <td colspan="4">
@@ -563,7 +564,7 @@ onBeforeUnmount(() => {
                             <td data-label="Action">
                                 <div class="table-actions">
                                     <button type="button" class="btn btn-sm btn-light rounded-pill" @click="openQuickRead(issue)">Quick read</button>
-                                    <Link :href="`/issues/${issue.id}`" class="btn btn-sm btn-light rounded-pill">Open</Link>
+                                    <Link :href="issueUrl(issue)" class="btn btn-sm btn-light rounded-pill">Open</Link>
                                 </div>
                             </td>
                         </tr>

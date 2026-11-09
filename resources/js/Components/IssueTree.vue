@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import { Plus } from 'lucide-vue-next';
 import StatusPill from './StatusPill.vue';
+import { issueUrl } from '../utils/issue';
 
 const props = defineProps({
     issues: {
@@ -36,7 +37,7 @@ const issueNumber = (index) => [...props.path, index + 1].join('-');
                     <div class="nested-issue-header">
                         <span class="nested-depth-marker">{{ issueNumber(index) }}</span>
                         <div class="nested-issue-title-block">
-                            <Link :href="`/issues/${issue.id}`" class="nested-issue-title-link">
+                            <Link :href="issueUrl(issue)" class="nested-issue-title-link">
                                 <strong class="nested-issue-title">{{ issue.title }}</strong>
                             </Link>
                             <div v-if="issue.tags?.length" class="nested-issue-tags">
