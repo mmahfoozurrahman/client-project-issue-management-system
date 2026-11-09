@@ -67,6 +67,55 @@
             </div>
         </section>
 
+        <section class="panel-card mb-4">
+            <div class="panel-header">
+                <div>
+                    <p class="section-kicker">Project Progress</p>
+                    <h3 class="panel-title">Completion overview</h3>
+                </div>
+                <span class="badge rounded-pill text-bg-light border">{{ progressPercent }}% complete</span>
+            </div>
+
+            <div class="project-progress-hero">
+                <div class="project-progress-figure">
+                    <strong>{{ progressPercent }}%</strong>
+                    <span>{{ progressDone }} of {{ progressTotal }} top-level issues done</span>
+                </div>
+
+                <div
+                    class="project-progress-meter"
+                    role="img"
+                    :aria-label="`${progressPercent}% of top-level issues completed`"
+                >
+                    <span class="project-progress-segment is-todo" :style="{ width: progressTodoWidth }" />
+                    <span class="project-progress-segment is-inprogress" :style="{ width: progressInProgressWidth }" />
+                    <span class="project-progress-segment is-done" :style="{ width: progressDoneWidth }" />
+                </div>
+            </div>
+
+            <div class="project-progress-stats">
+                <article class="project-progress-stat is-todo">
+                    <span>Todo</span>
+                    <strong>{{ progressTodo }}</strong>
+                    <small>{{ progressTodoShare }}% of all issues</small>
+                </article>
+                <article class="project-progress-stat is-inprogress">
+                    <span>In Progress</span>
+                    <strong>{{ progressInProgress }}</strong>
+                    <small>{{ progressInProgressShare }}% of all issues</small>
+                </article>
+                <article class="project-progress-stat is-done">
+                    <span>Done</span>
+                    <strong>{{ progressDone }}</strong>
+                    <small>{{ progressDoneShare }}% of all issues</small>
+                </article>
+            </div>
+
+            <p v-if="progressTotal === 0" class="project-progress-empty">
+                No issues in this project yet — progress will appear once issues are created.
+            </p>
+        </section>
+
         <section class="panel-card">
             <div class="panel-header">
                 <div>
@@ -445,6 +494,7 @@ import { projectUrl } from '../../utils/project';
 const props = defineProps({
     project: Object,
     issues: Object,
+    progress: { type: Object, default: () => ({}) },
     pinnedIssues: { type: Array, default: () => [] },
     projectTags: Array,
     filters: Object,
@@ -466,6 +516,24 @@ const canScrollPinnedLeft = ref(false);
 const canScrollPinnedRight = ref(false);
 const showPinnedControls = ref(false);
 const issueRows = computed(() => props.issues?.data ?? []);
+
+/* Project completion analytics ------------------------------------------------- */
+const progressTotal = computed(() => Number(props.progress?.total ?? 0));
+const progressTodo = computed(() => Number(props.progress?.todo ?? 0));
+const progressInProgress = computed(() => Number(props.progress?.inprogress ?? 0));
+const progressDone = computed(() => Number(props.progress?.done ?? 0));
+const progressPercent = computed(() => Number(props.progress?.percent ?? 0));
+
+const progressRatio = (count) => (progressTotal.value > 0 ? (count / progressTotal.value) * 100 : 0);
+
+const progressTodoWidth = computed(() => `${progressRatio(progressTodo.value)}%`);
+const progressInProgressWidth = computed(() => `${progressRatio(progressInProgress.value)}%`);
+const progressDoneWidth = computed(() => `${progressRatio(progressDone.value)}%`);
+
+const progressTodoShare = computed(() => Math.round(progressRatio(progressTodo.value)));
+const progressInProgressShare = computed(() => Math.round(progressRatio(progressInProgress.value)));
+const progressDoneShare = computed(() => Math.round(progressRatio(progressDone.value)));
+
 const plainText = (value) => String(value || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 const openQuickRead = (issue) => {
     activeIssue.value = issue;

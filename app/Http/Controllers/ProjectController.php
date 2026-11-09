@@ -183,9 +183,29 @@ class ProjectController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'email']);
 
+        // Project completion analytics. Counts top-level issues only, matching the
+        // issue list rendered just below it on this page.
+        $statusCounts = $project->issues()
+            ->whereNull('parent_id')
+            ->groupBy('status')
+            ->selectRaw('status, count(*) as aggregate')
+            ->pluck('aggregate', 'status');
+
+        $totalIssues = (int) $statusCounts->sum();
+        $doneIssues = (int) ($statusCounts['done'] ?? 0);
+
+        $progress = [
+            'total' => $totalIssues,
+            'todo' => (int) ($statusCounts['todo'] ?? 0),
+            'inprogress' => (int) ($statusCounts['inprogress'] ?? 0),
+            'done' => $doneIssues,
+            'percent' => $totalIssues > 0 ? (int) round(($doneIssues / $totalIssues) * 100) : 0,
+        ];
+
         return Inertia::render('Projects/Show', [
             'project' => $project,
             'issues' => $issues,
+            'progress' => $progress,
             'pinnedIssues' => $pinnedIssues,
             'projectTags' => IssueTag::query()
                 ->where('project_id', $project->id)

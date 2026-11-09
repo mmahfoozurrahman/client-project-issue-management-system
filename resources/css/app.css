@@ -1560,6 +1560,108 @@ a {
     100% { transform: translateX(0); }
 }
 
+/* Project progress analytics (Projects/Show) */
+.project-progress-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    margin-bottom: 1.1rem;
+}
+
+.project-progress-figure strong {
+    display: block;
+    font-size: clamp(2.1rem, 4vw, 2.9rem);
+    line-height: 1.05;
+    color: #16232f;
+}
+
+.project-progress-figure span {
+    display: block;
+    margin-top: 0.3rem;
+    color: #6b7280;
+    font-size: 0.85rem;
+}
+
+.project-progress-meter {
+    flex: 1 1 320px;
+    min-width: 220px;
+    display: flex;
+    height: 14px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: rgba(148, 163, 184, 0.22);
+}
+
+.project-progress-segment {
+    height: 100%;
+    transition: width 0.35s ease;
+}
+
+.project-progress-segment.is-todo {
+    background: #f0b429;
+}
+
+.project-progress-segment.is-inprogress {
+    background: #6677ef;
+}
+
+.project-progress-segment.is-done {
+    background: #1a8577;
+}
+
+.project-progress-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 0.85rem;
+}
+
+.project-progress-stat {
+    border-radius: 1rem;
+    padding: 0.95rem 1rem;
+    border: 1px solid #d8e2df;
+    background: rgba(255, 255, 255, 0.72);
+}
+
+.project-progress-stat span {
+    display: block;
+    color: #607078;
+    font-size: 0.8rem;
+    margin-bottom: 0.3rem;
+}
+
+.project-progress-stat strong {
+    display: block;
+    font-size: 1.45rem;
+    color: #203040;
+}
+
+.project-progress-stat small {
+    display: block;
+    margin-top: 0.2rem;
+    color: #8a97a0;
+    font-size: 0.74rem;
+}
+
+.project-progress-stat.is-todo strong {
+    color: #a36a13;
+}
+
+.project-progress-stat.is-inprogress strong {
+    color: #6677ef;
+}
+
+.project-progress-stat.is-done strong {
+    color: #1a8577;
+}
+
+.project-progress-empty {
+    margin: 0.9rem 0 0;
+    color: #6b7280;
+    font-size: 0.86rem;
+}
+
 @keyframes modalRise {
     0% {
         opacity: 0;
