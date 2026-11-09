@@ -4,11 +4,22 @@ This is a newest-first record of features and meaningful product changes, consol
 
 ## Current snapshot
 
-- **Latest commit:** `561eacd` - feat(issues): add seo-friendly title and tag slug to issue detail urls.
+- **Latest commit:** `b76a033` - feat(projects): add seo-friendly name slug to project detail urls.
 - **Workflow:** Clients -> Projects -> Issues -> Sub-Issues.
 - **Stack:** Laravel 13, PHP 8.3+, MySQL, Vue 3, Inertia.js, Vite, Bootstrap 5, SweetAlert2, TipTap, and Chart.js.
 
 ## Feature history (newest first)
+
+### SEO-friendly project URLs with name slugs
+
+**Last updated:** 9th November, 2026
+
+- Project detail URLs now append a human-readable slug too, e.g. `/projects/26/social-media-content-planning-posting`.
+  - **Routes:** `projects.show` is now `GET /projects/{project}/{slug?}`, registered after the `project-members` routes so it never shadows them. Route-model binding still resolves the `{id}`, so a stale or missing slug never breaks a link.
+  - **Model:** the `Project` model exposes derived `slug` and `url` attributes (`Str::slug()` of the project name), so every serialized project carries its own detail URL.
+  - Related spots were updated as well: the Issue Detail breadcrumb links to the project with its slug, and deleting an issue redirects to the slugged project URL.
+- **Frontend:** added `resources/js/utils/project.js` (`projectUrl()`) and pointed the Projects-list "Open project" link plus the Project Detail filter reload at it.
+- Added feature tests in `tests/Feature/ProjectSlugUrlTest.php` (slug generation, reachability with/without the slug, and project-member routes not being shadowed).
 
 ### SEO-friendly issue URLs with title and tag slugs
 
