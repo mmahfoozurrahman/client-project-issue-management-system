@@ -4,11 +4,22 @@ This is a newest-first record of features and meaningful product changes, consol
 
 ## Current snapshot
 
-- **Latest commit:** `492d62a` - feat(issues): auto-save the issue edit form in the background.
+- **Latest commit:** `8a30923` - feat(projects): add completion progress analytics to the project page.
 - **Workflow:** Clients -> Projects -> Issues -> Sub-Issues.
 - **Stack:** Laravel 13, PHP 8.3+, MySQL, Vue 3, Inertia.js, Vite, Bootstrap 5, SweetAlert2, TipTap, and Chart.js.
 
 ## Feature history (newest first)
+
+### Project completion progress analytics
+
+**Last updated:** 9th November, 2026
+
+- Added a "Project Progress — Completion overview" panel to the Project Detail page (`resources/js/Pages/Projects/Show.vue`), placed between the pinned bookmarks and the issue list.
+  - Shows the completion percentage with an "X of Y top-level issues done" caption, a segmented progress bar (Todo / In Progress / Done), and three stat tiles with counts plus each status's share of all issues.
+  - Backed by a new `progress` Inertia prop computed in `ProjectController@show` with a single grouped query: `total`, `todo`, `inprogress`, `done`, and `percent` (`round(done / total * 100)`).
+  - Counts **top-level issues only** (`whereNull('parent_id')`), matching both the issue list on this page and the Dashboard's existing status analytics.
+  - Styles live in `resources/css/app.css` (`.project-progress-*`) because this page has no scoped style block; the tone colours line up with the Dashboard analytics.
+- Added feature tests in `tests/Feature/ProjectProgressAnalyticsTest.php` (status breakdown with sub-issues excluded, and the empty-project case).
 
 ### Background auto-save for the issue edit form
 
