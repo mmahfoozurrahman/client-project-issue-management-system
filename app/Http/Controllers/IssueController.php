@@ -525,7 +525,7 @@ class IssueController extends Controller
             'breadcrumbs' => [
                 ['label' => 'Home', 'href' => route('dashboard')],
                 ['label' => 'Projects', 'href' => route('projects.index')],
-                ['label' => $issue->project->name, 'href' => route('projects.show', $issue->project)],
+                ['label' => $issue->project->name, 'href' => $issue->project->url],
                 ['label' => $issue->title],
             ],
         ]);
@@ -585,7 +585,7 @@ class IssueController extends Controller
         $title = $issue->title;
         $issue->delete();
 
-        return redirect()->route('projects.show', $project)->with('success', "Issue {$title} deleted successfully.");
+        return redirect()->to($project->url)->with('success', "Issue {$title} deleted successfully.");
     }
 
     public function togglePin(Request $request, Issue $issue): RedirectResponse

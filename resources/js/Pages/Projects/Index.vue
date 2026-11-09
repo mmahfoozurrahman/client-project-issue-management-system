@@ -7,6 +7,7 @@ import Modal from '../../Components/Modal.vue';
 import Pagination from '../../Components/Pagination.vue';
 import RichTextEditor from '../../Components/RichTextEditor.vue';
 import AppLayout from '../../Layouts/AppLayout.vue';
+import { projectUrl } from '../../utils/project';
 
 const props = defineProps({
     projects: Object,
@@ -194,7 +195,7 @@ const destroyProject = (project) => {
                     </div>
 
                     <div class="entity-actions">
-                        <Link :href="`/projects/${project.id}`" class="btn btn-sm btn-accent rounded-pill">Open project</Link>
+                        <Link :href="projectUrl(project)" class="btn btn-sm btn-accent rounded-pill">Open project</Link>
                         <button v-if="project.can_edit" class="btn btn-sm btn-light action-icon" @click="openEdit(project)">Edit</button>
                         <button v-if="project.can_delete" class="btn btn-sm btn-light action-icon action-delete" @click="destroyProject(project)">Delete</button>
                     </div>

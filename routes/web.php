@@ -31,7 +31,7 @@ Route::middleware('auth')->group(function (): void {
     Route::match(['put', 'post'], '/profile', [ProfileController::class, 'update'])->name('profile.update');
 
     Route::resource('clients', ClientController::class)->only(['index', 'store', 'update', 'destroy']);
-    Route::resource('projects', ProjectController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+    Route::resource('projects', ProjectController::class)->only(['index', 'store', 'update', 'destroy']);
 
     Route::prefix('projects/{project}/members')->name('project-members.')->group(function (): void {
         Route::post('/', [ProjectMemberController::class, 'store'])->name('store');
@@ -39,6 +39,11 @@ Route::middleware('auth')->group(function (): void {
         Route::delete('/{member}', [ProjectMemberController::class, 'destroy'])->name('destroy');
         Route::get('/search', [ProjectMemberController::class, 'searchUsers'])->name('search');
     });
+
+    // Project detail route with an optional SEO-friendly name slug, e.g.
+    // /projects/26/social-media-content-planning-posting. Registered after the
+    // project-members routes so it never shadows them.
+    Route::get('/projects/{project}/{slug?}', [ProjectController::class, 'show'])->name('projects.show');
 
     Route::get('/issues/daily-activity', [IssueController::class, 'dailyActivity'])->name('issues.daily-activity');
     Route::get('/issues/search-suggestions', [IssueController::class, 'searchSuggestions'])->name('issues.search-suggestions');

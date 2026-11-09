@@ -1,0 +1,1 @@
+function e(e){return e?.url?e.url:e?.id?`/projects/${e.id}`:`/projects`}export{e as t};

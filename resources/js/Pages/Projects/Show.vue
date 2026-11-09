@@ -440,6 +440,7 @@ import AppLayout from '../../Layouts/AppLayout.vue';
 import { formatIssueDate } from '../../utils/date';
 import { convertBlobToJpegFile, getScreenshotFilename, formatFileSize } from '../../utils/image';
 import { issueUrl } from '../../utils/issue';
+import { projectUrl } from '../../utils/project';
 
 const props = defineProps({
     project: Object,
@@ -718,7 +719,7 @@ const removeTagFromForm = (index) => {
 };
 
 const applyFilters = () => {
-    router.get(`/projects/${props.project.id}`, filterForm, {
+    router.get(projectUrl(props.project), filterForm, {
         preserveState: true,
         replace: true,
     });

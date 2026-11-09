@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Project extends Model
 {
@@ -18,6 +19,26 @@ class Project extends Model
         'client_id',
         'user_id',
     ];
+
+    /**
+     * Expose the derived slug and its detail URL on every serialized project,
+     * so links can be built as /projects/{id}/{slug} (the slug is cosmetic).
+     */
+    protected $appends = ['slug', 'url'];
+
+    public function getSlugAttribute(): string
+    {
+        return Str::slug((string) $this->name);
+    }
+
+    public function getUrlAttribute(): string
+    {
+        $slug = $this->slug;
+
+        return $slug !== ''
+            ? "/projects/{$this->id}/{$slug}"
+            : "/projects/{$this->id}";
+    }
 
     public function user(): BelongsTo
     {
