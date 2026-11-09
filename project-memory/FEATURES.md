@@ -4,11 +4,31 @@ This is a newest-first record of features and meaningful product changes, consol
 
 ## Current snapshot
 
-- **Latest commit:** `ac02edb` - fix: prevent flex-shrink collapse on issue image modal cards and restore full image height.
+- **Latest commit:** `e7d576f` - feat(shell): add collapsible sidebar toggle and fix issue show responsive breakpoints.
 - **Workflow:** Clients -> Projects -> Issues -> Sub-Issues.
 - **Stack:** Laravel 13, PHP 8.3+, MySQL, Vue 3, Inertia.js, Vite, Bootstrap 5, SweetAlert2, TipTap, and Chart.js.
 
 ## Feature history (newest first)
+
+### Issue Show page responsive breakpoint fixes (992–1199px)
+
+**Last updated:** 9th November, 2026
+
+- Fixed a broken layout on the Issue Show page (`resources/js/Pages/Issues/Show.vue`) that only appeared in the `992px–1199px` viewport band:
+  - **Hero overflow fix:** `resources/css/app.css` switches `.hero-panel` to `flex-direction: column` at `max-width: 1199px`, which turned `.issue-hero-copy`'s `flex: 1 1 32rem` into a ~`512px` tall column and stretched the hero card with a large empty area below the title. The Show page only reset this at `max-width: 991.98px`, leaving the `992–1199px` range broken. Added a new `@media (max-width: 1199.98px)` block that resets `.issue-hero-copy` to `flex: initial` and makes `.issue-hero-actions` full-width and left-aligned, aligning the page breakpoint with the global shell breakpoint.
+  - **Grid stacking fix:** `col-xl-7` / `col-xl-5` had no base `col-12`, so below `1200px` both grid columns stayed side-by-side at auto width instead of stacking full-width. Updated them to `col-12 col-xl-7` and `col-12 col-xl-5`.
+- Verified with `npm run build`.
+
+### Collapsible left sidebar toggle
+
+**Last updated:** 9th November, 2026
+
+- Added a desktop sidebar show/hide toggle in the shared `AppLayout.vue` shell (`resources/js/Layouts/AppLayout.vue`), so it applies to every authenticated page including `AdminLayout` pages:
+  - New topbar button (visible `≥1200px`) collapses the sidebar with a smooth slide/fade and lets the main content expand to full width; clicking again restores it.
+  - Collapse state is persisted in `localStorage` (`sidebar-collapsed`) so it survives navigation and page reloads.
+  - Uses `PanelLeftClose` / `PanelLeftOpen` icons with `aria-label`, `title`, and `aria-expanded` for accessibility.
+- Fixed a pre-existing breakpoint gap where the sidebar's off-canvas breakpoint (`1199px`) did not match the mobile toggle visibility: switched the hamburger, backdrop, and close controls from `d-lg-none` to `d-xl-none` so the drawer toggle is available across the whole `≤1199px` range (including the previous dead zone of `992px–1199px`).
+- Styling added in `resources/css/app.css` (`.app-shell` grid transition, `.sidebar-collapsed` rules, and the `.topbar-heading` wrapper).
 
 ### Feed-style vertical scroll issue image modal & project workflow process
 
