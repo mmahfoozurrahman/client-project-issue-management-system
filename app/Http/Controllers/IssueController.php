@@ -567,6 +567,12 @@ class IssueController extends Controller
 
         $issue->load('tags');
 
+        // Background auto-saves persist silently: only an explicit "Save Changes"
+        // submission should surface the success toast.
+        if ($request->boolean('autosave')) {
+            return redirect()->to($issue->url);
+        }
+
         return redirect()->to($issue->url)->with('success', "Issue {$issue->title} updated successfully.");
     }
 

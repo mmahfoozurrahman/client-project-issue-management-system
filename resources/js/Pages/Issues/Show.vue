@@ -276,15 +276,20 @@ const handlePaste = async (event) => {
 
 onMounted(() => {
     window.addEventListener('paste', handlePaste);
+    savedSnapshot = issueEditSnapshot.value;
+    autosaveReady.value = true;
 });
 
 onBeforeUnmount(() => {
     window.removeEventListener('paste', handlePaste);
+    cancelScheduledAutosave();
     clearStagedUpdateImages();
     clearStagedChildImages();
 });
 
 const submit = () => {
+    cancelScheduledAutosave();
+
     updateForm.transform((data) => ({
         ...data,
         _method: 'put',
@@ -292,9 +297,112 @@ const submit = () => {
         forceFormData: true,
         onSuccess: () => {
             clearStagedUpdateImages();
+            markAutosaveSynced();
         },
     });
 };
+
+/* ---------------------------------------------------------------------------
+ * Background auto-save for the edit form.
+ *
+ * Any change to the editable issue fields is persisted automatically after a
+ * short pause, so the issue no longer has to be saved by pressing the button.
+ * The manual "Save Changes" button stays available (and remains what uploads
+ * staged images/files). Issue creation keeps using its normal submit buttons.
+ * ------------------------------------------------------------------------- */
+const AUTOSAVE_DELAY = 1200;
+const autosaveState = ref('idle'); // idle | saving | saved | error
+const autosaveReady = ref(false);
+let autosaveTimer = null;
+let autosaveInFlight = false;
+let autosavePending = false;
+let savedSnapshot = '';
+
+const autosavePayload = () => ({
+    // Tells the update endpoint to persist silently (no success toast).
+    autosave: true,
+    title: updateForm.title,
+    description: updateForm.description,
+    status: updateForm.status,
+    project_id: updateForm.project_id,
+    parent_id: updateForm.parent_id ?? '',
+    links: (updateForm.links ?? []).map((link) => ({
+        url: link.url ?? '',
+        label: link.label ?? '',
+    })),
+    tag_names: [...(updateForm.tag_names ?? [])],
+});
+
+const issueEditSnapshot = computed(() => JSON.stringify(autosavePayload()));
+
+const cancelScheduledAutosave = () => {
+    if (autosaveTimer) {
+        clearTimeout(autosaveTimer);
+        autosaveTimer = null;
+    }
+};
+
+const markAutosaveSynced = () => {
+    savedSnapshot = issueEditSnapshot.value;
+    autosaveState.value = 'saved';
+};
+
+const runAutosave = () => {
+    if (!props.canEdit || !autosaveReady.value) return;
+
+    if (updateForm.processing || isUploadingDirectly.value || autosaveInFlight) {
+        autosavePending = true;
+        return;
+    }
+
+    // Mirror the update request's required fields so a half-typed title never
+    // flashes a validation error mid-edit.
+    if ((updateForm.title ?? '').trim() === '' || !updateForm.project_id) {
+        return;
+    }
+
+    const snapshotAtSave = issueEditSnapshot.value;
+    autosaveInFlight = true;
+    autosavePending = false;
+    autosaveState.value = 'saving';
+
+    router.put(`/issues/${props.issue.id}`, autosavePayload(), {
+        preserveScroll: true,
+        preserveState: true,
+        replace: true,
+        onSuccess: () => {
+            savedSnapshot = snapshotAtSave;
+            autosaveState.value = 'saved';
+        },
+        onError: () => {
+            autosaveState.value = 'error';
+        },
+        onFinish: () => {
+            autosaveInFlight = false;
+
+            if (autosavePending || issueEditSnapshot.value !== savedSnapshot) {
+                autosavePending = false;
+                scheduleAutosave();
+            }
+        },
+    });
+};
+
+const scheduleAutosave = () => {
+    cancelScheduledAutosave();
+
+    autosaveTimer = setTimeout(() => {
+        autosaveTimer = null;
+        runAutosave();
+    }, AUTOSAVE_DELAY);
+};
+
+watch(issueEditSnapshot, (value) => {
+    if (!autosaveReady.value || value === savedSnapshot) return;
+
+    scheduleAutosave();
+});
+
 
 const destroyIssue = () => {
     Swal.fire({
@@ -479,11 +587,9 @@ watch(
 watch(
     () => props.issue.links,
     (next) => {
+        // Display-only sync: the form keeps whatever the user is editing, so a
+        // background auto-save never overwrites in-progress link input.
         issueLinks.value = [...(next ?? [])];
-        updateForm.links = (next ?? []).map((link) => ({
-            label: link.label ?? '',
-            url: link.url ?? '',
-        }));
     },
     { immediate: true }
 );
@@ -491,8 +597,8 @@ watch(
 watch(
     () => props.issue.tags,
     (next) => {
+        // Display-only sync: keep the form's tag list exactly as the user typed it.
         issueTags.value = [...(next ?? [])];
-        updateForm.tag_names = (next ?? []).map((tag) => tag.name);
     },
     { immediate: true }
 );
@@ -701,6 +807,12 @@ const deleteLink = (link) => {
                             <p class="section-kicker">Edit Issue</p>
                             <h4 class="panel-title">Update details, parent links, and attachments</h4>
                         </div>
+                        <span class="autosave-pill" :class="`is-${autosaveState}`">
+                            <template v-if="autosaveState === 'saving'">Saving…</template>
+                            <template v-else-if="autosaveState === 'saved'">Auto-saved</template>
+                            <template v-else-if="autosaveState === 'error'">Auto-save failed</template>
+                            <template v-else>Auto-save on</template>
+                        </span>
                     </div>
 
                     <form class="vstack gap-3" @submit.prevent="submit">
@@ -1342,6 +1454,30 @@ const deleteLink = (link) => {
 <style scoped>
 .hero-panel {
     align-items: flex-start;
+}
+
+.autosave-pill {
+    flex: 0 0 auto;
+    padding: 0.35rem 0.85rem;
+    border-radius: 999px;
+    border: 1px solid rgba(15, 118, 110, 0.25);
+    background: rgba(15, 118, 110, 0.08);
+    color: #0f766e;
+    font-size: 0.76rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.autosave-pill.is-saving {
+    border-color: rgba(217, 119, 6, 0.35);
+    background: rgba(217, 119, 6, 0.1);
+    color: #b45309;
+}
+
+.autosave-pill.is-error {
+    border-color: rgba(220, 38, 38, 0.35);
+    background: rgba(220, 38, 38, 0.1);
+    color: #b91c1c;
 }
 
 .issue-hero-panel {
