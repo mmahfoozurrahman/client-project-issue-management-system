@@ -4,11 +4,23 @@ This is a newest-first record of features and meaningful product changes, consol
 
 ## Current snapshot
 
-- **Latest commit:** `db93e69` - fix(projects): rename issue date badge from Completed to Updated.
+- **Latest commit:** `561eacd` - feat(issues): add seo-friendly title and tag slug to issue detail urls.
 - **Workflow:** Clients -> Projects -> Issues -> Sub-Issues.
 - **Stack:** Laravel 13, PHP 8.3+, MySQL, Vue 3, Inertia.js, Vite, Bootstrap 5, SweetAlert2, TipTap, and Chart.js.
 
 ## Feature history (newest first)
+
+### SEO-friendly issue URLs with title and tag slugs
+
+**Last updated:** 9th November, 2026
+
+- Issue detail URLs now append a human-readable slug so the address bar tells you what the issue is about, e.g. `/issues/533/suura-al-kafiruun-dandapani-focus-and-awareness`.
+  - **Routes:** `issues.show` is now `GET /issues/{issue}/{slug?}`, and it is registered after the more specific `/issues/*` routes so it never shadows narration, daily activity, or search-suggestion endpoints. The `{id}` still drives route-model binding, so a stale or missing slug never breaks a link.
+  - **Model:** the `Issue` model exposes derived `slug` and `url` attributes (`Str::slug()` of the title plus each attached tag name), so every serialized issue carries its own detail URL. Bangla titles transliterate automatically (`সূরা আল-কাফিরূন` → `suura-al-kafiruun`).
+  - Tag names are folded into the slug and sorted alphabetically for stable URLs. They are only included when the `tags` relation is already eager-loaded, which keeps serializing large issue collections free of N+1 queries.
+  - Create and update redirects now land on the slugged URL, so the address bar stays descriptive right after saving.
+- **Frontend:** added `resources/js/utils/issue.js` (`issueUrl()`) and pointed all 13 issue links across `IssueCard`, `IssueTree`, `IssueQuickReadModal`, `Dashboard`, `Issues/Index`, `Issues/DailyActivity`, `Issues/Show`, and `Projects/Show` at it.
+- Added feature tests in `tests/Feature/IssueSlugUrlTest.php` (slug generation, Bangla transliteration, tag suffixing, and reachability with/without the slug).
 
 ### Project issue list sorted by most recently edited
 
