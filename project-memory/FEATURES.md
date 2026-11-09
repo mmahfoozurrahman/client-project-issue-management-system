@@ -4,11 +4,21 @@ This is a newest-first record of features and meaningful product changes, consol
 
 ## Current snapshot
 
-- **Latest commit:** `e7d576f` - feat(shell): add collapsible sidebar toggle and fix issue show responsive breakpoints.
+- **Latest commit:** `f46ebc3` - feat(projects): sort project issue list by most recently edited (updated_at).
 - **Workflow:** Clients -> Projects -> Issues -> Sub-Issues.
 - **Stack:** Laravel 13, PHP 8.3+, MySQL, Vue 3, Inertia.js, Vite, Bootstrap 5, SweetAlert2, TipTap, and Chart.js.
 
 ## Feature history (newest first)
+
+### Project issue list sorted by most recently edited
+
+**Last updated:** 9th November, 2026
+
+- Changed the top-level issue list on the Project Detail page (`app/Http/Controllers/ProjectController.php@show`) to order by `updated_at DESC` (with an `id DESC` tiebreaker) instead of `created_at`:
+  - Newly created issues (`created_at == updated_at`) now appear at the top of the list automatically.
+  - Editing an issue moves it back to the top of the list, so the most recently edited issue is always listed first. Status changes also touch `updated_at`, so those rise to the top as well.
+  - The `id DESC` tiebreaker keeps the ordering deterministic when multiple issues share the same timestamp.
+- Added feature tests in `tests/Feature/ProjectIssueOrderingTest.php` covering both the "newly created issue is first" and "edited issue rises to the top" behaviours.
 
 ### Issue Show page responsive breakpoint fixes (992–1199px)
 
