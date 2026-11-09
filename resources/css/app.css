@@ -33,6 +33,7 @@ a {
     min-height: 100vh;
     display: grid;
     grid-template-columns: 320px minmax(0, 1fr);
+    transition: grid-template-columns 0.25s ease;
 }
 
 .sidebar-panel {
@@ -48,6 +49,8 @@ a {
     color: #f8fafc;
     z-index: 30;
     overflow: hidden;
+    min-width: 0;
+    transition: opacity 0.25s ease, transform 0.25s ease, padding 0.25s ease;
 }
 
 .sidebar-brand,
@@ -168,6 +171,13 @@ a {
 .topbar {
     align-items: flex-start;
     margin-bottom: 20px;
+}
+
+.topbar-heading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
 }
 
 .topbar-alert {
@@ -1598,7 +1608,7 @@ a {
 
     .panel-header .btn,
     .project-meta-block .btn,
-    .topbar > .btn {
+    .topbar .btn {
         flex-shrink: 0;
     }
 
@@ -1624,6 +1634,20 @@ a {
     .profile-grid,
     .settings-grid {
         grid-template-columns: 1fr;
+    }
+}
+
+@media (min-width: 1200px) {
+    .app-shell.sidebar-collapsed {
+        grid-template-columns: 0 minmax(0, 1fr);
+    }
+
+    .app-shell.sidebar-collapsed .sidebar-panel {
+        padding-left: 0;
+        padding-right: 0;
+        opacity: 0;
+        transform: translateX(-18px);
+        pointer-events: none;
     }
 }
 

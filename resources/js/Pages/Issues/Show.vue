@@ -693,7 +693,7 @@ const deleteLink = (link) => {
         </section>
 
         <div class="row g-4">
-            <div class="col-xl-7">
+            <div class="col-12 col-xl-7">
                 <section v-if="canEdit" class="panel-card h-100">
                     <div class="panel-header">
                         <div>
@@ -914,7 +914,7 @@ const deleteLink = (link) => {
                 </section>
             </div>
 
-            <div class="col-xl-5">
+            <div class="col-12 col-xl-5">
                 <section class="panel-card mb-4">
                     <div class="panel-header">
                         <div>
@@ -1434,6 +1434,24 @@ const deleteLink = (link) => {
     align-items: center;
     justify-content: center;
     border-radius: 999px;
+}
+
+@media (max-width: 1199.98px) {
+    .issue-hero-copy {
+        flex: initial;
+    }
+
+    .issue-hero-actions {
+        width: 100%;
+        min-width: 0;
+        justify-content: flex-start;
+        align-items: flex-start;
+    }
+
+    .issue-hero-actions-top {
+        justify-content: flex-start;
+        width: 100%;
+    }
 }
 
 @media (max-width: 991.98px) {

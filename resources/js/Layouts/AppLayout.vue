@@ -1,7 +1,7 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useForm, usePage } from '@inertiajs/vue3';
-import { BriefcaseBusiness, Building2, LayoutDashboard, LogOut, Menu, PanelsTopLeft, Settings, ShieldCheck, Tag, UserCircle2, X } from 'lucide-vue-next';
+import { BriefcaseBusiness, Building2, LayoutDashboard, LogOut, Menu, PanelsTopLeft, PanelLeftClose, PanelLeftOpen, Settings, ShieldCheck, Tag, UserCircle2, X } from 'lucide-vue-next';
 import Breadcrumbs from '../Components/Breadcrumbs.vue';
 import FlashToasts from '../Components/FlashToasts.vue';
 
@@ -25,6 +25,18 @@ const showProjectNav = computed(() => isAdmin.value || canAccessProjects.value);
 const page = usePage();
 const sidebarOpen = ref(false);
 const logoutForm = useForm({});
+
+// Desktop sidebar collapse state, remembered across page loads.
+const SIDEBAR_COLLAPSED_KEY = 'sidebar-collapsed';
+const sidebarCollapsed = ref(
+    typeof window !== 'undefined' && window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true',
+);
+
+watch(sidebarCollapsed, (collapsed) => {
+    if (typeof window !== 'undefined') {
+        window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(collapsed));
+    }
+});
 
 const user = computed(() => page.props.auth?.user);
 const isAdmin = computed(() => Boolean(user.value?.is_admin));
@@ -73,7 +85,7 @@ const isItemActive = (href) => {
 </script>
 
 <template>
-    <div class="app-shell">
+    <div class="app-shell" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
         <FlashToasts />
 
         <aside class="sidebar-panel" :class="{ open: sidebarOpen }">
@@ -82,7 +94,7 @@ const isItemActive = (href) => {
                     <p class="sidebar-eyebrow">Workspace</p>
                     <h1>{{ siteName }}</h1>
                 </div>
-                <button class="btn btn-light d-lg-none rounded-circle" @click="sidebarOpen = false">
+                <button class="btn btn-light d-xl-none rounded-circle" aria-label="Close navigation" @click="sidebarOpen = false">
                     <X :size="18" />
                 </button>
             </div>
@@ -120,16 +132,28 @@ const isItemActive = (href) => {
             </div>
         </aside>
 
-        <div v-if="sidebarOpen" class="sidebar-backdrop d-lg-none" @click="sidebarOpen = false" />
+        <div v-if="sidebarOpen" class="sidebar-backdrop d-xl-none" @click="sidebarOpen = false" />
 
         <div class="main-panel">
             <header class="topbar">
-                <button class="btn btn-light rounded-circle d-lg-none" @click="sidebarOpen = true">
-                    <Menu :size="18" />
-                </button>
-                <div>
-                    <p class="section-kicker">{{ title || 'Workspace' }}</p>
-                    <Breadcrumbs :items="breadcrumbs" />
+                <div class="topbar-heading">
+                    <button class="btn btn-light rounded-circle d-xl-none" aria-label="Open navigation" @click="sidebarOpen = true">
+                        <Menu :size="18" />
+                    </button>
+                    <button
+                        class="btn btn-light rounded-circle d-none d-xl-inline-flex"
+                        :aria-expanded="!sidebarCollapsed"
+                        :aria-label="sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'"
+                        :title="sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'"
+                        @click="sidebarCollapsed = !sidebarCollapsed"
+                    >
+                        <PanelLeftOpen v-if="sidebarCollapsed" :size="18" />
+                        <PanelLeftClose v-else :size="18" />
+                    </button>
+                    <div>
+                        <p class="section-kicker">{{ title || 'Workspace' }}</p>
+                        <Breadcrumbs :items="breadcrumbs" />
+                    </div>
                 </div>
                 <Link
                     v-if="pendingNudgeCount > 0"
