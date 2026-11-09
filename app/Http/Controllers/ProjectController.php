@@ -152,7 +152,10 @@ class ProjectController extends Controller
                         ->orWhere('description', 'like', "%{$search}%");
                 });
             })
-            ->latest()
+            // Sort by most recently edited first, so newly created issues (created_at == updated_at)
+            // and just-edited issues both rise to the top of the project issue list.
+            ->orderByDesc('updated_at')
+            ->orderByDesc('id')
             ->with(['images', 'files', 'links', 'tags', 'user:id,name', 'parentIssue:id,title'])
             ->withCount(['subIssues', 'images', 'files'])
             ->withExists(['pinnedByUsers as is_pinned' => fn ($pinQuery) => $pinQuery->whereKey(auth()->id())])
