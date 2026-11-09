@@ -138,7 +138,7 @@
                                         <strong>{{ issue.title }}</strong>
                                         <small class="issue-date-meta">Created {{ formatIssueDate(issue.created_at) }}</small>
                                         <small v-if="issue.updated_at" class="issue-date-meta" :style="{ color: '#1f7a6e', fontWeight: '600' }">
-                                            Completed {{ formatIssueDate(issue.updated_at) }}
+                                            Updated {{ formatIssueDate(issue.updated_at) }}
                                         </small>
                                         <div v-if="issue.tags?.length" class="d-flex flex-wrap gap-1 mt-2">
                                             <Link v-for="tag in issue.tags" :key="tag.id" :href="`/issues?tag_id=${tag.id}&project_id=${issue.project_id}`" class="badge rounded-pill text-bg-light border text-decoration-none">{{ tag.name }}</Link>
