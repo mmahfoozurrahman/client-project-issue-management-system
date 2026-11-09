@@ -4,11 +4,23 @@ This is a newest-first record of features and meaningful product changes, consol
 
 ## Current snapshot
 
-- **Latest commit:** `b76a033` - feat(projects): add seo-friendly name slug to project detail urls.
+- **Latest commit:** `492d62a` - feat(issues): auto-save the issue edit form in the background.
 - **Workflow:** Clients -> Projects -> Issues -> Sub-Issues.
 - **Stack:** Laravel 13, PHP 8.3+, MySQL, Vue 3, Inertia.js, Vite, Bootstrap 5, SweetAlert2, TipTap, and Chart.js.
 
 ## Feature history (newest first)
+
+### Background auto-save for the issue edit form
+
+**Last updated:** 9th November, 2026
+
+- The issue edit form on the Issue Detail page (`resources/js/Pages/Issues/Show.vue`) now persists changes automatically in the background: title, description, status, project, parent issue, links, and tags are saved about 1.2s after typing stops, so editing no longer depends on pressing "Save Changes".
+  - Auto-save reuses the existing `PUT /issues/{issue}` endpoint with `preserveScroll` / `preserveState` / `replace`, and adds guards: it skips the initial page load, pauses while a manual save or staged-image upload is running, queues a follow-up save when edits land mid-flight, and never fires while the (required) title or project is empty.
+  - The manual "Save Changes" button remains, and is still what uploads staged images/files. Issue creation (issues and sub-issues) continues to use its normal submit button only.
+  - An "Auto-save on / Saving… / Auto-saved" pill was added to the edit panel header for feedback.
+  - Background saves send `autosave: true`, so the update endpoint redirects **without** the `success` flash — auto-save stays silent and only an explicit "Save Changes" submission shows the toast.
+  - Fixed a related pitfall: the `props.issue.links` / `props.issue.tags` watchers used to reset `updateForm.links` / `updateForm.tag_names`, which would have wiped in-progress edits whenever an auto-save refreshed the page props. They now sync the display refs only.
+- Added feature tests in `tests/Feature/IssueAutosaveTest.php` covering the silent auto-save and the still-flashing manual save.
 
 ### SEO-friendly project URLs with name slugs
 
