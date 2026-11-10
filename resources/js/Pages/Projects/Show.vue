@@ -133,24 +133,12 @@
                     <option value="done">Done</option>
                 </select>
 
-                <details ref="tagFilterDropdown" class="tag-filter-dropdown">
-                    <summary class="form-select">{{ tagFilterLabel }}</summary>
-                    <div class="tag-filter-menu">
-                        <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
-                            <span class="small text-muted">Select one or more tags</span>
-                            <button type="button" class="btn btn-link btn-sm p-0" @click="clearTagFilters">Clear</button>
-                        </div>
-                        <label v-for="tag in projectTags" :key="tag.id" class="tag-filter-option">
-                            <input
-                                type="checkbox"
-                                :checked="filterForm.tag_ids.includes(String(tag.id))"
-                                @change="toggleTagFilter(tag.id)"
-                            >
-                            <span>{{ tag.name }}</span>
-                        </label>
-                        <p v-if="!projectTags?.length" class="small text-muted mb-0">No tags have been added to this project yet.</p>
-                    </div>
-                </details>
+                <TagFilterAutocomplete
+                    v-model="filterForm.tag_ids"
+                    :tags="projectTags"
+                    placeholder="Filter tags..."
+                    @change="applyTagFilter"
+                />
 
                 <div class="d-flex gap-2 flex-grow-1">
                     <IssueSearchAutocomplete
@@ -483,6 +471,7 @@ import Modal from '../../Components/Modal.vue';
 import Pagination from '../../Components/Pagination.vue';
 import RichTextEditor from '../../Components/RichTextEditor.vue';
 import StatusPill from '../../Components/StatusPill.vue';
+import TagFilterAutocomplete from '../../Components/TagFilterAutocomplete.vue';
 import AppLayout from '../../Layouts/AppLayout.vue';
 import { formatIssueDate } from '../../utils/date';
 import { convertBlobToJpegFile, getScreenshotFilename, formatFileSize } from '../../utils/image';
@@ -558,7 +547,6 @@ const form = useForm({
     tag_names: [],
 });
 const tagInput = ref('');
-const tagFilterDropdown = ref(null);
 
 const memberModalOpen  = ref(false);
 const memberForm = useForm({ user_id: '', role_id: '' });
@@ -791,54 +779,18 @@ const applyFilters = () => {
     });
 };
 
-const closeTagFilterDropdown = () => {
-    if (tagFilterDropdown.value) {
-        tagFilterDropdown.value.open = false;
-    }
-};
-
-const closeTagFilterOnOutsideClick = (event) => {
-    if (tagFilterDropdown.value?.open && !tagFilterDropdown.value.contains(event.target)) {
-        closeTagFilterDropdown();
-    }
-};
-
-const toggleTagFilter = (tagId) => {
-    const normalizedId = String(tagId);
-    const index = filterForm.tag_ids.indexOf(normalizedId);
-
-    if (index === -1) {
-        filterForm.tag_ids.push(normalizedId);
-    } else {
-        filterForm.tag_ids.splice(index, 1);
-    }
-
+const applyTagFilter = (tagIds) => {
+    filterForm.tag_ids = Array.isArray(tagIds) ? tagIds.map(String) : [];
     applyFilters();
 };
-
-const clearTagFilters = () => {
-    if (!filterForm.tag_ids.length) return;
-
-    filterForm.tag_ids = [];
-    closeTagFilterDropdown();
-    applyFilters();
-};
-
-const tagFilterLabel = computed(() => {
-    const count = filterForm.tag_ids.length;
-    if (!count) return 'All tags';
-    return count === 1 ? '1 tag selected' : `${count} tags selected`;
-});
 
 onMounted(() => {
-    document.addEventListener('click', closeTagFilterOnOutsideClick);
     window.addEventListener('resize', handlePinnedIssuesResize);
     window.addEventListener('paste', handlePaste);
     nextTick(updatePinnedScrollState);
 });
 
 onBeforeUnmount(() => {
-    document.removeEventListener('click', closeTagFilterOnOutsideClick);
     window.removeEventListener('resize', handlePinnedIssuesResize);
     window.removeEventListener('paste', handlePaste);
     clearStagedImages();
