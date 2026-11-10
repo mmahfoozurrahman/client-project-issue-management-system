@@ -4,11 +4,26 @@ This is a newest-first record of features and meaningful product changes, consol
 
 ## Current snapshot
 
-- **Latest commit:** `8a30923` - feat(projects): add completion progress analytics to the project page.
+- **Latest commit:** `5373bd2` - feat(issues): match the project issue snapshot and order listings by latest activity.
 - **Workflow:** Clients -> Projects -> Issues -> Sub-Issues.
 - **Stack:** Laravel 13, PHP 8.3+, MySQL, Vue 3, Inertia.js, Vite, Bootstrap 5, SweetAlert2, TipTap, and Chart.js.
 
 ## Feature history (newest first)
+
+### Issue library & project list ordered by latest activity
+
+**Last updated:** 10th November, 2026
+
+- The Issues Library page (`resources/js/Pages/Issues/Index.vue`) now reads like the Project Detail "Issue Snapshot":
+  - Each row shows **Created + Updated** date badges, and the redundant **Client** and **Images** columns were dropped. Columns are now Issue / Project / Status / Sub-issues / Actions.
+  - The retained Completed (done) and idle/at-risk meta lines stay in place below the dates.
+- `IssueController@index` sorts top-level issues by most recent activity (`updated_at` desc, then `id` desc) instead of creation date, so freshly created or edited issues rise to the top.
+- The Projects list (`resources/js/Pages/Projects/Index.vue`) is now ordered by each project's most recent issue activity:
+  - `ProjectController@index` uses `withMax('issues as latest_issue_updated_at', 'updated_at')` and orders by that value descending, falling back to the project's own `created_at` then `id`. A project whose issue was just created or edited jumps to the top; projects without issues sink below.
+  - Search, client eager-loading, issue counts, and permissions are unchanged.
+- Removed the **Images** column from the Project Detail issue snapshot table (`resources/js/Pages/Projects/Show.vue`), so it now shows Issue / Status / Sub-issues / Action.
+- Added `tests/Feature/IssueLibraryOrderingTest.php` (library ordering by most recent edit + newly created issue first) and `tests/Feature/ProjectListOrderingTest.php` (project ordering by a fresh issue, by an edited issue, and the creation-date fallback for issue-less projects).
+- Rebuilt front-end assets.
 
 ### Project completion progress analytics
 
