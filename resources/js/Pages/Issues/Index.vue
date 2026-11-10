@@ -344,7 +344,6 @@ const idleMetaClass = (issue) => {
                     <thead>
                         <tr>
                             <th>Issue</th>
-                            <th>Client</th>
                             <th>Project</th>
                             <th>Status</th>
                             <th>Sub-issues</th>
@@ -359,6 +358,9 @@ const idleMetaClass = (issue) => {
                                     <div>
                                         <strong>{{ issue.title }}</strong>
                                         <small class="issue-date-meta">Created {{ formatIssueDate(issue.created_at) }}</small>
+                                        <small v-if="issue.updated_at" class="issue-date-meta" :style="{ color: '#1f7a6e', fontWeight: '600' }">
+                                            Updated {{ formatIssueDate(issue.updated_at) }}
+                                        </small>
                                         <small v-if="issue.status === 'done'" class="issue-date-meta" :style="{ color: '#1f7a6e', fontWeight: '600' }">
                                             Completed {{ formatIssueDate(issue.done_at) }}
                                         </small>
@@ -371,7 +373,6 @@ const idleMetaClass = (issue) => {
                                     </div>
                                 </div>
                             </td>
-                            <td data-label="Client">{{ issue.project?.client?.name || 'No client' }}</td>
                             <td data-label="Project">{{ issue.project?.name || 'No project' }}</td>
                             <td data-label="Status"><StatusPill :status="issue.status" /></td>
                             <td data-label="Sub-issues">{{ issue.sub_issues_count ?? 0 }}</td>
@@ -386,7 +387,7 @@ const idleMetaClass = (issue) => {
                             </td>
                         </tr>
                         <tr v-if="!issueRows.length">
-                            <td colspan="6">
+                            <td colspan="5">
                                 <div class="table-empty">No issues match the current filters.</div>
                             </td>
                         </tr>

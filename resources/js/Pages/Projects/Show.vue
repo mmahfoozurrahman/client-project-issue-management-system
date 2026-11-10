@@ -174,7 +174,6 @@
                             <th>Issue</th>
                             <th>Status</th>
                             <th>Sub-issues</th>
-                            <th>Images</th>
                             <th class="text-end">Action</th>
                         </tr>
                     </thead>
@@ -197,7 +196,6 @@
                             </td>
                             <td data-label="Status"><StatusPill :status="issue.status" /></td>
                             <td data-label="Sub-issues">{{ issue.sub_issues_count ?? 0 }}</td>
-                            <td data-label="Images">{{ issue.images_count ?? 0 }}</td>
                             <td data-label="Action">
                                 <div class="table-actions">
                                     <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" @click="togglePin(issue)">
@@ -209,7 +207,7 @@
                             </td>
                         </tr>
                         <tr v-if="!issueRows.length">
-                            <td colspan="5">
+                            <td colspan="4">
                                 <div class="table-empty">No top-level issues yet. Add the first issue for this project.</div>
                             </td>
                         </tr>

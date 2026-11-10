@@ -50,7 +50,13 @@ class ProjectController extends Controller
                 }
             ])
             ->withCount('issues')
-            ->latest()
+            // Order projects by their most recent issue activity so the project whose
+            // issue was created or edited most recently rises to the top of the list.
+            // Projects without any issues fall back to their own creation date.
+            ->withMax('issues as latest_issue_updated_at', 'updated_at')
+            ->orderByDesc('latest_issue_updated_at')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
             ->paginate(12)
             ->withQueryString();
 

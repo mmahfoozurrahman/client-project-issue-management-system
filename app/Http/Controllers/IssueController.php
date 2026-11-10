@@ -62,7 +62,10 @@ class IssueController extends Controller
             ->withCount(['subIssues', 'images', 'files'])
             ->withExists(['pinnedByUsers as is_pinned' => fn ($pinQuery) => $pinQuery->whereKey($user->id)])
             ->whereNull('parent_id')
-            ->latest();
+            // Mirror the project issue snapshot: the most recently created or edited
+            // issue appears first, so fresh activity always sits at the top of the list.
+            ->orderByDesc('updated_at')
+            ->orderByDesc('id');
 
         if ($request->filled('project_id')) {
             $projectId = (int) $request->input('project_id');
