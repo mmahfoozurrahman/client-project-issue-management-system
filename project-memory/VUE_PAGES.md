@@ -9,7 +9,7 @@ All frontend pages live in `resources/js/Pages/`. Laravel controllers return the
 | `Dashboard.vue` | `/dashboard` | `DashboardController@index` | Workspace overview, issue analytics, status summaries, activity information, Quick Read issue previews, and clickable issue tags. |
 | `Clients/Index.vue` | `/clients` | `ClientController@index` | Paginated client listing with create/edit/delete modal flows. |
 | `Projects/Index.vue` | `/projects` | `ProjectController@index` | Project listing, filtering, and create/edit workflows. |
-| `Projects/Show.vue` | `/projects/{project}` | `ProjectController@show` | Project overview, issue list/date column, shared Quick Read, member management, issue creation, and clickable issue tags. |
+| `Projects/Show.vue` | `/projects/{project}` | `ProjectController@show` | Project overview, issue list with a type-to-filter tag autocomplete, shared Quick Read, member management, issue creation, and clickable issue tags. |
 | `Issues/Index.vue` | `/issues` | `IssueController@index` | Filterable, searchable, paginated issue listing, Quick Read, create-issue modal, and tag-filter destinations. |
 | `Issues/Show.vue` | `/issues/{issue}` | `IssueController@show` | Full issue detail, editing, rich text, clickable tags, uploads, links, image gallery, related issues, recursive sub-issue tree, and Quick Read previews. |
 | `Issues/Kanban.vue` | `/kanban` | `IssueController@kanban` | Status-board workflow for Todo, In Progress, and Done issues with per-card Quick Read and clickable tags. |

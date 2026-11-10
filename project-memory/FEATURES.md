@@ -4,11 +4,22 @@ This is a newest-first record of features and meaningful product changes, consol
 
 ## Current snapshot
 
-- **Latest commit:** `5373bd2` - feat(issues): match the project issue snapshot and order listings by latest activity.
+- **Latest commit:** `e7b055d` - feat(projects): add a type-to-filter tag autocomplete to the project issue list.
 - **Workflow:** Clients -> Projects -> Issues -> Sub-Issues.
 - **Stack:** Laravel 13, PHP 8.3+, MySQL, Vue 3, Inertia.js, Vite, Bootstrap 5, SweetAlert2, TipTap, and Chart.js.
 
 ## Feature history (newest first)
+
+### Project tag filter autocomplete
+
+**Last updated:** 10th November, 2026
+
+- Added a reusable `TagFilterAutocomplete.vue` (`resources/js/Components/`) so the Project Detail issue list can be filtered by tag from a typed search instead of scanning a long checkbox list:
+  - Typing in the input filters the project's tags live (case-insensitive) and the dropdown lists the matches as **checkbox** rows, so several tags can be picked at once (AND match). Selected tags stay visible/checked so they can be toggled off.
+  - The dropdown stays open while picking, closes on Escape or an outside click, and shows "N selected"; the input shell carries a selected-count badge and a Clear button. It works with the tags already loaded on the page (no extra request).
+- `resources/js/Pages/Projects/Show.vue` replaces the old checkbox `<details>` dropdown with this component, bound to `filterForm.tag_ids`, so a selection applies the existing `tag_ids` query filter via `router.get`. The old `tagFilterDropdown` ref and its helper/outside-click handlers were removed.
+- Styling reuses the existing `.tag-filter-menu` / `.tag-filter-option` classes and adds `.filters-row > .tag-filter-autocomplete` sizing plus a `<=767px` full-width rule in `resources/css/app.css`.
+- Rebuilt front-end assets.
 
 ### Issue library & project list ordered by latest activity
 
